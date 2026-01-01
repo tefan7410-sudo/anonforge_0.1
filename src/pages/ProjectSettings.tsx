@@ -25,6 +25,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Layers, Save, Trash2, Loader2, Settings, Users, Shield, AlertTriangle } from 'lucide-react';
 import { TeamManagement } from '@/components/project/TeamManagement';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { MobileNav } from '@/components/MobileNav';
 
 export default function ProjectSettings() {
   const { id } = useParams<{ id: string }>();
@@ -143,18 +145,24 @@ export default function ProjectSettings() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50">
-        <div className="container mx-auto flex items-center gap-4 px-6 py-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`/project/${id}`)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <Layers className="h-5 w-5 text-primary-foreground" />
+        <div className="container mx-auto flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate(`/project/${id}`)}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+                <Layers className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="font-display text-xl font-semibold">Project Settings</h1>
+                <p className="text-sm text-muted-foreground">{project.name}</p>
+              </div>
             </div>
-            <div>
-              <h1 className="font-display text-xl font-semibold">Project Settings</h1>
-              <p className="text-sm text-muted-foreground">{project.name}</p>
-            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <MobileNav />
           </div>
         </div>
       </header>
@@ -282,7 +290,7 @@ export default function ProjectSettings() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-medium">Delete Project</p>
                   <p className="text-sm text-muted-foreground">

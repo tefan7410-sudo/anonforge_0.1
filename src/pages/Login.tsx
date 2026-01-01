@@ -47,7 +47,7 @@ export default function Login() {
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
           <Layers className="h-6 w-6 text-primary-foreground" />
         </div>
-        <h1 className="font-display text-3xl font-bold">LayerForge</h1>
+        <h1 className="font-display text-3xl font-bold">AnonForge</h1>
       </div>
 
       <Card className="w-full max-w-md border-border/50 shadow-lg">

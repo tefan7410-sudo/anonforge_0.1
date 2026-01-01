@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Layers, ArrowRight, Sparkles, Palette, Download, Zap, Shield, Globe } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Index() {
   return (
@@ -8,14 +9,15 @@ export default function Index() {
       {/* Header */}
       <header className="border-b border-border/50">
         <nav className="container mx-auto flex items-center justify-between px-6 py-4" aria-label="Main navigation">
-          <Link to="/" className="flex items-center gap-3" aria-label="LayerForge home">
+          <Link to="/" className="flex items-center gap-3" aria-label="AnonForge home">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
               <Layers className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
             </div>
-            <span className="font-display text-xl font-semibold">LayerForge</span>
+            <span className="font-display text-xl font-semibold">AnonForge</span>
           </Link>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" asChild>
+            <ThemeToggle />
+            <Button variant="ghost" asChild className="hidden sm:inline-flex">
               <Link to="/login">Sign in</Link>
             </Button>
             <Button asChild>
@@ -94,7 +96,7 @@ export default function Index() {
         {/* Benefits Section */}
         <section className="container mx-auto px-6 py-20" aria-labelledby="benefits-heading">
           <h2 id="benefits-heading" className="mb-12 text-center font-display text-3xl font-bold">
-            Why choose LayerForge?
+            Why choose AnonForge?
           </h2>
           <div className="grid gap-8 md:grid-cols-3">
             <div className="text-center">
@@ -132,7 +134,7 @@ export default function Index() {
           <div className="container mx-auto px-6 py-20 text-center">
             <h2 id="cta-heading" className="font-display text-3xl font-bold">Ready to build your collection?</h2>
             <p className="mt-4 text-muted-foreground">
-              Join creators using LayerForge to generate unique profile pictures.
+              Join creators using AnonForge to generate unique profile pictures.
             </p>
             <Button size="lg" className="mt-8" asChild>
               <Link to="/register">
@@ -149,7 +151,7 @@ export default function Index() {
         <div className="container mx-auto flex items-center justify-between px-6 py-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Layers className="h-4 w-4" aria-hidden="true" />
-            <span>LayerForge</span>
+            <span>AnonForge</span>
           </div>
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} All rights reserved.

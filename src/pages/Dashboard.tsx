@@ -11,6 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { MobileNav } from '@/components/MobileNav';
 
 interface Project {
   id: string;
@@ -147,25 +149,28 @@ export default function Dashboard() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
               <Layers className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="font-display text-xl font-semibold">LayerForge</span>
+            <span className="font-display text-xl font-semibold">AnonForge</span>
           </div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
               <Link to="/profile">
                 <User className="mr-2 h-4 w-4" />
-                {user?.email}
+                <span className="hidden lg:inline">{user?.email}</span>
+                <span className="lg:hidden">Profile</span>
               </Link>
             </Button>
-            <Button variant="ghost" size="icon" onClick={signOut}>
+            <Button variant="ghost" size="icon" onClick={signOut} className="hidden md:inline-flex">
               <LogOut className="h-4 w-4" />
             </Button>
+            <MobileNav />
           </div>
         </div>
       </header>
 
       {/* Main content */}
       <main className="container mx-auto px-6 py-8">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-3xl font-bold">Dashboard</h1>
             <p className="mt-1 text-muted-foreground">Manage your layer generation projects</p>
@@ -191,7 +196,7 @@ export default function Dashboard() {
                 {invitations.map((invite) => (
                   <div
                     key={invite.id}
-                    className="flex items-center justify-between rounded-lg border border-border/50 bg-card p-4"
+                    className="flex flex-col gap-3 rounded-lg border border-border/50 bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div>
                       <p className="font-medium">{invite.projects.name}</p>
