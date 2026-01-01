@@ -77,6 +77,39 @@ export function useInviteMember() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Check for existing pending invitation
+      const { data: existing } = await supabase
+        .from('project_invitations')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('email', email)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+      if (existing) {
+        throw new Error('An invitation is already pending for this email');
+      }
+
+      // Check if user is already a member
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (profile) {
+        const { data: existingMember } = await supabase
+          .from('project_members')
+          .select('id')
+          .eq('project_id', projectId)
+          .eq('user_id', profile.id)
+          .maybeSingle();
+
+        if (existingMember) {
+          throw new Error('This user is already a member of this project');
+        }
+      }
+
       const { error } = await supabase.from('project_invitations').insert({
         project_id: projectId,
         email,
@@ -84,7 +117,13 @@ export function useInviteMember() {
         invited_by: user.id,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle unique constraint violation gracefully
+        if (error.code === '23505') {
+          throw new Error('An invitation is already pending for this email');
+        }
+        throw error;
+      }
     },
     onSuccess: (_, { projectId }) => {
       queryClient.invalidateQueries({ queryKey: ['project-invitations', projectId] });

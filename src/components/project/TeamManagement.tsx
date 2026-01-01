@@ -56,11 +56,17 @@ export function TeamManagement({ projectId, ownerId }: TeamManagementProps) {
       setEmail('');
       setEmailError(null);
     } catch (error: any) {
-      toast({
-        title: 'Failed to send invitation',
-        description: error.message,
-        variant: 'destructive',
-      });
+      const message = error.message || 'An error occurred';
+      // Show specific errors inline, others as toast
+      if (message.includes('already pending') || message.includes('already a member')) {
+        setEmailError(message);
+      } else {
+        toast({
+          title: 'Failed to send invitation',
+          description: message,
+          variant: 'destructive',
+        });
+      }
     }
   };
 
