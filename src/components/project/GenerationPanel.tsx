@@ -1,27 +1,27 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCategories, useAllLayers, type Project, type Layer, type Category } from '@/hooks/use-project';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import {
+  useCreateGeneration,
+  useCleanupGenerations,
+  uploadGenerationImage,
+} from '@/hooks/use-generations';
+import {
   Sparkles,
   Shuffle,
-  Download,
   Loader2,
   Info,
   Wand2,
   Hand,
   FileJson,
   Image as ImageIcon,
-  Check,
   RefreshCw,
 } from 'lucide-react';
 
@@ -41,13 +41,15 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const { data: categories } = useCategories(projectId);
   const { data: allLayers } = useAllLayers(projectId);
   const { toast } = useToast();
+  const createGeneration = useCreateGeneration();
+  const cleanupGenerations = useCleanupGenerations();
 
   const [mode, setMode] = useState<'random' | 'manual'>('random');
   const [generating, setGenerating] = useState(false);
-  const [batchSize, setBatchSize] = useState(1);
   const [generated, setGenerated] = useState<GeneratedCharacter[]>([]);
   const [manualSelections, setManualSelections] = useState<Record<string, string>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -132,7 +134,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     return canvas.toDataURL('image/png');
   };
 
-  // Generate single preview
+  // Generate single preview and save to history
   const handleGeneratePreview = async () => {
     if (!hasLayers) return;
 
@@ -142,7 +144,25 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
       character.imageData = await composeLayers(character.layers);
       setPreviewImage(character.imageData);
       setGenerated([character]);
-      toast({ title: 'Preview generated' });
+
+      // Save to history
+      setSaving(true);
+      const generationId = crypto.randomUUID();
+      const imagePath = await uploadGenerationImage(projectId, generationId, character.imageData);
+      
+      await createGeneration.mutateAsync({
+        projectId,
+        tokenId: character.tokenId,
+        imagePath,
+        layerCombination: character.layers.map((l) => l.layer.id),
+        metadata: character.metadata,
+        generationType: 'single',
+      });
+
+      // Cleanup old generations (keep only 25 non-favorites)
+      await cleanupGenerations.mutateAsync(projectId);
+
+      toast({ title: 'Preview generated and saved to history' });
     } catch (error) {
       console.error('Generation error:', error);
       toast({
@@ -152,6 +172,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
       });
     } finally {
       setGenerating(false);
+      setSaving(false);
     }
   };
 
@@ -175,12 +196,13 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     setManualSelections(newSelections);
   };
 
-  // Download generated image
+  // Download generated image (local copy)
   const handleDownload = () => {
     if (!previewImage) return;
     const link = document.createElement('a');
     link.download = `${generated[0]?.tokenId || 'preview'}.png`;
     link.href = previewImage;
+    link.target = '_blank';
     link.click();
   };
 
@@ -318,16 +340,16 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
         {/* Generate button */}
         <Button
           onClick={handleGeneratePreview}
-          disabled={generating}
+          disabled={generating || saving}
           className="w-full"
           size="lg"
         >
-          {generating ? (
+          {generating || saving ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <Wand2 className="mr-2 h-4 w-4" />
           )}
-          Generate Preview
+          {saving ? 'Saving...' : 'Generate Preview'}
         </Button>
       </div>
 

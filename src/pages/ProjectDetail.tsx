@@ -27,6 +27,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { LayerUploadZone } from '@/components/project/LayerUploadZone';
 import { CategoryList } from '@/components/project/CategoryList';
 import { GenerationPanel } from '@/components/project/GenerationPanel';
+import { GenerationHistory } from '@/components/project/GenerationHistory';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -193,13 +194,7 @@ export default function ProjectDetail() {
           </TabsContent>
 
           <TabsContent value="history">
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/50 py-16">
-              <ImageIcon className="mb-4 h-12 w-12 text-muted-foreground/50" />
-              <h3 className="mb-1 font-display text-lg font-medium">No generations yet</h3>
-              <p className="text-sm text-muted-foreground">
-                Generated images will appear here
-              </p>
-            </div>
+            <GenerationHistory projectId={id!} />
           </TabsContent>
         </Tabs>
       </main>
