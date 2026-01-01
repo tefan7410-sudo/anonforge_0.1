@@ -458,6 +458,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_project_invitation: {
+        Args: { invitation_id: string }
+        Returns: undefined
+      }
+      decline_project_invitation: {
+        Args: { invitation_id: string }
+        Returns: undefined
+      }
+      get_my_pending_invitations: {
+        Args: never
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          inviter_name: string
+          project_description: string
+          project_id: string
+          project_name: string
+          role: string
+        }[]
+      }
       get_project_id_from_storage_path: {
         Args: { path: string }
         Returns: string
