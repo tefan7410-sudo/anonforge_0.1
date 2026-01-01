@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, DragEvent } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,7 @@ import {
   useDeleteCategory,
   useUpdateLayerWeight,
   useDeleteLayer,
+  useReorderCategories,
   type Category,
   type Layer,
 } from '@/hooks/use-project';
@@ -159,9 +160,23 @@ function LayerItem({
 function CategoryItem({
   category,
   projectId,
+  index,
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDragEnd,
+  onDrop,
 }: {
   category: Category;
   projectId: string;
+  index: number;
+  isDragging: boolean;
+  isDragOver: boolean;
+  onDragStart: (e: DragEvent<HTMLDivElement>, index: number) => void;
+  onDragOver: (e: DragEvent<HTMLDivElement>, index: number) => void;
+  onDragEnd: () => void;
+  onDrop: (e: DragEvent<HTMLDivElement>, index: number) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -191,38 +206,53 @@ function CategoryItem({
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card className="border-border/50">
+      <Card 
+        className={`border-border/50 transition-all ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'ring-2 ring-primary' : ''}`}
+        draggable
+        onDragStart={(e) => onDragStart(e, index)}
+        onDragOver={(e) => onDragOver(e, index)}
+        onDragEnd={onDragEnd}
+        onDrop={(e) => onDrop(e, index)}
+      >
         <CardHeader className="py-3">
           <div className="flex items-center justify-between">
-            <CollapsibleTrigger className="flex items-center gap-2 hover:text-primary">
-              {isOpen ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-              {isEditing ? (
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  <Input
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="h-7 w-40"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSave();
-                      if (e.key === 'Escape') handleCancel();
-                    }}
-                  />
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleSave}>
-                    <Check className="h-3 w-3" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCancel}>
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ) : (
-                <CardTitle className="text-base font-medium">{category.display_name}</CardTitle>
-              )}
-            </CollapsibleTrigger>
+            <div className="flex items-center gap-2">
+              <div className="cursor-grab text-muted-foreground hover:text-foreground" title="Drag to reorder">
+                <GripVertical className="h-4 w-4" />
+              </div>
+              <Badge variant="outline" className="h-5 w-5 justify-center p-0 text-xs font-mono">
+                {index}
+              </Badge>
+              <CollapsibleTrigger className="flex items-center gap-2 hover:text-primary">
+                {isOpen ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+                {isEditing ? (
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <Input
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="h-7 w-40"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSave();
+                        if (e.key === 'Escape') handleCancel();
+                      }}
+                    />
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleSave}>
+                      <Check className="h-3 w-3" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCancel}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <CardTitle className="text-base font-medium">{category.display_name}</CardTitle>
+                )}
+              </CollapsibleTrigger>
+            </div>
 
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs">
@@ -305,6 +335,40 @@ function CategoryItem({
 
 export function CategoryList({ projectId }: CategoryListProps) {
   const { data: categories, isLoading } = useCategories(projectId);
+  const reorderCategories = useReorderCategories();
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex || !categories) return;
+
+    const reordered = [...categories];
+    const [removed] = reordered.splice(draggedIndex, 1);
+    reordered.splice(dropIndex, 0, removed);
+
+    const updates = reordered.map((cat, idx) => ({ id: cat.id, orderIndex: idx }));
+    reorderCategories.mutate({ projectId, categories: updates });
+
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
 
   if (isLoading) {
     return (
@@ -330,7 +394,7 @@ export function CategoryList({ projectId }: CategoryListProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {categories.length} categories • Adjust weights to control rarity
+          {categories.length} categories • Drag to reorder (0 = bottom layer)
         </p>
         <Tooltip>
           <TooltipTrigger>
@@ -338,14 +402,25 @@ export function CategoryList({ projectId }: CategoryListProps) {
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
             <p>
-              Weights determine how often each trait appears. Higher weight = more common. The
-              percentage shows the probability of selection.
+              Drag categories to set layer order. Layer 0 is rendered first (bottom), higher numbers on top.
+              Weights determine trait rarity within each category.
             </p>
           </TooltipContent>
         </Tooltip>
       </div>
-      {categories.map((category) => (
-        <CategoryItem key={category.id} category={category} projectId={projectId} />
+      {categories.map((category, index) => (
+        <CategoryItem
+          key={category.id}
+          category={category}
+          projectId={projectId}
+          index={index}
+          isDragging={draggedIndex === index}
+          isDragOver={dragOverIndex === index}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+          onDrop={handleDrop}
+        />
       ))}
     </div>
   );
