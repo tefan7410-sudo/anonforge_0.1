@@ -17,6 +17,16 @@ import {
   uploadGenerationZip,
 } from '@/hooks/use-generations';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Sparkles,
   Shuffle,
   Loader2,
@@ -27,6 +37,7 @@ import {
   Image as ImageIcon,
   RefreshCw,
   Layers,
+  AlertTriangle,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -58,6 +69,8 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const [saving, setSaving] = useState(false);
   const [batchSize, setBatchSize] = useState(1);
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
+  const [showWarningDialog, setShowWarningDialog] = useState(false);
+  const [generationWarnings, setGenerationWarnings] = useState<string[]>([]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -123,6 +136,58 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   // Helper to create a consistent hash from layer combination
   const getCombinationHash = (layers: { category: Category; layer: Layer }[]): string => {
     return layers.map((l) => l.layer.id).sort().join('|');
+  };
+
+  // Analyze generation conditions and return warnings
+  const analyzeGenerationConditions = (): string[] => {
+    const warnings: string[] = [];
+
+    // Check if batch size uses a high percentage of remaining combinations
+    const combinationRatio = remainingCombinations > 0 ? batchSize / remainingCombinations : 1;
+    if (combinationRatio > 0.5 && batchSize > 1) {
+      warnings.push(`Batch uses ${Math.round(combinationRatio * 100)}% of remaining ${remainingCombinations} unique combinations`);
+    }
+
+    // Check weight distribution per category for skewed weights
+    for (const category of sortedCategories) {
+      const layers = layersByCategory.get(category.id) || [];
+      if (layers.length < 2) continue;
+
+      const totalWeight = layers.reduce((sum, l) => sum + l.rarity_weight, 0);
+      if (totalWeight === 0) {
+        warnings.push(`"${category.display_name}" has no weighted traits (all at 0)`);
+        continue;
+      }
+
+      for (const layer of layers) {
+        const percentage = (layer.rarity_weight / totalWeight) * 100;
+        if (percentage >= 90) {
+          warnings.push(`"${layer.display_name}" in "${category.display_name}" has ${percentage.toFixed(0)}% drop rate`);
+        }
+      }
+
+      // Check if any traits have 0 weight
+      const zeroWeightCount = layers.filter((l) => l.rarity_weight === 0).length;
+      if (zeroWeightCount > 0 && zeroWeightCount < layers.length) {
+        warnings.push(`${zeroWeightCount} trait(s) in "${category.display_name}" won't appear (weight = 0)`);
+      }
+    }
+
+    // Check if not enough unique combinations for the batch
+    if (remainingCombinations < batchSize) {
+      warnings.push(`Not enough unique combinations: ${remainingCombinations} available, but batch size is ${batchSize}`);
+    }
+
+    // Check if categories have very few traits
+    const lowTraitCategories = sortedCategories.filter((c) => {
+      const layers = layersByCategory.get(c.id) || [];
+      return layers.length === 1;
+    });
+    if (lowTraitCategories.length > 0 && batchSize > 5) {
+      warnings.push(`${lowTraitCategories.length} category(ies) have only 1 trait, limiting variety`);
+    }
+
+    return warnings;
   };
 
   // Weighted random selection
@@ -283,8 +348,8 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     return { character, savedTokenNumber: currentTokenNumber };
   };
 
-  // Generate single or batch preview and save to history
-  const handleGeneratePreview = async () => {
+  // Check for warnings before generating
+  const handleGenerateClick = () => {
     if (!hasLayers) return;
 
     // Check if we have enough remaining combinations
@@ -297,6 +362,23 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
       return;
     }
 
+    // Analyze conditions and show warning if needed
+    const warnings = analyzeGenerationConditions();
+    if (warnings.length > 0) {
+      setGenerationWarnings(warnings);
+      setShowWarningDialog(true);
+      return;
+    }
+
+    // No warnings, proceed directly
+    handleGeneratePreview();
+  };
+
+  // Generate single or batch preview and save to history
+  const handleGeneratePreview = async () => {
+    if (!hasLayers) return;
+
+    setShowWarningDialog(false);
     setGenerating(true);
     setGenerationProgress({ current: 0, total: batchSize });
     const generatedCharacters: GeneratedCharacter[] = [];
@@ -587,9 +669,40 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
           </CardContent>
         </Card>
 
+        {/* Warning Dialog */}
+        <AlertDialog open={showWarningDialog} onOpenChange={setShowWarningDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                Generation Warning
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3">
+                  <p>The following conditions may affect your generation results:</p>
+                  <ul className="list-inside list-disc space-y-1 text-sm">
+                    {generationWarnings.map((warning, i) => (
+                      <li key={i}>{warning}</li>
+                    ))}
+                  </ul>
+                  <p className="text-sm">
+                    Results may not reflect the ideal weight distribution. Do you want to continue?
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleGeneratePreview}>
+                Generate Anyway
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Generate button */}
         <Button
-          onClick={handleGeneratePreview}
+          onClick={handleGenerateClick}
           disabled={generating || saving}
           className="w-full"
           size="lg"

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Layers } from 'lucide-react';
+import { Loader2, Layers, ArrowLeft } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -42,13 +42,19 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <div className="mb-8 flex items-center gap-3">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-4">
+      <Link to="/" className="absolute left-4 top-4">
+        <Button variant="ghost" size="icon" className="h-10 w-10">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+      </Link>
+
+      <Link to="/" className="mb-8 flex items-center gap-3 transition-opacity hover:opacity-80">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
           <Layers className="h-6 w-6 text-primary-foreground" />
         </div>
         <h1 className="font-display text-3xl font-bold">AnonForge</h1>
-      </div>
+      </Link>
 
       <Card className="w-full max-w-md border-border/50 shadow-lg">
         <CardHeader className="space-y-1">

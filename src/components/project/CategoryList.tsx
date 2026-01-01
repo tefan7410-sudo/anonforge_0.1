@@ -66,6 +66,7 @@ function LayerItem({
   const [weight, setWeight] = useState(layer.rarity_weight);
 
   const percentage = totalWeight > 0 ? ((weight / totalWeight) * 100).toFixed(1) : '0';
+  const isZeroWeight = weight === 0;
 
   const { data: publicUrl } = supabase.storage.from('layers').getPublicUrl(layer.storage_path);
 
@@ -85,7 +86,7 @@ function LayerItem({
   };
 
   return (
-    <div className="group flex items-center gap-3 rounded-lg border border-border/50 bg-card p-3">
+    <div className={`group flex items-center gap-3 rounded-lg border border-border/50 bg-card p-3 ${isZeroWeight ? 'opacity-50' : ''}`}>
       <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted">
         <img
           src={publicUrl.publicUrl}
@@ -103,26 +104,33 @@ function LayerItem({
         <p className="truncate text-xs text-muted-foreground">{layer.filename}</p>
       </div>
 
-      <div className="flex w-56 items-center gap-2">
+      <div className="flex w-64 items-center gap-2">
         <Slider
           value={[weight]}
           onValueChange={handleWeightChange}
           onValueCommit={handleWeightCommit}
-          min={1}
+          min={0}
           max={100}
           step={1}
           className="flex-1"
         />
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge variant="secondary" className="w-20 justify-center text-xs cursor-help">
-              {percentage}%
-            </Badge>
+            <div className="flex flex-col items-center gap-0.5">
+              <Badge variant="outline" className="w-14 justify-center text-xs cursor-help">
+                {weight}/100
+              </Badge>
+              <span className={`text-[10px] ${isZeroWeight ? 'text-destructive' : 'text-muted-foreground'}`}>
+                {isZeroWeight ? "won't appear" : `${percentage}%`}
+              </span>
+            </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p className="font-medium">Weight: {weight}</p>
+            <p className="font-medium">Weight: {weight}/100 points</p>
             <p className="text-xs text-muted-foreground">
-              Higher weight = more likely to appear
+              {isZeroWeight 
+                ? 'This trait will never appear in generation' 
+                : `Drop rate: ${percentage}% (based on total category weight)`}
             </p>
           </TooltipContent>
         </Tooltip>
