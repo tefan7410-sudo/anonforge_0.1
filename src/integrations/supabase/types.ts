@@ -100,6 +100,30 @@ export type Database = {
           },
         ]
       }
+      generation_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          generation_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          generation_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          generation_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       generations: {
         Row: {
           batch_size: number | null
@@ -194,29 +218,71 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          link: string | null
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          link?: string | null
+          message: string
+          metadata?: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          link?: string | null
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          accepted_terms_at: string | null
           avatar_url: string | null
           created_at: string
           display_name: string | null
           email: string
           id: string
+          marketing_consent: boolean | null
           updated_at: string
         }
         Insert: {
+          accepted_terms_at?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           email: string
           id: string
+          marketing_consent?: boolean | null
           updated_at?: string
         }
         Update: {
+          accepted_terms_at?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           email?: string
           id?: string
+          marketing_consent?: boolean | null
           updated_at?: string
         }
         Relationships: []

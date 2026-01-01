@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { CookieBanner } from "@/components/CookieBanner";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -15,6 +16,7 @@ import NewProject from "./pages/NewProject";
 import ProjectDetail from "./pages/ProjectDetail";
 import ProjectSettings from "./pages/ProjectSettings";
 import Profile from "./pages/Profile";
+import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +33,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route
                 path="/dashboard"
                 element={
@@ -74,6 +77,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <CookieBanner />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

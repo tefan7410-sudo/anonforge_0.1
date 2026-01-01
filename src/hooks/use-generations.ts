@@ -219,3 +219,42 @@ export function getGenerationFileUrl(imagePath: string): string {
   const { data } = supabase.storage.from('generations').getPublicUrl(imagePath);
   return data.publicUrl;
 }
+
+// Clear all generations for a project
+export function useClearAllGenerations() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (projectId: string) => {
+      // Get all generations for project
+      const { data: generations, error } = await supabase
+        .from('generations')
+        .select('*')
+        .eq('project_id', projectId);
+
+      if (error) throw error;
+
+      // Delete all files from storage
+      const filesToDelete = (generations || [])
+        .filter((g) => g.image_path)
+        .map((g) => g.image_path as string);
+
+      if (filesToDelete.length > 0) {
+        await supabase.storage.from('generations').remove(filesToDelete);
+      }
+
+      // Delete all records
+      const { error: deleteError } = await supabase
+        .from('generations')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (deleteError) throw deleteError;
+
+      return (generations || []).length;
+    },
+    onSuccess: (_, projectId) => {
+      queryClient.invalidateQueries({ queryKey: ['generations', projectId] });
+    },
+  });
+}
