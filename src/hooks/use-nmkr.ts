@@ -40,13 +40,45 @@ export interface NmkrCredentials {
   lastValidated: string | null;
 }
 
-// Helper function to call NMKR proxy
+// Helper function to call NMKR proxy with JWT refresh handling
 async function callNmkrProxy(action: string, params: Record<string, unknown> = {}) {
+  // Get fresh session before making the call
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session) {
+    throw new Error('Not authenticated. Please log in again.');
+  }
+
   const { data, error } = await supabase.functions.invoke('nmkr-proxy', {
     body: { action, ...params },
   });
 
   if (error) {
+    // Check if it's an auth error (401 or JWT related)
+    const errorMsg = error.message || '';
+    if (errorMsg.includes('401') || errorMsg.includes('JWT') || errorMsg.includes('token')) {
+      // Try to refresh the session
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        throw new Error('Session expired. Please log in again.');
+      }
+      
+      // Retry the call with refreshed session
+      const { data: retryData, error: retryError } = await supabase.functions.invoke('nmkr-proxy', {
+        body: { action, ...params },
+      });
+      
+      if (retryError) {
+        throw new Error(retryError.message || 'NMKR API call failed');
+      }
+      
+      if (!retryData.success) {
+        throw new Error(retryData.error || 'NMKR API returned an error');
+      }
+      
+      return retryData;
+    }
+    
     throw new Error(error.message || 'NMKR API call failed');
   }
 

@@ -32,6 +32,7 @@ import { PublishPanel } from '@/components/project/PublishPanel';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -197,19 +198,27 @@ export default function ProjectDetail() {
           </div>
 
           <TabsContent value="layers">
-            <CategoryList projectId={id!} />
+            <ErrorBoundary>
+              <CategoryList projectId={id!} />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="generate">
-            <GenerationPanel projectId={id!} project={project} />
+            <ErrorBoundary>
+              <GenerationPanel projectId={id!} project={project} />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="history">
-            <GenerationHistory projectId={id!} />
+            <ErrorBoundary>
+              <GenerationHistory projectId={id!} />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="publish">
-            <PublishPanel projectId={id!} projectName={project.name} />
+            <ErrorBoundary>
+              <PublishPanel projectId={id!} projectName={project.name} />
+            </ErrorBoundary>
           </TabsContent>
         </Tabs>
       </main>

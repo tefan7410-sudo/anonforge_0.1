@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CheckCircle2, Rocket, Upload, Settings, BarChart3, Key, Trash2 } from 'lucide-react';
+import { CheckCircle2, Rocket, Upload, Settings, BarChart3, Key, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useDeleteNmkrCredentials } from '@/hooks/use-nmkr';
 import {
   AlertDialog,
@@ -31,10 +31,36 @@ interface PublishPanelProps {
 
 export function PublishPanel({ projectId, projectName }: PublishPanelProps) {
   const [activeSubTab, setActiveSubTab] = useState('upload');
-  const { data: credentials, isLoading: credentialsLoading, refetch: refetchCredentials } = useNmkrCredentials();
+  const { 
+    data: credentials, 
+    isLoading: credentialsLoading, 
+    error: credentialsError,
+    refetch: refetchCredentials 
+  } = useNmkrCredentials();
   const { data: nmkrProject, isLoading: nmkrLoading } = useNmkrProject(projectId);
   const { data: counts } = useNmkrCounts(nmkrProject?.nmkr_project_uid);
   const deleteCredentials = useDeleteNmkrCredentials();
+
+  // Handle error state
+  if (credentialsError) {
+    return (
+      <Card className="border-destructive">
+        <CardContent className="pt-6">
+          <div className="text-center space-y-4">
+            <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
+            <h3 className="font-semibold">Connection Error</h3>
+            <p className="text-muted-foreground text-sm">
+              {credentialsError.message || 'Failed to check NMKR credentials. Please try again.'}
+            </p>
+            <Button onClick={() => refetchCredentials()} variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (credentialsLoading || nmkrLoading) {
     return (
