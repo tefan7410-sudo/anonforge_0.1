@@ -15,6 +15,7 @@ import {
   useGenerations,
   uploadGenerationImage,
   uploadGenerationZip,
+  getGenerationFileUrl,
 } from '@/hooks/use-generations';
 import {
   AlertDialog,
@@ -38,8 +39,13 @@ import {
   RefreshCw,
   Layers,
   AlertTriangle,
+  CheckCircle,
+  Download,
+  History,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Progress } from '@/components/ui/progress';
 
 interface GenerationPanelProps {
   projectId: string;
@@ -71,6 +77,10 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
   const [showWarningDialog, setShowWarningDialog] = useState(false);
   const [generationWarnings, setGenerationWarnings] = useState<string[]>([]);
+  const [isFullResolution, setIsFullResolution] = useState(false);
+  const [showFullResWarning, setShowFullResWarning] = useState(false);
+  const [generationComplete, setGenerationComplete] = useState(false);
+  const [lastBatchZipPath, setLastBatchZipPath] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -253,16 +263,20 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   };
 
   // Compose layers onto canvas
-  const composeLayers = async (layers: { category: Category; layer: Layer }[]): Promise<string> => {
+  const composeLayers = async (
+    layers: { category: Category; layer: Layer }[],
+    fullResolution: boolean = false
+  ): Promise<string> => {
     const canvas = canvasRef.current;
     if (!canvas) throw new Error('Canvas not available');
 
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas context not available');
 
-    // Set canvas size (using 512x512 for preview)
-    canvas.width = 512;
-    canvas.height = 512;
+    // Use 5000x5000 for full resolution, 512x512 for preview
+    const size = fullResolution ? 5000 : 512;
+    canvas.width = size;
+    canvas.height = size;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Load and draw each layer in order
@@ -290,7 +304,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     batchUsedCombinations: Set<string>
   ): Promise<{ character: GeneratedCharacter; savedTokenNumber: number }> => {
     const character = await generateCharacter(tokenNumber, batchUsedCombinations);
-    character.imageData = await composeLayers(character.layers);
+    character.imageData = await composeLayers(character.layers, isFullResolution);
 
     const generationId = crypto.randomUUID();
     const uploadedImagePath = await uploadGenerationImage(projectId, generationId, character.imageData);
@@ -352,6 +366,10 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const handleGenerateClick = () => {
     if (!hasLayers) return;
 
+    // Reset completion state
+    setGenerationComplete(false);
+    setLastBatchZipPath(null);
+
     // Check if we have enough remaining combinations
     if (batchSize > remainingCombinations) {
       toast({
@@ -359,6 +377,12 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
         description: `Only ${remainingCombinations} unique combinations remaining. Reduce batch size or add more layers.`,
         variant: 'destructive',
       });
+      return;
+    }
+
+    // Check for full resolution warning first (higher priority)
+    if (isFullResolution) {
+      setShowFullResWarning(true);
       return;
     }
 
@@ -374,12 +398,30 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     handleGeneratePreview();
   };
 
+  // Handle full resolution confirmation
+  const handleFullResConfirm = () => {
+    setShowFullResWarning(false);
+    
+    // Check for other warnings after full res confirmation
+    const warnings = analyzeGenerationConditions();
+    if (warnings.length > 0) {
+      setGenerationWarnings(warnings);
+      setShowWarningDialog(true);
+      return;
+    }
+    
+    handleGeneratePreview();
+  };
+
   // Generate single or batch preview and save to history
   const handleGeneratePreview = async () => {
     if (!hasLayers) return;
 
     setShowWarningDialog(false);
     setGenerating(true);
+    setGenerationComplete(false);
+    setLastBatchZipPath(null);
+    setPreviewImage(null); // Clear preview during batch generation
     setGenerationProgress({ current: 0, total: batchSize });
     const generatedCharacters: GeneratedCharacter[] = [];
     const batchUsedCombinations = new Set<string>();
@@ -394,19 +436,20 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
           setPreviewImage(character.imageData);
         }
       } else {
-        // Batch generation: generate all in memory, then create single ZIP
+        // Batch generation: generate all in memory without updating preview
         let tokenNumber = nextTokenNumber;
+        let firstImageData: string | undefined;
         
         for (let i = 0; i < batchSize; i++) {
           setGenerationProgress({ current: i + 1, total: batchSize });
           const character = await generateCharacter(tokenNumber, batchUsedCombinations);
-          character.imageData = await composeLayers(character.layers);
+          character.imageData = await composeLayers(character.layers, isFullResolution);
           generatedCharacters.push(character);
           tokenNumber++;
           
-          // Show the last generated image as preview
-          if (character.imageData) {
-            setPreviewImage(character.imageData);
+          // Store the first generated image for preview after completion
+          if (i === 0 && character.imageData) {
+            firstImageData = character.imageData;
           }
         }
 
@@ -431,6 +474,9 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
         const generationId = crypto.randomUUID();
         const zipPath = await uploadGenerationZip(projectId, generationId, zipBlob);
 
+        // Store zip path for download button
+        setLastBatchZipPath(zipPath);
+
         // Create ONE database record for the batch
         const firstToken = generatedCharacters[0].tokenId;
         const lastToken = generatedCharacters[generatedCharacters.length - 1].tokenId;
@@ -440,20 +486,26 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
           tokenId: `${firstToken}-${lastToken}`,
           imagePath: zipPath,
           layerCombination: [],
-          metadata: { count: String(batchSize), type: 'batch' },
+          metadata: { count: String(batchSize), type: 'batch', resolution: isFullResolution ? 'full' : 'preview' },
           generationType: 'batch',
           batchSize,
         });
+
+        // Set preview to first image after batch completes
+        if (firstImageData) {
+          setPreviewImage(firstImageData);
+        }
       }
 
       setGenerated(generatedCharacters);
+      setGenerationComplete(true);
 
       // Cleanup old generations (keep only 25 non-favorites)
       await cleanupGenerations.mutateAsync(projectId);
 
       toast({
         title: batchSize > 1
-          ? `${batchSize} characters generated and saved as ZIP`
+          ? `${batchSize} ${isFullResolution ? 'full resolution' : ''} characters generated`
           : 'Preview generated and saved to history',
       });
     } catch (error) {
@@ -669,6 +721,35 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
           </CardContent>
         </Card>
 
+        {/* Output Resolution Toggle */}
+        <Card className="border-border/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ImageIcon className="h-4 w-4" />
+              Output Resolution
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="resolution-toggle" className="text-sm font-medium">
+                  Full Resolution (5000×5000)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {isFullResolution 
+                    ? "Production quality - larger files, slower generation" 
+                    : "Preview mode - 512×512 for faster generation"}
+                </p>
+              </div>
+              <Switch
+                id="resolution-toggle"
+                checked={isFullResolution}
+                onCheckedChange={setIsFullResolution}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Warning Dialog */}
         <AlertDialog open={showWarningDialog} onOpenChange={setShowWarningDialog}>
           <AlertDialogContent>
@@ -700,6 +781,40 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* Full Resolution Warning Dialog */}
+        <AlertDialog open={showFullResWarning} onOpenChange={setShowFullResWarning}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                Full Resolution Generation
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3">
+                  <p>You are about to generate at full resolution (5000×5000 pixels).</p>
+                  <ul className="list-inside list-disc space-y-1 text-sm">
+                    <li>Each image will be approximately 10-20MB</li>
+                    <li>Generation will take significantly longer</li>
+                    {batchSize > 1 && (
+                      <li>Batch of {batchSize} images may take several minutes</li>
+                    )}
+                    <li>Estimated total size: ~{(batchSize * 15).toFixed(0)}MB</li>
+                  </ul>
+                  <p className="text-sm font-medium text-amber-600">
+                    This process is resource-intensive and may take a while to complete.
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleFullResConfirm}>
+                Generate Full Resolution
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Generate button */}
         <Button
           onClick={handleGenerateClick}
@@ -717,7 +832,9 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
           ) : (
             <>
               <Wand2 className="mr-2 h-4 w-4" />
-              {batchSize > 1 ? `Generate ${batchSize} Characters` : 'Generate Preview'}
+              {batchSize > 1 
+                ? `Generate ${batchSize} ${isFullResolution ? 'Full Res' : 'Previews'}`
+                : isFullResolution ? 'Generate Full Resolution' : 'Generate Preview'}
             </>
           )}
         </Button>
@@ -730,7 +847,60 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
             <CardTitle className="text-base">Preview</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            {previewImage ? (
+            {/* Show progress during batch generation */}
+            {generating && batchSize > 1 ? (
+              <div className="flex aspect-square flex-col items-center justify-center rounded-lg bg-muted">
+                <Loader2 className="mb-4 h-12 w-12 animate-spin text-primary" />
+                <p className="text-lg font-medium">
+                  Generating {generationProgress.current} / {generationProgress.total}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {isFullResolution ? 'Creating full resolution images...' : 'Creating preview images...'}
+                </p>
+                <Progress 
+                  value={(generationProgress.current / generationProgress.total) * 100} 
+                  className="mt-4 w-48" 
+                />
+              </div>
+            ) : generationComplete && batchSize > 1 && lastBatchZipPath ? (
+              /* Show completion state for batch generation */
+              <div className="space-y-4">
+                {previewImage && (
+                  <div className="overflow-hidden rounded-lg bg-muted">
+                    <img
+                      src={previewImage}
+                      alt="Generated preview"
+                      className="h-auto w-full"
+                    />
+                  </div>
+                )}
+                <div className="rounded-lg border border-green-500/20 bg-green-500/10 p-4 text-center">
+                  <CheckCircle className="mx-auto mb-2 h-8 w-8 text-green-500" />
+                  <p className="font-medium">Batch generation complete!</p>
+                  <p className="text-sm text-muted-foreground">
+                    {generated.length} {isFullResolution ? 'full resolution' : 'preview'} characters generated
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    className="flex-1" 
+                    onClick={() => {
+                      if (lastBatchZipPath) {
+                        const url = getGenerationFileUrl(lastBatchZipPath);
+                        window.open(url, '_blank');
+                      }
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download ZIP
+                  </Button>
+                  <Button variant="outline" className="flex-1">
+                    <History className="mr-2 h-4 w-4" />
+                    View in History
+                  </Button>
+                </div>
+              </div>
+            ) : previewImage ? (
               <div className="space-y-4">
                 <div className="overflow-hidden rounded-lg bg-muted">
                   <img
