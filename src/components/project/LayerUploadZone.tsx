@@ -83,15 +83,14 @@ export function LayerUploadZone({ projectId, onComplete }: LayerUploadZoneProps)
         categoryMap.set(cat.name, cat.id);
       }
 
-      // Create new categories
-      let categoryIndex = existingCategories?.length || 0;
-      for (const categoryName of grouped.keys()) {
+      // Create new categories with correct order from filenames
+      for (const [categoryName, { minOrder }] of grouped) {
         if (!existingCategoryNames.has(categoryName)) {
           const result = await createCategory.mutateAsync({
             projectId,
             name: categoryName,
             displayName: categoryName.charAt(0).toUpperCase() + categoryName.slice(1),
-            orderIndex: categoryIndex++,
+            orderIndex: minOrder,
           });
           categoryMap.set(categoryName, result.id);
         }
@@ -99,7 +98,7 @@ export function LayerUploadZone({ projectId, onComplete }: LayerUploadZoneProps)
 
       // Upload files and create layers
       let uploadedCount = 0;
-      for (const [categoryName, categoryFiles] of grouped) {
+      for (const [categoryName, { files: categoryFiles }] of grouped) {
         const categoryId = categoryMap.get(categoryName);
         if (!categoryId) continue;
 
@@ -239,14 +238,16 @@ export function LayerUploadZone({ projectId, onComplete }: LayerUploadZoneProps)
           <CardContent className="pt-0">
             <ScrollArea className="max-h-60">
               <div className="space-y-4">
-                {Array.from(grouped.entries()).map(([category, items]) => (
+                {Array.from(grouped.entries())
+                  .sort(([, a], [, b]) => a.minOrder - b.minOrder)
+                  .map(([category, { files: items, minOrder }]) => (
                   <div key={category}>
                     <div className="mb-2 flex items-center gap-2">
                       <Badge variant="secondary" className="capitalize">
                         {category}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {items.length} traits
+                        Layer {minOrder} · {items.length} traits
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">

@@ -57,20 +57,24 @@ export function validateFilenames(files: File[]): {
 
 export function groupByCategory(
   parsedFiles: { file: File; parsed: ParsedFilename }[]
-): Map<string, { file: File; parsed: ParsedFilename }[]> {
-  const groups = new Map<string, { file: File; parsed: ParsedFilename }[]>();
+): Map<string, { files: { file: File; parsed: ParsedFilename }[]; minOrder: number }> {
+  const groups = new Map<string, { files: { file: File; parsed: ParsedFilename }[]; minOrder: number }>();
 
   for (const item of parsedFiles) {
     const category = item.parsed.category;
-    if (!groups.has(category)) {
-      groups.set(category, []);
+    const existing = groups.get(category);
+
+    if (!existing) {
+      groups.set(category, { files: [item], minOrder: item.parsed.order });
+    } else {
+      existing.files.push(item);
+      existing.minOrder = Math.min(existing.minOrder, item.parsed.order);
     }
-    groups.get(category)!.push(item);
   }
 
-  // Sort each group by order
-  for (const [, items] of groups) {
-    items.sort((a, b) => a.parsed.order - b.parsed.order);
+  // Sort files within each group by order
+  for (const [, group] of groups) {
+    group.files.sort((a, b) => a.parsed.order - b.parsed.order);
   }
 
   return groups;
