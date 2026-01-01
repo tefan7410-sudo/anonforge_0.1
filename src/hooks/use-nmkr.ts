@@ -183,15 +183,18 @@ export function useCreateNmkrProject() {
       projectId,
       projectName,
       description,
+      maxNftSupply,
     }: {
       projectId: string;
       projectName: string;
       description?: string;
+      maxNftSupply: number;
     }) => {
       // Create project on NMKR
       const result = await callNmkrProxy('create-project', {
         projectName,
         description,
+        maxNftSupply,
       });
       const nmkrResult = result.data;
 

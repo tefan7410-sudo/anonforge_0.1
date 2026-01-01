@@ -15,14 +15,19 @@ interface NmkrSetupWizardProps {
 export function NmkrSetupWizard({ projectId, projectName }: NmkrSetupWizardProps) {
   const [nmkrProjectName, setNmkrProjectName] = useState(projectName);
   const [description, setDescription] = useState('');
+  const [maxSupply, setMaxSupply] = useState('10000');
   const createProject = useCreateNmkrProject();
 
+  const maxSupplyValue = parseInt(maxSupply) || 0;
+  const isValidSupply = maxSupplyValue >= 1;
+
   const handleCreateProject = async () => {
-    if (!nmkrProjectName.trim()) return;
+    if (!nmkrProjectName.trim() || !isValidSupply) return;
     await createProject.mutateAsync({
       projectId,
       projectName: nmkrProjectName.trim(),
       description: description.trim(),
+      maxNftSupply: maxSupplyValue,
     });
   };
 
@@ -67,7 +72,7 @@ export function NmkrSetupWizard({ projectId, projectName }: NmkrSetupWizardProps
         {/* Project creation form */}
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="nmkr-project-name">Collection Name</Label>
+            <Label htmlFor="nmkr-project-name">Collection Name <span className="text-destructive">*</span></Label>
             <Input
               id="nmkr-project-name"
               value={nmkrProjectName}
@@ -76,6 +81,21 @@ export function NmkrSetupWizard({ projectId, projectName }: NmkrSetupWizardProps
             />
             <p className="text-xs text-muted-foreground">
               This name will appear on marketplaces and in your NMKR dashboard
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="max-supply">Max NFT Supply <span className="text-destructive">*</span></Label>
+            <Input
+              id="max-supply"
+              type="number"
+              min="1"
+              value={maxSupply}
+              onChange={(e) => setMaxSupply(e.target.value)}
+              placeholder="10000"
+            />
+            <p className="text-xs text-muted-foreground">
+              The maximum number of NFTs that can be minted from this collection
             </p>
           </div>
 
@@ -93,7 +113,7 @@ export function NmkrSetupWizard({ projectId, projectName }: NmkrSetupWizardProps
 
         <Button 
           onClick={handleCreateProject}
-          disabled={createProject.isPending || !nmkrProjectName.trim()}
+          disabled={createProject.isPending || !nmkrProjectName.trim() || !isValidSupply}
           className="w-full"
         >
           {createProject.isPending ? (

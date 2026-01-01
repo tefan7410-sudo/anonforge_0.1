@@ -190,12 +190,13 @@ serve(async (req) => {
         nmkrBody = JSON.stringify({
           projectname: params.projectName,
           description: params.description || "",
-          policyexpires: params.policyExpires ?? false,
-          addressexpiretime: params.addressExpireTime ?? 20,
-          enablefiat: params.enableFiat ?? false,
-          enabledecentralpayments: params.enableDecentralPayments ?? true,
-          enablecrosssaleonpaymentgateway: false,
-          activatealiascreation: false,
+          policyExpires: params.policyExpires ?? false,
+          addressExpiretime: params.addressExpireTime ?? 20,
+          maxNftSupply: params.maxNftSupply ?? 10000,
+          enableFiat: params.enableFiat ?? false,
+          enableDecentralPayments: params.enableDecentralPayments ?? true,
+          enableCrossSaleOnPaymentgateway: false,
+          activatePayinAddress: false,
         });
         break;
 
