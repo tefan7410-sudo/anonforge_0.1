@@ -8,11 +8,13 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
+import JSZip from 'jszip';
 import {
   useCreateGeneration,
   useCleanupGenerations,
   useGenerations,
   uploadGenerationImage,
+  uploadGenerationZip,
 } from '@/hooks/use-generations';
 import {
   Sparkles,
@@ -233,21 +235,65 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     const generatedCharacters: GeneratedCharacter[] = [];
 
     try {
-      let tokenNumber = nextTokenNumber;
-
-      for (let i = 0; i < batchSize; i++) {
-        setGenerationProgress({ current: i + 1, total: batchSize });
-
-        const { character, savedTokenNumber } = await generateAndSaveCharacter(tokenNumber);
+      if (batchSize === 1) {
+        // Single generation: use existing flow
+        setGenerationProgress({ current: 1, total: 1 });
+        const { character } = await generateAndSaveCharacter(nextTokenNumber);
         generatedCharacters.push(character);
-
-        // Next token should be after the one we just saved
-        tokenNumber = savedTokenNumber + 1;
-
-        // Show the last generated image as preview
         if (character.imageData) {
           setPreviewImage(character.imageData);
         }
+      } else {
+        // Batch generation: generate all in memory, then create single ZIP
+        let tokenNumber = nextTokenNumber;
+        
+        for (let i = 0; i < batchSize; i++) {
+          setGenerationProgress({ current: i + 1, total: batchSize });
+          const character = await generateCharacter(tokenNumber);
+          character.imageData = await composeLayers(character.layers);
+          generatedCharacters.push(character);
+          tokenNumber++;
+          
+          // Show the last generated image as preview
+          if (character.imageData) {
+            setPreviewImage(character.imageData);
+          }
+        }
+
+        // Create ZIP with all images + metadata
+        const zip = new JSZip();
+        const metadata = generatedCharacters.map((c) => ({
+          token: c.tokenId,
+          attributes: c.metadata,
+        }));
+
+        for (const char of generatedCharacters) {
+          if (char.imageData) {
+            const response = await fetch(char.imageData);
+            const blob = await response.blob();
+            zip.file(`${char.tokenId}.png`, blob);
+          }
+        }
+        zip.file('metadata.json', JSON.stringify(metadata, null, 2));
+
+        // Generate ZIP blob and upload
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const generationId = crypto.randomUUID();
+        const zipPath = await uploadGenerationZip(projectId, generationId, zipBlob);
+
+        // Create ONE database record for the batch
+        const firstToken = generatedCharacters[0].tokenId;
+        const lastToken = generatedCharacters[generatedCharacters.length - 1].tokenId;
+        
+        await createGeneration.mutateAsync({
+          projectId,
+          tokenId: `${firstToken}-${lastToken}`,
+          imagePath: zipPath,
+          layerCombination: [],
+          metadata: { count: String(batchSize), type: 'batch' },
+          generationType: 'batch',
+          batchSize,
+        });
       }
 
       setGenerated(generatedCharacters);
@@ -257,7 +303,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
 
       toast({
         title: batchSize > 1
-          ? `${batchSize} characters generated and saved`
+          ? `${batchSize} characters generated and saved as ZIP`
           : 'Preview generated and saved to history',
       });
     } catch (error) {
