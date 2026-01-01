@@ -392,6 +392,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_project_id_from_storage_path: {
+        Args: { path: string }
+        Returns: string
+      }
       has_project_access: {
         Args: { project_uuid: string; user_uuid: string }
         Returns: boolean
