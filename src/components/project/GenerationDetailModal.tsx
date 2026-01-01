@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,36 +15,121 @@ import {
   useAddComment,
   useDeleteComment,
 } from '@/hooks/use-generation-comments';
+import { useMentionableUsers, type MentionableUser } from '@/hooks/use-mentions';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { getGenerationFileUrl, type Generation } from '@/hooks/use-generations';
 import { Send, Trash2, Loader2, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface GenerationDetailModalProps {
   generation: Generation | null;
+  projectId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export function GenerationDetailModal({
   generation,
+  projectId,
   open,
   onOpenChange,
 }: GenerationDetailModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionStartPos, setMentionStartPos] = useState<number | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: comments, isLoading: commentsLoading } = useGenerationComments(
     generation?.id || null
   );
   const addComment = useAddComment();
   const deleteComment = useDeleteComment();
+  const { data: mentionableUsers } = useMentionableUsers(projectId);
 
   const imageUrl = generation?.image_path
     ? getGenerationFileUrl(generation.image_path)
     : null;
+
+  // Filter mentionable users based on query
+  const filteredUsers = useMemo(() => {
+    if (!mentionableUsers) return [];
+    return mentionableUsers
+      .filter((u) =>
+        (u.display_name || u.email).toLowerCase().includes(mentionQuery.toLowerCase())
+      )
+      .slice(0, 5);
+  }, [mentionableUsers, mentionQuery]);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    const cursorPos = e.target.selectionStart;
+    setNewComment(value);
+
+    // Detect @ mentions
+    const textBeforeCursor = value.slice(0, cursorPos);
+    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+
+    if (mentionMatch) {
+      setMentionQuery(mentionMatch[1]);
+      setMentionStartPos(cursorPos - mentionMatch[0].length);
+      setShowMentions(true);
+    } else {
+      setShowMentions(false);
+      setMentionStartPos(null);
+    }
+  };
+
+  const insertMention = (mentionUser: MentionableUser) => {
+    if (mentionStartPos === null) return;
+
+    const displayName = mentionUser.display_name || mentionUser.email.split('@')[0];
+    // Format: @[DisplayName](user_id)
+    const mentionText = `@[${displayName}](${mentionUser.id}) `;
+
+    const beforeMention = newComment.slice(0, mentionStartPos);
+    const cursorPos = textareaRef.current?.selectionStart || mentionStartPos;
+    const afterMention = newComment.slice(cursorPos);
+
+    setNewComment(beforeMention + mentionText + afterMention);
+    setShowMentions(false);
+    setMentionStartPos(null);
+    setMentionQuery('');
+
+    // Focus back on textarea
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
+  // Extract mentioned user IDs from comment text
+  const extractMentions = (text: string): string[] => {
+    const mentionRegex = /@\[[^\]]+\]\(([^)]+)\)/g;
+    const userIds: string[] = [];
+    let match;
+    while ((match = mentionRegex.exec(text)) !== null) {
+      userIds.push(match[1]);
+    }
+    return userIds;
+  };
+
+  // Render comment content with mention highlighting
+  const renderCommentContent = (content: string) => {
+    const parts = content.split(/(@\[[^\]]+\]\([^)]+\))/g);
+    return parts.map((part, i) => {
+      const mentionMatch = part.match(/@\[([^\]]+)\]\(([^)]+)\)/);
+      if (mentionMatch) {
+        return (
+          <span key={i} className="text-primary font-medium">
+            @{mentionMatch[1]}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !generation || !user) return;
@@ -55,6 +140,23 @@ export function GenerationDetailModal({
         userId: user.id,
         content: newComment.trim(),
       });
+
+      // Extract mentioned user IDs and create notifications
+      const mentionedUserIds = extractMentions(newComment);
+      for (const mentionedUserId of mentionedUserIds) {
+        // Don't notify self
+        if (mentionedUserId === user.id) continue;
+
+        await supabase.from('notifications').insert({
+          user_id: mentionedUserId,
+          type: 'comment_mention',
+          title: 'You were mentioned',
+          message: `Someone mentioned you in a comment on ${generation.token_id}`,
+          link: `/project/${projectId}`,
+          metadata: { generation_id: generation.id },
+        });
+      }
+
       setNewComment('');
       toast({ title: 'Comment added' });
     } catch {
@@ -132,7 +234,7 @@ export function GenerationDetailModal({
                             </span>
                           </div>
                           <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                            {comment.content}
+                            {renderCommentContent(comment.content)}
                           </p>
                         </div>
                         {user?.id === comment.user_id && (
@@ -159,18 +261,47 @@ export function GenerationDetailModal({
 
             {/* Add Comment */}
             <div className="p-4 border-t border-border">
-              <div className="flex gap-2">
+              <div className="relative">
                 <Textarea
-                  placeholder="Add a comment or note..."
+                  ref={textareaRef}
+                  placeholder="Add a comment... Use @ to mention team members"
                   value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
+                  onChange={handleTextChange}
                   className="min-h-[60px] resize-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                       handleAddComment();
                     }
+                    if (e.key === 'Escape' && showMentions) {
+                      setShowMentions(false);
+                    }
                   }}
                 />
+
+                {/* Mention Dropdown */}
+                {showMentions && filteredUsers.length > 0 && (
+                  <div className="absolute bottom-full left-0 mb-1 w-full bg-popover border border-border rounded-md shadow-lg z-50 max-h-48 overflow-auto">
+                    {filteredUsers.map((mentionUser) => (
+                      <button
+                        key={mentionUser.id}
+                        onClick={() => insertMention(mentionUser)}
+                        className="flex items-center gap-2 w-full p-2 hover:bg-muted text-left transition-colors"
+                      >
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={mentionUser.avatar_url || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {(mentionUser.display_name || mentionUser.email)
+                              .charAt(0)
+                              .toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm truncate">
+                          {mentionUser.display_name || mentionUser.email}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex justify-between items-center mt-2">
                 <span className="text-xs text-muted-foreground">

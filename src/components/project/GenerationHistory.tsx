@@ -231,6 +231,7 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
       {/* Detail Modal */}
       <GenerationDetailModal
         generation={selectedGeneration}
+        projectId={projectId}
         open={detailModalOpen}
         onOpenChange={setDetailModalOpen}
       />

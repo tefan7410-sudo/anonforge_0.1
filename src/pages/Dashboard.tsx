@@ -13,6 +13,7 @@ import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X
 import { formatDistanceToNow } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
+import { NotificationDropdown } from '@/components/NotificationDropdown';
 
 interface Project {
   id: string;
@@ -152,6 +153,7 @@ export default function Dashboard() {
             <span className="font-display text-xl font-semibold">AnonForge</span>
           </div>
           <div className="flex items-center gap-2">
+            <NotificationDropdown />
             <ThemeToggle />
             <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
               <Link to="/profile">
