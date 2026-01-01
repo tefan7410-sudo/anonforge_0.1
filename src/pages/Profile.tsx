@@ -31,7 +31,7 @@ export default function Profile() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: profile, isLoading } = useProfile(user?.id);
+  const { data: profile, isLoading, error } = useProfile(user?.id);
   const updateProfile = useUpdateProfile();
   const uploadAvatar = useUploadAvatar();
   const resetPassword = useResetPassword();
@@ -108,6 +108,27 @@ export default function Profile() {
           <Skeleton className="mb-8 h-10 w-64" />
           <Skeleton className="h-64 w-full" />
         </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle className="text-destructive">Profile Error</CardTitle>
+            <CardDescription>
+              There was a problem loading your profile. This may be a temporary issue.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex gap-2">
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
+            <Button variant="outline" onClick={() => navigate('/dashboard')}>
+              Go to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

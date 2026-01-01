@@ -20,9 +20,32 @@ export function useProfile(userId: string | undefined) {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      // If profile doesn't exist, create one
+      if (!data) {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user) {
+          const newProfile = {
+            id: userId,
+            email: userData.user.email || '',
+            display_name: userData.user.email?.split('@')[0] || null,
+          };
+          
+          const { data: created, error: createError } = await supabase
+            .from('profiles')
+            .insert(newProfile)
+            .select()
+            .single();
+            
+          if (createError) throw createError;
+          return created as Profile;
+        }
+        throw new Error('Could not create profile');
+      }
+      
       return data as Profile;
     },
     enabled: !!userId,
