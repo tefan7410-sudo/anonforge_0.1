@@ -320,3 +320,35 @@ export function useDeleteLayer() {
     },
   });
 }
+
+export function useUpdateLayerName() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      displayName,
+    }: {
+      id: string;
+      categoryId: string;
+      projectId: string;
+      displayName: string;
+    }) => {
+      const { error } = await supabase
+        .from('layers')
+        .update({ display_name: displayName })
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['layers', variables.categoryId] });
+      queryClient.invalidateQueries({ queryKey: ['all-layers', variables.projectId] });
+      toast({ title: 'Trait renamed' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to rename trait', description: error.message, variant: 'destructive' });
+    },
+  });
+}

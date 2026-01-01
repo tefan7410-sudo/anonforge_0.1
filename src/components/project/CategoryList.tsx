@@ -40,6 +40,7 @@ import {
   useUpdateCategory,
   useDeleteCategory,
   useUpdateLayerWeight,
+  useUpdateLayerName,
   useDeleteLayer,
   useReorderCategories,
   type Category,
@@ -62,8 +63,11 @@ function LayerItem({
   totalWeight: number;
 }) {
   const updateWeight = useUpdateLayerWeight();
+  const updateName = useUpdateLayerName();
   const deleteLayer = useDeleteLayer();
   const [weight, setWeight] = useState(layer.rarity_weight);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [displayName, setDisplayName] = useState(layer.display_name);
 
   const percentage = totalWeight > 0 ? ((weight / totalWeight) * 100).toFixed(1) : '0';
   const isZeroWeight = weight === 0;
@@ -85,6 +89,23 @@ function LayerItem({
     }
   };
 
+  const handleSaveName = () => {
+    if (displayName.trim() && displayName !== layer.display_name) {
+      updateName.mutate({
+        id: layer.id,
+        categoryId,
+        projectId,
+        displayName: displayName.trim(),
+      });
+    }
+    setIsEditingName(false);
+  };
+
+  const handleCancelName = () => {
+    setDisplayName(layer.display_name);
+    setIsEditingName(false);
+  };
+
   return (
     <div className={`group flex items-center gap-3 rounded-lg border border-border/50 bg-card p-3 ${isZeroWeight ? 'opacity-50' : ''}`}>
       <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted">
@@ -100,7 +121,38 @@ function LayerItem({
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{layer.display_name}</p>
+        {isEditingName ? (
+          <div className="flex items-center gap-2">
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="h-7"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveName();
+                if (e.key === 'Escape') handleCancelName();
+              }}
+            />
+            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleSaveName}>
+              <Check className="h-3 w-3" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleCancelName}>
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 group/name">
+            <p className="truncate font-medium">{layer.display_name}</p>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 shrink-0 opacity-0 group-hover/name:opacity-100 transition-opacity"
+              onClick={() => setIsEditingName(true)}
+            >
+              <Edit2 className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
         <p className="truncate text-xs text-muted-foreground">{layer.filename}</p>
       </div>
 

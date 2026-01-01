@@ -36,6 +36,7 @@ export default function ProjectDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('layers');
 
   const { data: project, isLoading: projectLoading } = useProject(id!);
   const { data: categories } = useCategories(id!);
@@ -159,7 +160,7 @@ export default function ProjectDetail() {
 
       {/* Main content */}
       <main className="container mx-auto px-6 py-8">
-        <Tabs defaultValue="layers" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <TabsList>
               <TabsTrigger value="layers">Layers</TabsTrigger>
@@ -167,26 +168,28 @@ export default function ProjectDetail() {
               <TabsTrigger value="history">History</TabsTrigger>
             </TabsList>
 
-            <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload Layers
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle className="font-display">Upload Layers</DialogTitle>
-                  <DialogDescription>
-                    Upload PNG files with the correct naming format
-                  </DialogDescription>
-                </DialogHeader>
-                <LayerUploadZone
-                  projectId={id!}
-                  onComplete={() => setUploadDialogOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
+            {activeTab === 'layers' && (
+              <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Layers
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle className="font-display">Upload Layers</DialogTitle>
+                    <DialogDescription>
+                      Upload PNG files with the correct naming format
+                    </DialogDescription>
+                  </DialogHeader>
+                  <LayerUploadZone
+                    projectId={id!}
+                    onComplete={() => setUploadDialogOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
 
           <TabsContent value="layers">
