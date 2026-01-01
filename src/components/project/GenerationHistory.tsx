@@ -7,6 +7,7 @@ import {
   useGenerations,
   useToggleFavorite,
   useDeleteGeneration,
+  useClearAllGenerations,
   getGenerationFileUrl,
   type Generation,
 } from '@/hooks/use-generations';
@@ -32,6 +33,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { GenerationDetailModal } from './GenerationDetailModal';
 
 interface GenerationHistoryProps {
   projectId: string;
@@ -41,8 +43,11 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
   const { data: generations, isLoading } = useGenerations(projectId);
   const toggleFavorite = useToggleFavorite();
   const deleteGeneration = useDeleteGeneration();
+  const clearAllGenerations = useClearAllGenerations();
   const { toast } = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedGeneration, setSelectedGeneration] = useState<Generation | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   const handleToggleFavorite = async (generation: Generation) => {
     try {
@@ -77,6 +82,18 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
     }
   };
 
+  const handleClearAll = async () => {
+    try {
+      const count = await clearAllGenerations.mutateAsync(projectId);
+      toast({ title: `Cleared ${count} generations` });
+    } catch (error) {
+      toast({
+        title: 'Failed to clear history',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleDownload = (generation: Generation) => {
     if (!generation.image_path) return;
     const url = getGenerationFileUrl(generation.image_path);
@@ -86,6 +103,11 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
       ? `batch-${generation.token_id}.zip`
       : `${generation.token_id}.png`;
     link.click();
+  };
+
+  const handleImageClick = (generation: Generation) => {
+    setSelectedGeneration(generation);
+    setDetailModalOpen(true);
   };
 
   if (isLoading) {
@@ -116,6 +138,45 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
 
   return (
     <div className="space-y-8">
+      {/* Clear All Button */}
+      <div className="flex justify-end">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              disabled={clearAllGenerations.isPending}
+            >
+              {clearAllGenerations.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Clear All History
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Clear all generation history?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete all {generations.length} generations from your
+                history. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleClearAll}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Clear All
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
       {/* Single generations */}
       {singles.length > 0 && (
         <div>
@@ -134,6 +195,7 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
                 onToggleFavorite={() => handleToggleFavorite(generation)}
                 onDownload={() => handleDownload(generation)}
                 onDelete={() => handleDelete(generation)}
+                onImageClick={() => handleImageClick(generation)}
                 isDeleting={deletingId === generation.id}
               />
             ))}
@@ -165,6 +227,13 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
           </div>
         </div>
       )}
+
+      {/* Detail Modal */}
+      <GenerationDetailModal
+        generation={selectedGeneration}
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+      />
     </div>
   );
 }
@@ -174,6 +243,7 @@ interface GenerationCardProps {
   onToggleFavorite: () => void;
   onDownload: () => void;
   onDelete: () => void;
+  onImageClick: () => void;
   isDeleting: boolean;
 }
 
@@ -182,6 +252,7 @@ function GenerationCard({
   onToggleFavorite,
   onDownload,
   onDelete,
+  onImageClick,
   isDeleting,
 }: GenerationCardProps) {
   const imageUrl = generation.image_path ? getGenerationFileUrl(generation.image_path) : null;
@@ -196,7 +267,10 @@ function GenerationCard({
           </Badge>
         </div>
       )}
-      <div className="aspect-square overflow-hidden bg-muted">
+      <div
+        className="aspect-square overflow-hidden bg-muted cursor-pointer"
+        onClick={onImageClick}
+      >
         {imageUrl ? (
           <img
             src={imageUrl}

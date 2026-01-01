@@ -4,14 +4,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Layers, ArrowLeft } from 'lucide-react';
 
 export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
@@ -20,6 +24,15 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!acceptedTerms) {
+      toast({
+        title: 'Terms required',
+        description: 'Please accept the Terms of Service to continue.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (password.length < 6) {
       toast({
         title: 'Password too short',
@@ -41,6 +54,18 @@ export default function Register() {
       });
       setLoading(false);
     } else {
+      // Update profile with terms and marketing consent after auth state updates
+      const { data: { user: newUser } } = await supabase.auth.getUser();
+      if (newUser) {
+        await supabase
+          .from('profiles')
+          .update({
+            accepted_terms_at: new Date().toISOString(),
+            marketing_consent: marketingConsent,
+          })
+          .eq('id', newUser.id);
+      }
+
       toast({
         title: 'Account created',
         description: 'Welcome to AnonForge!',
@@ -107,9 +132,47 @@ export default function Register() {
               />
               <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
             </div>
+
+            {/* Terms of Service checkbox */}
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="terms"
+                checked={acceptedTerms}
+                onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                className="mt-1"
+              />
+              <Label htmlFor="terms" className="text-sm font-normal leading-relaxed cursor-pointer">
+                I agree to the{' '}
+                <Link
+                  to="/terms-of-service"
+                  className="text-primary hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Terms of Service
+                </Link>
+                <span className="text-destructive ml-1">*</span>
+              </Label>
+            </div>
+
+            {/* Marketing consent checkbox */}
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="marketing"
+                checked={marketingConsent}
+                onCheckedChange={(checked) => setMarketingConsent(checked === true)}
+                className="mt-1"
+              />
+              <Label htmlFor="marketing" className="text-sm font-normal leading-relaxed text-muted-foreground cursor-pointer">
+                I want to receive product updates, tips, and marketing emails (optional)
+              </Label>
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || !acceptedTerms}
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create account
             </Button>
