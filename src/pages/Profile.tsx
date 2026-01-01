@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Layers, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { MobileNav } from '@/components/MobileNav';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -123,16 +125,20 @@ export default function Profile() {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
                 <Layers className="h-5 w-5 text-primary-foreground" />
               </div>
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="font-display text-xl font-semibold">Profile Settings</h1>
                 <p className="text-sm text-muted-foreground">Manage your account</p>
               </div>
             </div>
           </div>
-          <Button variant="outline" onClick={handleSignOut}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="outline" onClick={handleSignOut} className="hidden md:inline-flex">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+            <MobileNav />
+          </div>
         </div>
       </header>
 
@@ -233,7 +239,7 @@ export default function Profile() {
               <CardDescription>Manage your account security</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-medium">Password</p>
                   <p className="text-sm text-muted-foreground">
@@ -264,7 +270,7 @@ export default function Profile() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-medium">Delete Account</p>
                   <p className="text-sm text-muted-foreground">

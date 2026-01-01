@@ -28,6 +28,8 @@ import { LayerUploadZone } from '@/components/project/LayerUploadZone';
 import { CategoryList } from '@/components/project/CategoryList';
 import { GenerationPanel } from '@/components/project/GenerationPanel';
 import { GenerationHistory } from '@/components/project/GenerationHistory';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { MobileNav } from '@/components/MobileNav';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -104,7 +106,7 @@ export default function ProjectDetail() {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
                 <Layers className="h-5 w-5 text-primary-foreground" />
               </div>
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="font-display text-xl font-semibold">{project.name}</h1>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" />
@@ -113,25 +115,27 @@ export default function ProjectDetail() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Badge variant={project.is_public ? 'secondary' : 'outline'}>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Badge variant={project.is_public ? 'secondary' : 'outline'} className="hidden sm:inline-flex">
               {project.is_public ? 'Public' : 'Private'}
             </Badge>
             {isOwner && (
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="hidden md:inline-flex">
                 <Link to={`/project/${id}/settings`}>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </Link>
               </Button>
             )}
+            <MobileNav />
           </div>
         </div>
       </header>
 
       {/* Stats bar */}
       <div className="border-b border-border/50 bg-muted/30">
-        <div className="container mx-auto flex items-center gap-6 px-6 py-3">
+        <div className="container mx-auto flex flex-wrap items-center gap-4 px-6 py-3 sm:gap-6">
           <div className="flex items-center gap-2">
             <ImageIcon className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">
@@ -147,7 +151,7 @@ export default function ProjectDetail() {
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">
-              <strong>{totalCombinations.toLocaleString()}</strong> possible combinations
+              <strong>{totalCombinations.toLocaleString()}</strong> <span className="hidden sm:inline">possible </span>combinations
             </span>
           </div>
         </div>
@@ -156,7 +160,7 @@ export default function ProjectDetail() {
       {/* Main content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="layers" className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <TabsList>
               <TabsTrigger value="layers">Layers</TabsTrigger>
               <TabsTrigger value="generate">Generate</TabsTrigger>
