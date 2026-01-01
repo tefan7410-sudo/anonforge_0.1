@@ -551,6 +551,36 @@ export type Database = {
           },
         ]
       }
+      user_nmkr_credentials: {
+        Row: {
+          api_key: string
+          created_at: string | null
+          id: string
+          is_valid: boolean | null
+          last_validated_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string | null
+          id?: string
+          is_valid?: boolean | null
+          last_validated_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string | null
+          id?: string
+          is_valid?: boolean | null
+          last_validated_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

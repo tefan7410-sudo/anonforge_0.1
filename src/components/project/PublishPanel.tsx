@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNmkrProject, useNmkrCounts, useValidateNmkrKey } from '@/hooks/use-nmkr';
+import { useNmkrProject, useNmkrCounts, useNmkrCredentials } from '@/hooks/use-nmkr';
+import { NmkrApiKeySetup } from './NmkrApiKeySetup';
 import { NmkrSetupWizard } from './NmkrSetupWizard';
 import { NftUploadQueue } from './NftUploadQueue';
 import { SaleConfigForm } from './SaleConfigForm';
@@ -9,8 +10,19 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, CheckCircle2, Rocket, Upload, Settings, BarChart3 } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CheckCircle2, Rocket, Upload, Settings, BarChart3, Key, Trash2 } from 'lucide-react';
+import { useDeleteNmkrCredentials } from '@/hooks/use-nmkr';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface PublishPanelProps {
   projectId: string;
@@ -19,32 +31,12 @@ interface PublishPanelProps {
 
 export function PublishPanel({ projectId, projectName }: PublishPanelProps) {
   const [activeSubTab, setActiveSubTab] = useState('upload');
+  const { data: credentials, isLoading: credentialsLoading, refetch: refetchCredentials } = useNmkrCredentials();
   const { data: nmkrProject, isLoading: nmkrLoading } = useNmkrProject(projectId);
   const { data: counts } = useNmkrCounts(nmkrProject?.nmkr_project_uid);
-  const validateKey = useValidateNmkrKey();
+  const deleteCredentials = useDeleteNmkrCredentials();
 
-  // Check if API key is configured by making a validation call
-  const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null);
-  const [checkingKey, setCheckingKey] = useState(false);
-
-  const checkApiKey = async () => {
-    setCheckingKey(true);
-    try {
-      await validateKey.mutateAsync();
-      setApiKeyValid(true);
-    } catch {
-      setApiKeyValid(false);
-    } finally {
-      setCheckingKey(false);
-    }
-  };
-
-  // Initial key check
-  if (apiKeyValid === null && !checkingKey && !nmkrLoading) {
-    checkApiKey();
-  }
-
-  if (nmkrLoading || checkingKey) {
+  if (credentialsLoading || nmkrLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-32 w-full" />
@@ -53,44 +45,23 @@ export function PublishPanel({ projectId, projectName }: PublishPanelProps) {
     );
   }
 
-  // API key not configured or invalid
-  if (apiKeyValid === false) {
+  // API key not configured - show setup
+  if (!credentials?.hasCredentials || !credentials?.isValid) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <Rocket className="h-5 w-5 text-primary" />
-            Publish to Cardano
-          </CardTitle>
-          <CardDescription>
-            Connect your NMKR Studio account to mint your NFT collection on the Cardano blockchain
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>NMKR API Key Required</AlertTitle>
-            <AlertDescription>
-              Your NMKR API key is not configured or is invalid. Please contact the administrator to set up the API key.
-            </AlertDescription>
-          </Alert>
-          <div className="mt-4">
-            <Button variant="outline" onClick={checkApiKey} disabled={checkingKey}>
-              Retry Connection
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <NmkrApiKeySetup onSuccess={() => refetchCredentials()} />
     );
   }
 
   // No NMKR project created yet
   if (!nmkrProject) {
     return (
-      <NmkrSetupWizard 
-        projectId={projectId} 
-        projectName={projectName}
-      />
+      <div className="space-y-6">
+        <ApiKeyStatusBar onRemove={() => deleteCredentials.mutate()} isRemoving={deleteCredentials.isPending} />
+        <NmkrSetupWizard 
+          projectId={projectId} 
+          projectName={projectName}
+        />
+      </div>
     );
   }
 
@@ -104,6 +75,9 @@ export function PublishPanel({ projectId, projectName }: PublishPanelProps) {
 
   return (
     <div className="space-y-6">
+      {/* API Key Status */}
+      <ApiKeyStatusBar onRemove={() => deleteCredentials.mutate()} isRemoving={deleteCredentials.isPending} />
+
       {/* Status Overview */}
       <Card>
         <CardHeader className="pb-3">
@@ -200,6 +174,38 @@ export function PublishPanel({ projectId, projectName }: PublishPanelProps) {
           </Card>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function ApiKeyStatusBar({ onRemove, isRemoving }: { onRemove: () => void; isRemoving: boolean }) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-4 py-2">
+      <div className="flex items-center gap-2 text-sm">
+        <Key className="h-4 w-4 text-green-500" />
+        <span className="text-muted-foreground">NMKR API key connected</span>
+      </div>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove API Key?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will disconnect your NMKR account. You'll need to re-enter your API key to continue using the Publish features.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onRemove} disabled={isRemoving}>
+              {isRemoving ? 'Removing...' : 'Remove'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
