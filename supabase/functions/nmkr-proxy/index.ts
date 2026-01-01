@@ -34,10 +34,13 @@ serve(async (req) => {
   }
 
   try {
-    // Verify user authentication
+    // Verify user authentication - gateway JWT verification is disabled,
+    // so we verify auth internally and return success:false for auth failures
+    // (HTTP 200 to avoid generic invoke errors in frontend)
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return jsonResponse({ error: "Missing authorization header" }, 401);
+      console.log("NMKR Proxy: Missing authorization header");
+      return jsonResponse({ success: false, error: "Not authenticated. Please log in." });
     }
 
     const supabaseClient = createClient(
@@ -49,7 +52,7 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
       console.error("Auth error:", userError);
-      return jsonResponse({ error: "Unauthorized" }, 401);
+      return jsonResponse({ success: false, error: "Session expired or invalid. Please log in again." });
     }
 
     const { action, apiKey: providedApiKey, ...params } = await req.json();

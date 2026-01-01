@@ -4,4 +4,4 @@ project_id = "tyrsrwmwwfqdzsmogjwb"
 verify_jwt = true
 
 [functions.nmkr-proxy]
-verify_jwt = true
+verify_jwt = false
