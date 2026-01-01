@@ -102,27 +102,36 @@ export type Database = {
       }
       generations: {
         Row: {
+          batch_size: number | null
           created_at: string
+          generation_type: string
           id: string
           image_path: string | null
+          is_favorite: boolean
           layer_combination: string[]
           metadata: Json
           project_id: string
           token_id: string
         }
         Insert: {
+          batch_size?: number | null
           created_at?: string
+          generation_type?: string
           id?: string
           image_path?: string | null
+          is_favorite?: boolean
           layer_combination: string[]
           metadata: Json
           project_id: string
           token_id: string
         }
         Update: {
+          batch_size?: number | null
           created_at?: string
+          generation_type?: string
           id?: string
           image_path?: string | null
+          is_favorite?: boolean
           layer_combination?: string[]
           metadata?: Json
           project_id?: string
