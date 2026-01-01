@@ -218,6 +218,104 @@ export type Database = {
           },
         ]
       }
+      nmkr_projects: {
+        Row: {
+          created_at: string
+          id: string
+          network: string
+          nmkr_policy_id: string | null
+          nmkr_project_uid: string
+          price_in_lovelace: number | null
+          project_id: string
+          settings: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          network?: string
+          nmkr_policy_id?: string | null
+          nmkr_project_uid: string
+          price_in_lovelace?: number | null
+          project_id: string
+          settings?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          network?: string
+          nmkr_policy_id?: string | null
+          nmkr_project_uid?: string
+          price_in_lovelace?: number | null
+          project_id?: string
+          settings?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nmkr_projects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nmkr_uploads: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          generation_id: string
+          id: string
+          nmkr_nft_uid: string | null
+          nmkr_project_id: string
+          token_name: string
+          updated_at: string
+          upload_status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          generation_id: string
+          id?: string
+          nmkr_nft_uid?: string | null
+          nmkr_project_id: string
+          token_name: string
+          updated_at?: string
+          upload_status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          generation_id?: string
+          id?: string
+          nmkr_nft_uid?: string | null
+          nmkr_project_id?: string
+          token_name?: string
+          updated_at?: string
+          upload_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nmkr_uploads_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: true
+            referencedRelation: "generations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nmkr_uploads_nmkr_project_id_fkey"
+            columns: ["nmkr_project_id"]
+            isOneToOne: false
+            referencedRelation: "nmkr_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null

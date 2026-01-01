@@ -28,6 +28,7 @@ import { LayerUploadZone } from '@/components/project/LayerUploadZone';
 import { CategoryList } from '@/components/project/CategoryList';
 import { GenerationPanel } from '@/components/project/GenerationPanel';
 import { GenerationHistory } from '@/components/project/GenerationHistory';
+import { PublishPanel } from '@/components/project/PublishPanel';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
@@ -168,6 +169,7 @@ export default function ProjectDetail() {
               <TabsTrigger value="layers">Layers</TabsTrigger>
               <TabsTrigger value="generate">Generate</TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
+              <TabsTrigger value="publish">Publish</TabsTrigger>
             </TabsList>
 
             {activeTab === 'layers' && (
@@ -204,6 +206,10 @@ export default function ProjectDetail() {
 
           <TabsContent value="history">
             <GenerationHistory projectId={id!} />
+          </TabsContent>
+
+          <TabsContent value="publish">
+            <PublishPanel projectId={id!} projectName={project.name} />
           </TabsContent>
         </Tabs>
       </main>
