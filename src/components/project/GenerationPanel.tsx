@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCategories, useAllLayers, type Project, type Layer, type Category } from '@/hooks/use-project';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   useCreateGeneration,
   useCleanupGenerations,
+  useGenerations,
   uploadGenerationImage,
 } from '@/hooks/use-generations';
 import {
@@ -40,6 +41,7 @@ interface GeneratedCharacter {
 export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const { data: categories } = useCategories(projectId);
   const { data: allLayers } = useAllLayers(projectId);
+  const { data: generations } = useGenerations(projectId);
   const { toast } = useToast();
   const createGeneration = useCreateGeneration();
   const cleanupGenerations = useCleanupGenerations();
@@ -61,6 +63,27 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   }
 
   const hasLayers = allLayers && allLayers.length > 0 && categories && categories.length > 0;
+
+  // Compute the next token number based on existing generations
+  const nextTokenNumber = useMemo(() => {
+    if (!generations || generations.length === 0) {
+      return project.token_start_number;
+    }
+    
+    // Parse token numbers from existing generations
+    const tokenNumbers = generations
+      .map((g) => {
+        const match = g.token_id.match(/(\d+)$/);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter((n) => n > 0);
+    
+    if (tokenNumbers.length === 0) {
+      return project.token_start_number;
+    }
+    
+    return Math.max(...tokenNumbers) + 1;
+  }, [generations, project.token_start_number]);
 
   // Weighted random selection
   const selectRandomLayer = (layers: Layer[]): Layer => {
@@ -139,25 +162,62 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     if (!hasLayers) return;
 
     setGenerating(true);
+    let uploadedImagePath: string | null = null;
+    
     try {
-      const character = await generateCharacter(project.token_start_number);
+      // Use the computed next token number
+      let tokenNumber = nextTokenNumber;
+      const character = await generateCharacter(tokenNumber);
       character.imageData = await composeLayers(character.layers);
       setPreviewImage(character.imageData);
       setGenerated([character]);
 
-      // Save to history
+      // Save to history with retry logic for duplicate token_id
       setSaving(true);
       const generationId = crypto.randomUUID();
-      const imagePath = await uploadGenerationImage(projectId, generationId, character.imageData);
+      uploadedImagePath = await uploadGenerationImage(projectId, generationId, character.imageData);
       
-      await createGeneration.mutateAsync({
-        projectId,
-        tokenId: character.tokenId,
-        imagePath,
-        layerCombination: character.layers.map((l) => l.layer.id),
-        metadata: character.metadata,
-        generationType: 'single',
-      });
+      const MAX_RETRIES = 5;
+      let attempt = 0;
+      let saved = false;
+      
+      while (!saved && attempt < MAX_RETRIES) {
+        try {
+          const currentTokenId = `${project.token_prefix}${String(tokenNumber).padStart(4, '0')}`;
+          
+          await createGeneration.mutateAsync({
+            projectId,
+            tokenId: currentTokenId,
+            imagePath: uploadedImagePath,
+            layerCombination: character.layers.map((l) => l.layer.id),
+            metadata: character.metadata,
+            generationType: 'single',
+          });
+          
+          saved = true;
+          
+          // Update local state with the actual saved token ID
+          character.tokenId = currentTokenId;
+          setGenerated([character]);
+          
+        } catch (insertError: unknown) {
+          const pgError = insertError as { code?: string };
+          // Check for duplicate key error (23505)
+          if (pgError?.code === '23505') {
+            attempt++;
+            tokenNumber++;
+            if (attempt < MAX_RETRIES) {
+              console.log(`Token ID collision, retrying with token number ${tokenNumber}`);
+            }
+          } else {
+            throw insertError;
+          }
+        }
+      }
+      
+      if (!saved) {
+        throw new Error('Could not save generation after multiple attempts. Please try again.');
+      }
 
       // Cleanup old generations (keep only 25 non-favorites)
       await cleanupGenerations.mutateAsync(projectId);
@@ -165,6 +225,16 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
       toast({ title: 'Preview generated and saved to history' });
     } catch (error) {
       console.error('Generation error:', error);
+      
+      // Clean up orphaned image if DB insert failed
+      if (uploadedImagePath) {
+        try {
+          await supabase.storage.from('generations').remove([uploadedImagePath]);
+        } catch (cleanupError) {
+          console.error('Failed to cleanup orphaned image:', cleanupError);
+        }
+      }
+      
       toast({
         title: 'Generation failed',
         description: error instanceof Error ? error.message : 'Unknown error',
