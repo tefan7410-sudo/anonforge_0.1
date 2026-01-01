@@ -49,33 +49,73 @@ async function callNmkrProxy(action: string, params: Record<string, unknown> = {
     throw new Error('Not authenticated. Please log in again.');
   }
 
+  console.log(`[NMKR] Calling action: ${action}`);
+
+  // Explicitly pass the Authorization header to ensure fresh token is used
   const { data, error } = await supabase.functions.invoke('nmkr-proxy', {
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
     body: { action, ...params },
   });
 
   // Handle invoke-level errors (network issues, auth problems)
   if (error) {
-    const errorMsg = error.message || '';
-    // Check if it's an auth error (401 or JWT related)
-    if (errorMsg.includes('401') || errorMsg.includes('JWT') || errorMsg.includes('token')) {
+    console.log(`[NMKR] Error for action ${action}:`, error.message);
+    
+    // Check if error has context (FunctionsHttpError)
+    let status: number | undefined;
+    let responseText = '';
+    
+    // Try to get status from error context (FunctionsHttpError has a context property that is a Response)
+    if ('context' in error && error.context instanceof Response) {
+      status = error.context.status;
+      try {
+        responseText = await error.context.text();
+        console.log(`[NMKR] Response status: ${status}, body snippet: ${responseText.substring(0, 200)}`);
+      } catch {
+        // Ignore if we can't read the body
+      }
+    }
+    
+    // Check if it's an auth error (401 status or JWT-related message)
+    const isAuthError = status === 401 || 
+                        error.message?.includes('JWT') || 
+                        error.message?.includes('Invalid JWT') ||
+                        responseText.includes('Invalid JWT');
+    
+    if (isAuthError) {
+      console.log('[NMKR] Auth error detected, refreshing session...');
       // Try to refresh the session
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !refreshData.session) {
         throw new Error('Session expired. Please log in again.');
       }
       
+      console.log('[NMKR] Session refreshed, retrying...');
       // Retry the call with refreshed session
       const { data: retryData, error: retryError } = await supabase.functions.invoke('nmkr-proxy', {
+        headers: {
+          Authorization: `Bearer ${refreshData.session.access_token}`,
+        },
         body: { action, ...params },
       });
       
       if (retryError) {
+        // Check retry error status
+        let retryStatus: number | undefined;
+        if ('context' in retryError && retryError.context instanceof Response) {
+          retryStatus = retryError.context.status;
+        }
+        if (retryStatus === 401) {
+          throw new Error('Session expired. Please log in again.');
+        }
         throw new Error(retryError.message || 'NMKR API call failed');
       }
       
       // Check for success: false in retry response
-      if (retryData && !retryData.success) {
-        const detailMsg = retryData.details ? `: ${retryData.details.substring(0, 100)}` : '';
+      if (retryData && retryData.success === false) {
+        const detailMsg = retryData.details ? `: ${String(retryData.details).substring(0, 100)}` : '';
         throw new Error(retryData.error || `NMKR API error${detailMsg}`);
       }
       
@@ -86,7 +126,7 @@ async function callNmkrProxy(action: string, params: Record<string, unknown> = {
   }
 
   // Handle application-level errors (success: false from our edge function)
-  if (data && !data.success) {
+  if (data && data.success === false) {
     // Build a meaningful error message from the response
     let errorMessage = data.error || 'NMKR API returned an error';
     if (data.nmkrStatus) {
@@ -97,9 +137,11 @@ async function callNmkrProxy(action: string, params: Record<string, unknown> = {
       const shortDetails = data.details.substring(0, 100);
       errorMessage += ` - ${shortDetails}`;
     }
+    console.log(`[NMKR] Action ${action} returned error:`, errorMessage);
     throw new Error(errorMessage);
   }
 
+  console.log(`[NMKR] Action ${action} succeeded`);
   return data;
 }
 
