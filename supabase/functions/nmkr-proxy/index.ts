@@ -8,6 +8,25 @@ const corsHeaders = {
 
 const NMKR_API_BASE = "https://studio-api.nmkr.io/v2";
 
+// Helper to create a JSON response
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+// Helper to create an error response that frontend can parse
+// For NMKR downstream errors, we return 200 with success: false so the frontend can read the real error
+function nmkrErrorResponse(error: string, nmkrStatus?: number, details?: string) {
+  return jsonResponse({
+    success: false,
+    error,
+    nmkrStatus,
+    details,
+  });
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -18,10 +37,7 @@ serve(async (req) => {
     // Verify user authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ error: "Missing authorization header" }, 401);
     }
 
     const supabaseClient = createClient(
@@ -33,38 +49,37 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
       console.error("Auth error:", userError);
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
     const { action, apiKey: providedApiKey, ...params } = await req.json();
     console.log(`NMKR Proxy: action=${action}, user=${user.id}`);
 
-    // Handle store-api-key action first (doesn't need NMKR API call)
+    // Handle store-api-key action first (validates and stores)
     if (action === "store-api-key") {
       if (!providedApiKey) {
-        return new Response(
-          JSON.stringify({ error: "Missing apiKey" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ error: "Missing apiKey" }, 400);
       }
 
-      // First validate the API key with NMKR
-      const validateResponse = await fetch(`${NMKR_API_BASE}/ListProjects/all/1/1`, {
+      // Validate the API key with NMKR using correct endpoint
+      console.log("Validating NMKR API key...");
+      const validateResponse = await fetch(`${NMKR_API_BASE}/ListProjects/1/1`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${providedApiKey}`,
-          "Content-Type": "application/json",
+          "accept": "text/plain",
         },
       });
 
+      const validateText = await validateResponse.text();
+      console.log(`NMKR validation response: status=${validateResponse.status}, body=${validateText.substring(0, 200)}`);
+
       if (!validateResponse.ok) {
-        console.error("Invalid NMKR API key provided");
-        return new Response(
-          JSON.stringify({ error: "Invalid NMKR API key", valid: false }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        // Return success: false with details so frontend can show the real error
+        return nmkrErrorResponse(
+          "Invalid NMKR API key or validation failed",
+          validateResponse.status,
+          validateText
         );
       }
 
@@ -86,16 +101,10 @@ serve(async (req) => {
 
       if (upsertError) {
         console.error("Error storing API key:", upsertError);
-        return new Response(
-          JSON.stringify({ error: "Failed to store API key" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ error: "Failed to store API key" }, 500);
       }
 
-      return new Response(
-        JSON.stringify({ success: true, valid: true }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ success: true, valid: true });
     }
 
     // Handle get-credentials action
@@ -110,15 +119,12 @@ serve(async (req) => {
         console.error("Error fetching credentials:", credError);
       }
 
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          hasCredentials: !!credentials,
-          isValid: credentials?.is_valid ?? false,
-          lastValidated: credentials?.last_validated_at
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ 
+        success: true, 
+        hasCredentials: !!credentials,
+        isValid: credentials?.is_valid ?? false,
+        lastValidated: credentials?.last_validated_at
+      });
     }
 
     // Handle delete-credentials action
@@ -130,16 +136,10 @@ serve(async (req) => {
 
       if (deleteError) {
         console.error("Error deleting credentials:", deleteError);
-        return new Response(
-          JSON.stringify({ error: "Failed to delete credentials" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ error: "Failed to delete credentials" }, 500);
       }
 
-      return new Response(
-        JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ success: true });
     }
 
     // For all other actions, we need an API key
@@ -160,28 +160,25 @@ serve(async (req) => {
 
       if (credError || !credentials?.api_key) {
         console.error("No API key found for user:", credError);
-        return new Response(
-          JSON.stringify({ error: "NMKR API key not configured. Please add your API key." }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ error: "NMKR API key not configured. Please add your API key." }, 400);
       }
 
       NMKR_API_KEY = credentials.api_key;
     }
 
-    let nmkrResponse: Response;
     let nmkrEndpoint: string;
     let nmkrMethod = "GET";
     let nmkrBody: string | undefined;
 
     switch (action) {
       case "validate-api-key":
-        // Test API key by listing projects
-        nmkrEndpoint = "/ListProjects/all/1/1";
+        // Test API key by listing projects - corrected endpoint
+        nmkrEndpoint = "/ListProjects/1/1";
         break;
 
       case "list-projects":
-        nmkrEndpoint = "/ListProjects/all/100/1";
+        // Corrected endpoint - removed 'all'
+        nmkrEndpoint = "/ListProjects/100/1";
         break;
 
       case "create-project":
@@ -201,30 +198,23 @@ serve(async (req) => {
 
       case "get-project-details":
         if (!params.projectUid) {
-          return new Response(
-            JSON.stringify({ error: "Missing projectUid" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return jsonResponse({ error: "Missing projectUid" }, 400);
         }
-        nmkrEndpoint = `/GetProjectDetails/${params.projectUid}`;
+        // Corrected endpoint
+        nmkrEndpoint = `/ProjectDetails/${params.projectUid}`;
         break;
 
       case "get-counts":
         if (!params.projectUid) {
-          return new Response(
-            JSON.stringify({ error: "Missing projectUid" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return jsonResponse({ error: "Missing projectUid" }, 400);
         }
-        nmkrEndpoint = `/GetCounts/${params.projectUid}`;
+        // Corrected endpoint
+        nmkrEndpoint = `/Counts/${params.projectUid}`;
         break;
 
       case "upload-nft":
         if (!params.projectUid || !params.tokenName || !params.displayName) {
-          return new Response(
-            JSON.stringify({ error: "Missing required fields for NFT upload" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return jsonResponse({ error: "Missing required fields for NFT upload" }, 400);
         }
         nmkrEndpoint = `/UploadNft/${params.projectUid}`;
         nmkrMethod = "POST";
@@ -242,10 +232,7 @@ serve(async (req) => {
 
       case "get-nfts":
         if (!params.projectUid) {
-          return new Response(
-            JSON.stringify({ error: "Missing projectUid" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return jsonResponse({ error: "Missing projectUid" }, 400);
         }
         const state = params.state || "all";
         const count = params.count || 100;
@@ -255,10 +242,7 @@ serve(async (req) => {
 
       case "update-pricelist":
         if (!params.projectUid || params.priceInLovelace === undefined) {
-          return new Response(
-            JSON.stringify({ error: "Missing projectUid or priceInLovelace" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return jsonResponse({ error: "Missing projectUid or priceInLovelace" }, 400);
         }
         nmkrEndpoint = `/UpdatePricelist/${params.projectUid}`;
         nmkrMethod = "PUT";
@@ -270,61 +254,46 @@ serve(async (req) => {
 
       case "get-payment-address":
         if (!params.projectUid || !params.nftUid) {
-          return new Response(
-            JSON.stringify({ error: "Missing projectUid or nftUid" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return jsonResponse({ error: "Missing projectUid or nftUid" }, 400);
         }
         nmkrEndpoint = `/GetPaymentAddressForRandomNftSale/${params.projectUid}/1/${params.customerIpHash || ""}`;
         break;
 
       case "get-nmkr-pay-link":
+        // Generate NMKR Pay link directly - this is not an API endpoint
         if (!params.projectUid) {
-          return new Response(
-            JSON.stringify({ error: "Missing projectUid" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return jsonResponse({ error: "Missing projectUid" }, 400);
         }
-        nmkrEndpoint = "/GetNmkrPayLink";
-        nmkrMethod = "POST";
-        nmkrBody = JSON.stringify({
-          projectUid: params.projectUid,
-          paymentgatewayParameters: {
-            customeripaddress: params.customerIp || "",
-          },
-        });
-        break;
+        // Return the generated link directly
+        const payLink = `https://pay.nmkr.io/?p=${params.projectUid}&c=1`;
+        return jsonResponse({ success: true, data: { paymentLink: payLink } });
 
       default:
-        return new Response(
-          JSON.stringify({ error: `Unknown action: ${action}` }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ error: `Unknown action: ${action}` }, 400);
     }
 
     console.log(`NMKR API call: ${nmkrMethod} ${nmkrEndpoint}`);
 
-    nmkrResponse = await fetch(`${NMKR_API_BASE}${nmkrEndpoint}`, {
+    const nmkrResponse = await fetch(`${NMKR_API_BASE}${nmkrEndpoint}`, {
       method: nmkrMethod,
       headers: {
         "Authorization": `Bearer ${NMKR_API_KEY}`,
         "Content-Type": "application/json",
+        "accept": "text/plain",
       },
       body: nmkrBody,
     });
 
     const responseText = await nmkrResponse.text();
-    console.log(`NMKR response status: ${nmkrResponse.status}`);
+    console.log(`NMKR response: status=${nmkrResponse.status}, body=${responseText.substring(0, 300)}`);
 
     if (!nmkrResponse.ok) {
-      console.error(`NMKR API error: ${responseText}`);
-      return new Response(
-        JSON.stringify({ 
-          error: "NMKR API error", 
-          details: responseText,
-          status: nmkrResponse.status 
-        }),
-        { status: nmkrResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      // Return success: false with details so frontend can parse the real error
+      // We return HTTP 200 so supabase.functions.invoke doesn't throw the generic error
+      return nmkrErrorResponse(
+        `NMKR API error (${nmkrResponse.status})`,
+        nmkrResponse.status,
+        responseText
       );
     }
 
@@ -336,16 +305,13 @@ serve(async (req) => {
       data = responseText;
     }
 
-    return new Response(
-      JSON.stringify({ success: true, data }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({ success: true, data });
 
   } catch (error) {
     console.error("NMKR proxy error:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({ 
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error" 
+    });
   }
 });

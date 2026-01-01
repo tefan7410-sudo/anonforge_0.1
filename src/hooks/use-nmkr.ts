@@ -53,9 +53,10 @@ async function callNmkrProxy(action: string, params: Record<string, unknown> = {
     body: { action, ...params },
   });
 
+  // Handle invoke-level errors (network issues, auth problems)
   if (error) {
-    // Check if it's an auth error (401 or JWT related)
     const errorMsg = error.message || '';
+    // Check if it's an auth error (401 or JWT related)
     if (errorMsg.includes('401') || errorMsg.includes('JWT') || errorMsg.includes('token')) {
       // Try to refresh the session
       const { error: refreshError } = await supabase.auth.refreshSession();
@@ -72,8 +73,10 @@ async function callNmkrProxy(action: string, params: Record<string, unknown> = {
         throw new Error(retryError.message || 'NMKR API call failed');
       }
       
-      if (!retryData.success) {
-        throw new Error(retryData.error || 'NMKR API returned an error');
+      // Check for success: false in retry response
+      if (retryData && !retryData.success) {
+        const detailMsg = retryData.details ? `: ${retryData.details.substring(0, 100)}` : '';
+        throw new Error(retryData.error || `NMKR API error${detailMsg}`);
       }
       
       return retryData;
@@ -82,8 +85,19 @@ async function callNmkrProxy(action: string, params: Record<string, unknown> = {
     throw new Error(error.message || 'NMKR API call failed');
   }
 
-  if (!data.success) {
-    throw new Error(data.error || 'NMKR API returned an error');
+  // Handle application-level errors (success: false from our edge function)
+  if (data && !data.success) {
+    // Build a meaningful error message from the response
+    let errorMessage = data.error || 'NMKR API returned an error';
+    if (data.nmkrStatus) {
+      errorMessage = `NMKR API error (${data.nmkrStatus}): ${data.error}`;
+    }
+    if (data.details && typeof data.details === 'string') {
+      // Append first 100 chars of details for context
+      const shortDetails = data.details.substring(0, 100);
+      errorMessage += ` - ${shortDetails}`;
+    }
+    throw new Error(errorMessage);
   }
 
   return data;
