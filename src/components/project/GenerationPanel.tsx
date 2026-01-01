@@ -24,7 +24,9 @@ import {
   FileJson,
   Image as ImageIcon,
   RefreshCw,
+  Layers,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 interface GenerationPanelProps {
   projectId: string;
@@ -52,6 +54,8 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const [manualSelections, setManualSelections] = useState<Record<string, string>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [batchSize, setBatchSize] = useState(1);
+  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -157,84 +161,107 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     return canvas.toDataURL('image/png');
   };
 
-  // Generate single preview and save to history
+  // Generate and save a single character with retry logic
+  const generateAndSaveCharacter = async (
+    tokenNumber: number
+  ): Promise<{ character: GeneratedCharacter; savedTokenNumber: number }> => {
+    const character = await generateCharacter(tokenNumber);
+    character.imageData = await composeLayers(character.layers);
+
+    const generationId = crypto.randomUUID();
+    const uploadedImagePath = await uploadGenerationImage(projectId, generationId, character.imageData);
+
+    const MAX_RETRIES = 5;
+    let attempt = 0;
+    let saved = false;
+    let currentTokenNumber = tokenNumber;
+
+    while (!saved && attempt < MAX_RETRIES) {
+      try {
+        const currentTokenId = `${project.token_prefix}${String(currentTokenNumber).padStart(4, '0')}`;
+
+        await createGeneration.mutateAsync({
+          projectId,
+          tokenId: currentTokenId,
+          imagePath: uploadedImagePath,
+          layerCombination: character.layers.map((l) => l.layer.id),
+          metadata: character.metadata,
+          generationType: batchSize > 1 ? 'batch' : 'single',
+          batchSize: batchSize > 1 ? batchSize : undefined,
+        });
+
+        saved = true;
+        character.tokenId = currentTokenId;
+      } catch (insertError: unknown) {
+        const pgError = insertError as { code?: string };
+        if (pgError?.code === '23505') {
+          attempt++;
+          currentTokenNumber++;
+          if (attempt < MAX_RETRIES) {
+            console.log(`Token ID collision, retrying with token number ${currentTokenNumber}`);
+          }
+        } else {
+          // Clean up orphaned image on non-duplicate error
+          try {
+            await supabase.storage.from('generations').remove([uploadedImagePath]);
+          } catch (cleanupError) {
+            console.error('Failed to cleanup orphaned image:', cleanupError);
+          }
+          throw insertError;
+        }
+      }
+    }
+
+    if (!saved) {
+      try {
+        await supabase.storage.from('generations').remove([uploadedImagePath]);
+      } catch (cleanupError) {
+        console.error('Failed to cleanup orphaned image:', cleanupError);
+      }
+      throw new Error('Could not save generation after multiple attempts.');
+    }
+
+    return { character, savedTokenNumber: currentTokenNumber };
+  };
+
+  // Generate single or batch preview and save to history
   const handleGeneratePreview = async () => {
     if (!hasLayers) return;
 
     setGenerating(true);
-    let uploadedImagePath: string | null = null;
-    
-    try {
-      // Use the computed next token number
-      let tokenNumber = nextTokenNumber;
-      const character = await generateCharacter(tokenNumber);
-      character.imageData = await composeLayers(character.layers);
-      setPreviewImage(character.imageData);
-      setGenerated([character]);
+    setGenerationProgress({ current: 0, total: batchSize });
+    const generatedCharacters: GeneratedCharacter[] = [];
 
-      // Save to history with retry logic for duplicate token_id
-      setSaving(true);
-      const generationId = crypto.randomUUID();
-      uploadedImagePath = await uploadGenerationImage(projectId, generationId, character.imageData);
-      
-      const MAX_RETRIES = 5;
-      let attempt = 0;
-      let saved = false;
-      
-      while (!saved && attempt < MAX_RETRIES) {
-        try {
-          const currentTokenId = `${project.token_prefix}${String(tokenNumber).padStart(4, '0')}`;
-          
-          await createGeneration.mutateAsync({
-            projectId,
-            tokenId: currentTokenId,
-            imagePath: uploadedImagePath,
-            layerCombination: character.layers.map((l) => l.layer.id),
-            metadata: character.metadata,
-            generationType: 'single',
-          });
-          
-          saved = true;
-          
-          // Update local state with the actual saved token ID
-          character.tokenId = currentTokenId;
-          setGenerated([character]);
-          
-        } catch (insertError: unknown) {
-          const pgError = insertError as { code?: string };
-          // Check for duplicate key error (23505)
-          if (pgError?.code === '23505') {
-            attempt++;
-            tokenNumber++;
-            if (attempt < MAX_RETRIES) {
-              console.log(`Token ID collision, retrying with token number ${tokenNumber}`);
-            }
-          } else {
-            throw insertError;
-          }
+    try {
+      let tokenNumber = nextTokenNumber;
+
+      for (let i = 0; i < batchSize; i++) {
+        setGenerationProgress({ current: i + 1, total: batchSize });
+
+        const { character, savedTokenNumber } = await generateAndSaveCharacter(tokenNumber);
+        generatedCharacters.push(character);
+
+        // Next token should be after the one we just saved
+        tokenNumber = savedTokenNumber + 1;
+
+        // Show the last generated image as preview
+        if (character.imageData) {
+          setPreviewImage(character.imageData);
         }
       }
-      
-      if (!saved) {
-        throw new Error('Could not save generation after multiple attempts. Please try again.');
-      }
+
+      setGenerated(generatedCharacters);
 
       // Cleanup old generations (keep only 25 non-favorites)
       await cleanupGenerations.mutateAsync(projectId);
 
-      toast({ title: 'Preview generated and saved to history' });
+      toast({
+        title: batchSize > 1
+          ? `${batchSize} characters generated and saved`
+          : 'Preview generated and saved to history',
+      });
     } catch (error) {
       console.error('Generation error:', error);
-      
-      // Clean up orphaned image if DB insert failed
-      if (uploadedImagePath) {
-        try {
-          await supabase.storage.from('generations').remove([uploadedImagePath]);
-        } catch (cleanupError) {
-          console.error('Failed to cleanup orphaned image:', cleanupError);
-        }
-      }
-      
       toast({
         title: 'Generation failed',
         description: error instanceof Error ? error.message : 'Unknown error',
@@ -242,7 +269,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
       });
     } finally {
       setGenerating(false);
-      setSaving(false);
+      setGenerationProgress({ current: 0, total: 0 });
     }
   };
 
@@ -407,6 +434,40 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
           </Card>
         )}
 
+        {/* Batch size selector */}
+        <Card className="border-border/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Layers className="h-4 w-4" />
+              Batch Size
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>Generate multiple characters at once with sequential token IDs.</p>
+                </TooltipContent>
+              </Tooltip>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex items-center gap-4">
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={batchSize}
+                onChange={(e) => setBatchSize(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
+                className="w-24"
+              />
+              <span className="text-sm text-muted-foreground">
+                Next: {project.token_prefix}{String(nextTokenNumber).padStart(4, '0')}
+                {batchSize > 1 && ` → ${project.token_prefix}${String(nextTokenNumber + batchSize - 1).padStart(4, '0')}`}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Generate button */}
         <Button
           onClick={handleGeneratePreview}
@@ -414,12 +475,19 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
           className="w-full"
           size="lg"
         >
-          {generating || saving ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          {generating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {generationProgress.total > 1
+                ? `Generating ${generationProgress.current}/${generationProgress.total}...`
+                : 'Generating...'}
+            </>
           ) : (
-            <Wand2 className="mr-2 h-4 w-4" />
+            <>
+              <Wand2 className="mr-2 h-4 w-4" />
+              {batchSize > 1 ? `Generate ${batchSize} Characters` : 'Generate Preview'}
+            </>
           )}
-          {saving ? 'Saving...' : 'Generate Preview'}
         </Button>
       </div>
 
@@ -465,20 +533,22 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <FileJson className="h-4 w-4" />
-                Metadata
+                Metadata {generated.length > 1 && `(${generated.length} items)`}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <pre className="overflow-auto rounded-lg bg-muted p-3 text-xs">
-                {JSON.stringify(
-                  {
-                    token: generated[0].tokenId,
-                    meta: generated[0].metadata,
-                  },
-                  null,
-                  2
-                )}
-              </pre>
+              <ScrollArea className={generated.length > 1 ? 'h-64' : ''}>
+                <pre className="overflow-auto rounded-lg bg-muted p-3 text-xs">
+                  {JSON.stringify(
+                    generated.map((g) => ({
+                      token: g.tokenId,
+                      meta: g.metadata,
+                    })),
+                    null,
+                    2
+                  )}
+                </pre>
+              </ScrollArea>
             </CardContent>
           </Card>
         )}
