@@ -200,12 +200,6 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     URL.revokeObjectURL(url);
   };
 
-  // Update preview when manual selections change
-  useEffect(() => {
-    if (mode === 'manual' && Object.keys(manualSelections).length > 0) {
-      handleGeneratePreview();
-    }
-  }, [manualSelections, mode]);
 
   if (!hasLayers) {
     return (
