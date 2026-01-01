@@ -30,10 +30,10 @@ interface Invitation {
   project_id: string;
   role: string;
   created_at: string;
-  projects: {
-    name: string;
-    description: string | null;
-  };
+  expires_at: string;
+  project_name: string;
+  project_description: string | null;
+  inviter_name: string | null;
 }
 
 export default function Dashboard() {
@@ -56,47 +56,58 @@ export default function Dashboard() {
   const loadProjects = async () => {
     setLoading(true);
 
-    // Load owned projects
-    const { data: owned } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('owner_id', user!.id)
-      .order('last_modified', { ascending: false });
-
-    // Load shared projects (where user is a member)
-    const { data: memberOf } = await supabase
-      .from('project_members')
-      .select('project_id')
-      .eq('user_id', user!.id);
-
-    if (memberOf && memberOf.length > 0) {
-      const projectIds = memberOf.map(m => m.project_id);
-      const { data: shared } = await supabase
+    try {
+      // Load owned projects
+      const { data: owned, error: ownedError } = await supabase
         .from('projects')
         .select('*')
-        .in('id', projectIds)
+        .eq('owner_id', user!.id)
         .order('last_modified', { ascending: false });
-      setSharedProjects(shared || []);
+
+      if (ownedError) {
+        console.error('Error loading owned projects:', ownedError);
+      }
+
+      // Load shared projects (where user is a member)
+      const { data: memberOf } = await supabase
+        .from('project_members')
+        .select('project_id')
+        .eq('user_id', user!.id);
+
+      if (memberOf && memberOf.length > 0) {
+        const projectIds = memberOf.map(m => m.project_id);
+        const { data: shared } = await supabase
+          .from('projects')
+          .select('*')
+          .in('id', projectIds)
+          .order('last_modified', { ascending: false });
+        setSharedProjects(shared || []);
+      } else {
+        setSharedProjects([]);
+      }
+
+      // Load pending invitations using the secure RPC function
+      const { data: invites, error: invitesError } = await supabase
+        .rpc('get_my_pending_invitations');
+
+      if (invitesError) {
+        console.error('Error loading invitations:', invitesError);
+        setInvitations([]);
+      } else {
+        setInvitations((invites as Invitation[]) || []);
+      }
+
+      setOwnedProjects(owned || []);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      toast({
+        title: 'Error loading data',
+        description: 'Please try refreshing the page',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
-
-    // Load pending invitations
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('id', user!.id)
-      .single();
-
-    if (profile) {
-      const { data: invites } = await supabase
-        .from('project_invitations')
-        .select('id, project_id, role, created_at, projects:project_id(name, description)')
-        .eq('email', profile.email)
-        .eq('status', 'pending');
-      setInvitations(invites as unknown as Invitation[] || []);
-    }
-
-    setOwnedProjects(owned || []);
-    setLoading(false);
   };
 
   const ProjectCard = ({ project, isOwner = true }: { project: Project; isOwner?: boolean }) => (
@@ -201,9 +212,10 @@ export default function Dashboard() {
                     className="flex flex-col gap-3 rounded-lg border border-border/50 bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div>
-                      <p className="font-medium">{invite.projects.name}</p>
+                      <p className="font-medium">{invite.project_name || 'Unknown Project'}</p>
                       <p className="text-sm text-muted-foreground">
                         Invited as {invite.role}
+                        {invite.inviter_name && ` by ${invite.inviter_name}`}
                       </p>
                     </div>
                     <div className="flex gap-2">

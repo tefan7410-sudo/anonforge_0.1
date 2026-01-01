@@ -201,38 +201,16 @@ export function useAcceptInvitation() {
 
   return useMutation({
     mutationFn: async ({ invitationId }: { invitationId: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      // Get the invitation
-      const { data: invitation, error: fetchError } = await supabase
-        .from('project_invitations')
-        .select('project_id, role')
-        .eq('id', invitationId)
-        .single();
-
-      if (fetchError || !invitation) throw fetchError || new Error('Invitation not found');
-
-      // Create project member entry
-      const { error: memberError } = await supabase.from('project_members').insert({
-        project_id: invitation.project_id,
-        user_id: user.id,
-        role: invitation.role,
+      const { error } = await supabase.rpc('accept_project_invitation', {
+        invitation_id: invitationId,
       });
 
-      if (memberError) throw memberError;
-
-      // Update invitation status
-      const { error: updateError } = await supabase
-        .from('project_invitations')
-        .update({ status: 'accepted' })
-        .eq('id', invitationId);
-
-      if (updateError) throw updateError;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invitations'] });
       queryClient.invalidateQueries({ queryKey: ['shared-projects'] });
+      queryClient.invalidateQueries({ queryKey: ['team-members'] });
     },
   });
 }
@@ -242,12 +220,11 @@ export function useDeclineInvitation() {
 
   return useMutation({
     mutationFn: async ({ invitationId }: { invitationId: string }) => {
-      const { error } = await supabase
-        .from('project_invitations')
-        .update({ status: 'declined' })
-        .eq('id', invitationId);
+      const { error } = await supabase.rpc('decline_project_invitation', {
+        invitation_id: invitationId,
+      });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invitations'] });
