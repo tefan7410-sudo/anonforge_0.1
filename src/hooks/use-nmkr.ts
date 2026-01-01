@@ -34,6 +34,12 @@ export interface NmkrCounts {
   total: number;
 }
 
+export interface NmkrCredentials {
+  hasCredentials: boolean;
+  isValid: boolean;
+  lastValidated: string | null;
+}
+
 // Helper function to call NMKR proxy
 async function callNmkrProxy(action: string, params: Record<string, unknown> = {}) {
   const { data, error } = await supabase.functions.invoke('nmkr-proxy', {
@@ -48,14 +54,62 @@ async function callNmkrProxy(action: string, params: Record<string, unknown> = {
     throw new Error(data.error || 'NMKR API returned an error');
   }
 
-  return data.data;
+  return data;
 }
 
-// Validate NMKR API key
-export function useValidateNmkrKey() {
+// Get user's NMKR credentials status
+export function useNmkrCredentials() {
+  return useQuery({
+    queryKey: ['nmkr-credentials'],
+    queryFn: async (): Promise<NmkrCredentials> => {
+      const result = await callNmkrProxy('get-credentials');
+      return {
+        hasCredentials: result.hasCredentials,
+        isValid: result.isValid,
+        lastValidated: result.lastValidated,
+      };
+    },
+  });
+}
+
+// Save NMKR API key
+export function useSaveNmkrApiKey() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (apiKey: string) => {
+      const result = await callNmkrProxy('store-api-key', { apiKey });
+      if (!result.valid) {
+        throw new Error('Invalid API key');
+      }
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nmkr-credentials'] });
+    },
+  });
+}
+
+// Delete NMKR credentials
+export function useDeleteNmkrCredentials() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async () => {
-      return await callNmkrProxy('validate-api-key');
+      await callNmkrProxy('delete-credentials');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nmkr-credentials'] });
+      toast.success('API key removed');
+    },
+  });
+}
+
+// Validate NMKR API key (for testing provided key)
+export function useValidateNmkrKey() {
+  return useMutation({
+    mutationFn: async (apiKey?: string) => {
+      return await callNmkrProxy('validate-api-key', apiKey ? { apiKey } : {});
     },
     onError: (error: Error) => {
       toast.error(`API key validation failed: ${error.message}`);
@@ -115,10 +169,11 @@ export function useCreateNmkrProject() {
       description?: string;
     }) => {
       // Create project on NMKR
-      const nmkrResult = await callNmkrProxy('create-project', {
+      const result = await callNmkrProxy('create-project', {
         projectName,
         description,
       });
+      const nmkrResult = result.data;
 
       // Store reference in our database
       const { data, error } = await supabase
@@ -152,7 +207,8 @@ export function useNmkrProjectDetails(nmkrProjectUid: string | undefined) {
     queryKey: ['nmkr-project-details', nmkrProjectUid],
     queryFn: async () => {
       if (!nmkrProjectUid) return null;
-      return await callNmkrProxy('get-project-details', { projectUid: nmkrProjectUid });
+      const result = await callNmkrProxy('get-project-details', { projectUid: nmkrProjectUid });
+      return result.data;
     },
     enabled: !!nmkrProjectUid,
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -165,7 +221,8 @@ export function useNmkrCounts(nmkrProjectUid: string | undefined) {
     queryKey: ['nmkr-counts', nmkrProjectUid],
     queryFn: async (): Promise<NmkrCounts | null> => {
       if (!nmkrProjectUid) return null;
-      const result = await callNmkrProxy('get-counts', { projectUid: nmkrProjectUid });
+      const response = await callNmkrProxy('get-counts', { projectUid: nmkrProjectUid });
+      const result = response.data;
       return {
         sold: result.sold || 0,
         reserved: result.reserved || 0,
@@ -216,7 +273,7 @@ export function useUploadNft() {
 
       try {
         // Upload to NMKR
-        const result = await callNmkrProxy('upload-nft', {
+        const response = await callNmkrProxy('upload-nft', {
           projectUid: nmkrProjectUid,
           tokenName,
           displayName,
@@ -226,6 +283,7 @@ export function useUploadNft() {
             base64: imageBase64,
           },
         });
+        const result = response.data;
 
         // Update record with success
         const { error: updateError } = await supabase
@@ -301,7 +359,8 @@ export function useUpdateNmkrPrice() {
 export function useGetNmkrPayLink() {
   return useMutation({
     mutationFn: async ({ projectUid }: { projectUid: string }) => {
-      return await callNmkrProxy('get-nmkr-pay-link', { projectUid });
+      const result = await callNmkrProxy('get-nmkr-pay-link', { projectUid });
+      return result.data;
     },
     onError: (error: Error) => {
       toast.error(`Failed to get payment link: ${error.message}`);
