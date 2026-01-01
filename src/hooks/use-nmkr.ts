@@ -40,102 +40,21 @@ export interface NmkrCredentials {
   lastValidated: string | null;
 }
 
-// Helper to make a single function call with explicit token
-async function invokeWithToken(action: string, params: Record<string, unknown>, accessToken: string) {
-  const { data, error } = await supabase.functions.invoke('nmkr-proxy', {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: { action, ...params },
-  });
-  return { data, error };
-}
-
-// Helper function to call NMKR proxy with JWT refresh handling
+// Simplified helper function to call NMKR proxy
+// Gateway JWT verification is disabled; the edge function validates auth internally
+// and returns { success: false, error: "..." } for auth issues (HTTP 200)
 async function callNmkrProxy(action: string, params: Record<string, unknown> = {}) {
-  // Force a fresh session check - this ensures we have the latest token
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  
-  if (sessionError || !session) {
-    console.log('[NMKR] No valid session found');
-    throw new Error('Not authenticated. Please log in again.');
-  }
-
   console.log(`[NMKR] Calling action: ${action}`);
 
-  // First attempt with current session token
-  let { data, error } = await invokeWithToken(action, params, session.access_token);
+  // Let the SDK handle auth - it will attach the current session token automatically
+  const { data, error } = await supabase.functions.invoke('nmkr-proxy', {
+    body: { action, ...params },
+  });
 
-  // Handle invoke-level errors (network issues, auth problems)
+  // Handle invoke-level errors (network issues, function not found, etc.)
   if (error) {
-    console.log(`[NMKR] Error for action ${action}:`, error.message);
-    
-    // Check if error has context (FunctionsHttpError)
-    let status: number | undefined;
-    let responseText = '';
-    
-    // Try to get status from error context (FunctionsHttpError has a context property that is a Response)
-    if ('context' in error && error.context instanceof Response) {
-      status = error.context.status;
-      try {
-        responseText = await error.context.text();
-        console.log(`[NMKR] Response status: ${status}, body snippet: ${responseText.substring(0, 200)}`);
-      } catch {
-        // Ignore if we can't read the body
-      }
-    }
-    
-    // Check if it's an auth error (401 status or JWT-related message)
-    const isAuthError = status === 401 || 
-                        error.message?.includes('JWT') || 
-                        error.message?.includes('Invalid JWT') ||
-                        responseText.includes('Invalid JWT');
-    
-    if (isAuthError) {
-      console.log('[NMKR] Auth error detected, forcing session refresh...');
-      
-      // Force a complete session refresh
-      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-      
-      if (refreshError || !refreshData.session) {
-        console.log('[NMKR] Session refresh failed:', refreshError?.message);
-        // Sign out and redirect to login
-        await supabase.auth.signOut();
-        throw new Error('Session expired. Please log in again.');
-      }
-      
-      console.log('[NMKR] Session refreshed successfully, waiting briefly...');
-      
-      // Small delay to allow token propagation
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Retry with the new token
-      const retryResult = await invokeWithToken(action, params, refreshData.session.access_token);
-      
-      if (retryResult.error) {
-        console.log('[NMKR] Retry also failed:', retryResult.error.message);
-        
-        // Check if retry also got 401
-        let retryStatus: number | undefined;
-        if ('context' in retryResult.error && retryResult.error.context instanceof Response) {
-          retryStatus = retryResult.error.context.status;
-        }
-        
-        if (retryStatus === 401) {
-          // Token is still invalid - force sign out
-          console.log('[NMKR] Persistent auth failure, signing out...');
-          await supabase.auth.signOut();
-          throw new Error('Session expired. Please log in again.');
-        }
-        
-        throw new Error(retryResult.error.message || 'NMKR API call failed');
-      }
-      
-      data = retryResult.data;
-      error = null;
-    } else {
-      throw new Error(error.message || 'NMKR API call failed');
-    }
+    console.log(`[NMKR] Invoke error: ${error.message}`);
+    throw new Error(error.message || 'Failed to call NMKR service');
   }
 
   // Handle application-level errors (success: false from our edge function)
