@@ -10,6 +10,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, ArrowRight, Check, Loader2, Layers, Lock, Globe } from 'lucide-react';
+import { z } from 'zod';
+
+// Input validation schemas
+const projectNameSchema = z.string()
+  .min(1, 'Project name is required')
+  .max(100, 'Project name must be less than 100 characters')
+  .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Project name can only contain letters, numbers, spaces, hyphens, and underscores');
+
+const projectDescriptionSchema = z.string()
+  .max(500, 'Description must be less than 500 characters')
+  .optional();
+
+const tokenPrefixSchema = z.string()
+  .max(20, 'Token prefix must be less than 20 characters')
+  .regex(/^[a-zA-Z0-9\-_]*$/, 'Token prefix can only contain letters, numbers, hyphens, and underscores')
+  .optional();
 
 type Step = 'details' | 'privacy' | 'confirm';
 
@@ -30,10 +46,38 @@ export default function NewProject() {
   const steps: Step[] = ['details', 'privacy', 'confirm'];
   const currentStepIndex = steps.indexOf(step);
 
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  const validateInputs = () => {
+    const errors: Record<string, string> = {};
+    
+    const nameResult = projectNameSchema.safeParse(name.trim());
+    if (!nameResult.success) {
+      errors.name = nameResult.error.errors[0].message;
+    }
+    
+    if (description.trim()) {
+      const descResult = projectDescriptionSchema.safeParse(description.trim());
+      if (!descResult.success) {
+        errors.description = descResult.error.errors[0].message;
+      }
+    }
+    
+    if (tokenPrefix.trim()) {
+      const prefixResult = tokenPrefixSchema.safeParse(tokenPrefix.trim());
+      if (!prefixResult.success) {
+        errors.tokenPrefix = prefixResult.error.errors[0].message;
+      }
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const canProceed = () => {
     switch (step) {
       case 'details':
-        return name.trim().length > 0;
+        return name.trim().length > 0 && name.trim().length <= 100;
       case 'privacy':
         return true;
       case 'confirm':
@@ -62,16 +106,31 @@ export default function NewProject() {
   const handleCreate = async () => {
     if (!user) return;
     
+    // Validate all inputs before submission
+    if (!validateInputs()) {
+      toast({
+        title: 'Validation error',
+        description: 'Please fix the errors before continuing.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setLoading(true);
+
+    // Sanitize inputs
+    const sanitizedName = name.trim().slice(0, 100);
+    const sanitizedDescription = description.trim().slice(0, 500) || null;
+    const sanitizedPrefix = tokenPrefix.trim().slice(0, 20) || 'Token';
 
     const { data, error } = await supabase
       .from('projects')
       .insert({
         owner_id: user.id,
-        name: name.trim(),
-        description: description.trim() || null,
+        name: sanitizedName,
+        description: sanitizedDescription,
         is_public: isPublic,
-        token_prefix: tokenPrefix.trim() || 'Token',
+        token_prefix: sanitizedPrefix,
       })
       .select()
       .single();
@@ -86,7 +145,7 @@ export default function NewProject() {
     } else {
       toast({
         title: 'Project created',
-        description: `${name} is ready to use.`,
+        description: `${sanitizedName} is ready to use.`,
       });
       navigate(`/project/${data.id}`);
     }
@@ -155,8 +214,13 @@ export default function NewProject() {
                   placeholder="My NFT Collection"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  maxLength={100}
                   autoFocus
                 />
+                {validationErrors.name && (
+                  <p className="text-xs text-destructive">{validationErrors.name}</p>
+                )}
+                <p className="text-xs text-muted-foreground">{name.length}/100 characters</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
@@ -165,8 +229,13 @@ export default function NewProject() {
                   placeholder="A collection of unique characters..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  maxLength={500}
                   rows={3}
                 />
+                {validationErrors.description && (
+                  <p className="text-xs text-destructive">{validationErrors.description}</p>
+                )}
+                <p className="text-xs text-muted-foreground">{description.length}/500 characters</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tokenPrefix">Token prefix</Label>
@@ -175,7 +244,11 @@ export default function NewProject() {
                   placeholder="Token"
                   value={tokenPrefix}
                   onChange={(e) => setTokenPrefix(e.target.value)}
+                  maxLength={20}
                 />
+                {validationErrors.tokenPrefix && (
+                  <p className="text-xs text-destructive">{validationErrors.tokenPrefix}</p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Used in metadata (e.g., {tokenPrefix || 'Token'}0001, {tokenPrefix || 'Token'}0002...)
                 </p>

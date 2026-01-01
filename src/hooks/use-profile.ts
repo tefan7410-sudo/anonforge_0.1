@@ -83,10 +83,23 @@ export function useUploadAvatar() {
 export function useDeleteAccount() {
   return useMutation({
     mutationFn: async () => {
-      // Note: Full account deletion would require a server-side function
-      // For now, we'll sign out the user
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // Call the delete-account edge function for proper server-side deletion
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        method: 'POST',
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to delete account');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      // Sign out after successful deletion
+      await supabase.auth.signOut();
+      
+      return data;
     },
   });
 }

@@ -11,6 +11,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Mail, Trash2, UserPlus, Users, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { z } from 'zod';
+
+// Email validation schema
+const emailSchema = z.string()
+  .email('Please enter a valid email address')
+  .max(255, 'Email must be less than 255 characters');
 
 interface TeamManagementProps {
   projectId: string;
@@ -28,14 +34,27 @@ export function TeamManagement({ projectId, ownerId }: TeamManagementProps) {
   const removeMember = useRemoveMember();
   const cancelInvitation = useCancelInvitation();
 
+  const [emailError, setEmailError] = useState<string | null>(null);
+
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    setEmailError(null);
+    
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail) return;
+
+    // Validate email format
+    const validationResult = emailSchema.safeParse(trimmedEmail);
+    if (!validationResult.success) {
+      setEmailError(validationResult.error.errors[0].message);
+      return;
+    }
 
     try {
-      await inviteMember.mutateAsync({ projectId, email: email.trim(), role });
-      toast({ title: 'Invitation sent', description: `Invited ${email} as ${role}` });
+      await inviteMember.mutateAsync({ projectId, email: trimmedEmail, role });
+      toast({ title: 'Invitation sent', description: `Invited ${trimmedEmail} as ${role}` });
       setEmail('');
+      setEmailError(null);
     } catch (error: any) {
       toast({
         title: 'Failed to send invitation',
@@ -85,37 +104,46 @@ export function TeamManagement({ projectId, ownerId }: TeamManagementProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleInvite} className="flex flex-col gap-4 sm:flex-row">
-            <div className="flex-1">
-              <Label htmlFor="email" className="sr-only">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="colleague@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+          <form onSubmit={handleInvite} className="space-y-4">
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <div className="flex-1 space-y-1">
+                <Label htmlFor="email" className="sr-only">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="colleague@example.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setEmailError(null);
+                  }}
+                  maxLength={255}
+                />
+              </div>
+              <div className="w-full sm:w-32">
+                <Label htmlFor="role" className="sr-only">Role</Label>
+                <Select value={role} onValueChange={setRole}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="viewer">Viewer</SelectItem>
+                    <SelectItem value="editor">Editor</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="submit" disabled={inviteMember.isPending || !email.trim()}>
+                {inviteMember.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Mail className="mr-2 h-4 w-4" />
+                )}
+                Send Invite
+              </Button>
             </div>
-            <div className="w-full sm:w-32">
-              <Label htmlFor="role" className="sr-only">Role</Label>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="viewer">Viewer</SelectItem>
-                  <SelectItem value="editor">Editor</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button type="submit" disabled={inviteMember.isPending || !email.trim()}>
-              {inviteMember.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Mail className="mr-2 h-4 w-4" />
-              )}
-              Send Invite
-            </Button>
+            {emailError && (
+              <p className="text-xs text-destructive">{emailError}</p>
+            )}
           </form>
         </CardContent>
       </Card>
