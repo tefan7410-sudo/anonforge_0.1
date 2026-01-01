@@ -193,6 +193,7 @@ serve(async (req) => {
           policyExpires: params.policyExpires ?? false,
           addressExpiretime: params.addressExpireTime ?? 20,
           maxNftSupply: params.maxNftSupply ?? 10000,
+          payoutWalletaddress: params.payoutWalletAddress,
           enableFiat: params.enableFiat ?? false,
           enableDecentralPayments: params.enableDecentralPayments ?? true,
           enableCrossSaleOnPaymentgateway: false,

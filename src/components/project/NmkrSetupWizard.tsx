@@ -16,18 +16,21 @@ export function NmkrSetupWizard({ projectId, projectName }: NmkrSetupWizardProps
   const [nmkrProjectName, setNmkrProjectName] = useState(projectName);
   const [description, setDescription] = useState('');
   const [maxSupply, setMaxSupply] = useState('10000');
+  const [payoutWallet, setPayoutWallet] = useState('');
   const createProject = useCreateNmkrProject();
 
   const maxSupplyValue = parseInt(maxSupply) || 0;
   const isValidSupply = maxSupplyValue >= 1;
+  const isValidWallet = payoutWallet.startsWith('addr1') && payoutWallet.length >= 58;
 
   const handleCreateProject = async () => {
-    if (!nmkrProjectName.trim() || !isValidSupply) return;
+    if (!nmkrProjectName.trim() || !isValidSupply || !isValidWallet) return;
     await createProject.mutateAsync({
       projectId,
       projectName: nmkrProjectName.trim(),
       description: description.trim(),
       maxNftSupply: maxSupplyValue,
+      payoutWalletAddress: payoutWallet.trim(),
     });
   };
 
@@ -100,6 +103,25 @@ export function NmkrSetupWizard({ projectId, projectName }: NmkrSetupWizardProps
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="payout-wallet">Payout Wallet Address <span className="text-destructive">*</span></Label>
+            <Input
+              id="payout-wallet"
+              value={payoutWallet}
+              onChange={(e) => setPayoutWallet(e.target.value)}
+              placeholder="addr1..."
+              className={payoutWallet && !isValidWallet ? 'border-destructive' : ''}
+            />
+            <p className="text-xs text-muted-foreground">
+              Your Cardano wallet address where you'll receive ADA from NFT sales
+            </p>
+            {payoutWallet && !isValidWallet && (
+              <p className="text-xs text-destructive">
+                Please enter a valid Cardano mainnet address (starts with addr1)
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="description">Description (Optional)</Label>
             <Textarea
               id="description"
@@ -113,7 +135,7 @@ export function NmkrSetupWizard({ projectId, projectName }: NmkrSetupWizardProps
 
         <Button 
           onClick={handleCreateProject}
-          disabled={createProject.isPending || !nmkrProjectName.trim() || !isValidSupply}
+          disabled={createProject.isPending || !nmkrProjectName.trim() || !isValidSupply || !isValidWallet}
           className="w-full"
         >
           {createProject.isPending ? (
