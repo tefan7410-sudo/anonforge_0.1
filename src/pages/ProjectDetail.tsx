@@ -30,6 +30,7 @@ import { GenerationPanel } from '@/components/project/GenerationPanel';
 import { GenerationHistory } from '@/components/project/GenerationHistory';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
+import { NotificationDropdown } from '@/components/NotificationDropdown';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -117,6 +118,7 @@ export default function ProjectDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <NotificationDropdown />
             <ThemeToggle />
             <Badge variant={project.is_public ? 'secondary' : 'outline'} className="hidden sm:inline-flex">
               {project.is_public ? 'Public' : 'Private'}

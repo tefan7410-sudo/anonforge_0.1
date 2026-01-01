@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
   SheetContent,
@@ -8,13 +9,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Menu, LayoutDashboard, User, LogOut, Layers } from 'lucide-react';
+import { Menu, LayoutDashboard, User, LogOut, Layers, Bell } from 'lucide-react';
 import { useState } from 'react';
+import { useUnreadCount } from '@/hooks/use-notifications';
 
 export function MobileNav() {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const { data: unreadCount } = useUnreadCount(user?.id);
 
   const handleSignOut = async () => {
     await signOut();
@@ -49,6 +52,25 @@ export function MobileNav() {
             <Link to="/dashboard">
               <LayoutDashboard className="mr-3 h-4 w-4" />
               Dashboard
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            className="justify-start relative"
+            asChild
+            onClick={() => setOpen(false)}
+          >
+            <Link to="/dashboard">
+              <Bell className="mr-3 h-4 w-4" />
+              Notifications
+              {unreadCount && unreadCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="ml-auto h-5 min-w-5 rounded-full p-0 text-xs flex items-center justify-center"
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Badge>
+              )}
             </Link>
           </Button>
           <Button
