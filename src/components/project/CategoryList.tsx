@@ -103,19 +103,29 @@ function LayerItem({
         <p className="truncate text-xs text-muted-foreground">{layer.filename}</p>
       </div>
 
-      <div className="flex w-48 items-center gap-2">
+      <div className="flex w-56 items-center gap-2">
         <Slider
           value={[weight]}
           onValueChange={handleWeightChange}
           onValueCommit={handleWeightCommit}
-          min={0}
+          min={1}
           max={100}
           step={1}
           className="flex-1"
         />
-        <Badge variant="secondary" className="w-16 justify-center text-xs">
-          {percentage}%
-        </Badge>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="secondary" className="w-20 justify-center text-xs cursor-help">
+              {percentage}%
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="font-medium">Weight: {weight}</p>
+            <p className="text-xs text-muted-foreground">
+              Higher weight = more likely to appear
+            </p>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <AlertDialog>
