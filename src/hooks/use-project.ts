@@ -179,6 +179,35 @@ export function useUpdateCategory() {
   });
 }
 
+export function useReorderCategories() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      categories,
+    }: {
+      projectId: string;
+      categories: { id: string; orderIndex: number }[];
+    }) => {
+      const updates = categories.map(({ id, orderIndex }) =>
+        supabase.from('categories').update({ order_index: orderIndex }).eq('id', id)
+      );
+      const results = await Promise.all(updates);
+      const error = results.find((r) => r.error)?.error;
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['categories', variables.projectId] });
+      toast({ title: 'Layer order updated' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to update order', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
 export function useDeleteCategory() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
