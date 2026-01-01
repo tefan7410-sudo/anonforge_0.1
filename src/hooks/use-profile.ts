@@ -1,0 +1,103 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface Profile {
+  id: string;
+  email: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function useProfile(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['profile', userId],
+    queryFn: async () => {
+      if (!userId) throw new Error('No user ID');
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      return data as Profile;
+    },
+    enabled: !!userId,
+  });
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      displayName,
+      avatarUrl,
+    }: {
+      userId: string;
+      displayName?: string;
+      avatarUrl?: string;
+    }) => {
+      const updates: { display_name?: string; avatar_url?: string; updated_at: string } = {
+        updated_at: new Date().toISOString(),
+      };
+      
+      if (displayName !== undefined) updates.display_name = displayName;
+      if (avatarUrl !== undefined) updates.avatar_url = avatarUrl;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, { userId }) => {
+      queryClient.invalidateQueries({ queryKey: ['profile', userId] });
+    },
+  });
+}
+
+export function useUploadAvatar() {
+  return useMutation({
+    mutationFn: async ({ userId, file }: { userId: string; file: File }) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('layers')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('layers').getPublicUrl(fileName);
+      return data.publicUrl;
+    },
+  });
+}
+
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: async () => {
+      // Note: Full account deletion would require a server-side function
+      // For now, we'll sign out the user
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    },
+  });
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: async ({ email }: { email: string }) => {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      if (error) throw error;
+    },
+  });
+}

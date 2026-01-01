@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useAcceptInvitation, useDeclineInvitation } from '@/hooks/use-team';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Project {
@@ -33,10 +35,14 @@ interface Invitation {
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
+  const { toast } = useToast();
   const [ownedProjects, setOwnedProjects] = useState<Project[]>([]);
   const [sharedProjects, setSharedProjects] = useState<Project[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const acceptInvitation = useAcceptInvitation();
+  const declineInvitation = useDeclineInvitation();
 
   useEffect(() => {
     if (user) {
@@ -144,7 +150,12 @@ export default function Dashboard() {
             <span className="font-display text-xl font-semibold">LayerForge</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{user?.email}</span>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/profile">
+                <User className="mr-2 h-4 w-4" />
+                {user?.email}
+              </Link>
+            </Button>
             <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut className="h-4 w-4" />
             </Button>
@@ -189,10 +200,40 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        disabled={declineInvitation.isPending}
+                        onClick={async () => {
+                          try {
+                            await declineInvitation.mutateAsync({ invitationId: invite.id });
+                            setInvitations(prev => prev.filter(i => i.id !== invite.id));
+                            toast({ title: 'Invitation declined' });
+                          } catch (error: any) {
+                            toast({ title: 'Failed', description: error.message, variant: 'destructive' });
+                          }
+                        }}
+                      >
+                        {declineInvitation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="mr-1 h-4 w-4" />}
                         Decline
                       </Button>
-                      <Button size="sm">Accept</Button>
+                      <Button 
+                        size="sm"
+                        disabled={acceptInvitation.isPending}
+                        onClick={async () => {
+                          try {
+                            await acceptInvitation.mutateAsync({ invitationId: invite.id });
+                            setInvitations(prev => prev.filter(i => i.id !== invite.id));
+                            toast({ title: 'Invitation accepted', description: 'You now have access to this project' });
+                            loadProjects();
+                          } catch (error: any) {
+                            toast({ title: 'Failed', description: error.message, variant: 'destructive' });
+                          }
+                        }}
+                      >
+                        {acceptInvitation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+                        Accept
+                      </Button>
                     </div>
                   </div>
                 ))}

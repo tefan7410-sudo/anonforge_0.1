@@ -1,0 +1,236 @@
+import { useState } from 'react';
+import { useTeamMembers, useProjectInvitations, useInviteMember, useRemoveMember, useCancelInvitation } from '@/hooks/use-team';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Mail, Trash2, UserPlus, Users, Clock } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+
+interface TeamManagementProps {
+  projectId: string;
+  ownerId: string;
+}
+
+export function TeamManagement({ projectId, ownerId }: TeamManagementProps) {
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState('editor');
+
+  const { data: members, isLoading: membersLoading } = useTeamMembers(projectId);
+  const { data: invitations, isLoading: invitationsLoading } = useProjectInvitations(projectId);
+  const inviteMember = useInviteMember();
+  const removeMember = useRemoveMember();
+  const cancelInvitation = useCancelInvitation();
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+
+    try {
+      await inviteMember.mutateAsync({ projectId, email: email.trim(), role });
+      toast({ title: 'Invitation sent', description: `Invited ${email} as ${role}` });
+      setEmail('');
+    } catch (error: any) {
+      toast({
+        title: 'Failed to send invitation',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    try {
+      await removeMember.mutateAsync({ memberId, projectId });
+      toast({ title: 'Member removed', description: `Removed ${memberName} from project` });
+    } catch (error: any) {
+      toast({
+        title: 'Failed to remove member',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCancelInvitation = async (invitationId: string, email: string) => {
+    try {
+      await cancelInvitation.mutateAsync({ invitationId, projectId });
+      toast({ title: 'Invitation cancelled', description: `Cancelled invitation for ${email}` });
+    } catch (error: any) {
+      toast({
+        title: 'Failed to cancel invitation',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Invite Form */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display text-lg">
+            <UserPlus className="h-5 w-5" />
+            Invite Team Member
+          </CardTitle>
+          <CardDescription>
+            Send an invitation to collaborate on this project
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleInvite} className="flex flex-col gap-4 sm:flex-row">
+            <div className="flex-1">
+              <Label htmlFor="email" className="sr-only">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="colleague@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="w-full sm:w-32">
+              <Label htmlFor="role" className="sr-only">Role</Label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="viewer">Viewer</SelectItem>
+                  <SelectItem value="editor">Editor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" disabled={inviteMember.isPending || !email.trim()}>
+              {inviteMember.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="mr-2 h-4 w-4" />
+              )}
+              Send Invite
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Pending Invitations */}
+      {invitationsLoading ? (
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-5 w-40" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-12 w-full" />
+          </CardContent>
+        </Card>
+      ) : invitations && invitations.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-lg">
+              <Clock className="h-5 w-5" />
+              Pending Invitations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {invitations.map((invite) => (
+                <div
+                  key={invite.id}
+                  className="flex items-center justify-between rounded-lg border border-border/50 p-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>{invite.email[0].toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium">{invite.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Expires {formatDistanceToNow(new Date(invite.expires_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">{invite.role}</Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleCancelInvitation(invite.id, invite.email)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {/* Current Members */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display text-lg">
+            <Users className="h-5 w-5" />
+            Team Members
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {membersLoading ? (
+            <div className="space-y-3">
+              {[1, 2].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : members && members.length > 0 ? (
+            <div className="space-y-3">
+              {members.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between rounded-lg border border-border/50 p-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={member.profile?.avatar_url || undefined} />
+                      <AvatarFallback>
+                        {(member.profile?.display_name || member.profile?.email || '?')[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium">
+                        {member.profile?.display_name || member.profile?.email}
+                      </p>
+                      {member.profile?.display_name && (
+                        <p className="text-xs text-muted-foreground">{member.profile.email}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">{member.role}</Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveMember(member.id, member.profile?.display_name || member.profile?.email || 'Member')}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              No team members yet. Invite someone to collaborate!
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
