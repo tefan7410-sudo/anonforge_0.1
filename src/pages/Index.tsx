@@ -1,19 +1,19 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Layers, ArrowRight, Sparkles, Palette, Download } from 'lucide-react';
+import { Layers, ArrowRight, Sparkles, Palette, Download, Zap, Shield, Globe } from 'lucide-react';
 
 export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50">
-        <div className="container mx-auto flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
+        <nav className="container mx-auto flex items-center justify-between px-6 py-4" aria-label="Main navigation">
+          <Link to="/" className="flex items-center gap-3" aria-label="LayerForge home">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <Layers className="h-5 w-5 text-primary-foreground" />
+              <Layers className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
             </div>
             <span className="font-display text-xl font-semibold">LayerForge</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-3">
             <Button variant="ghost" asChild>
               <Link to="/login">Sign in</Link>
@@ -22,14 +22,14 @@ export default function Index() {
               <Link to="/register">Get started</Link>
             </Button>
           </div>
-        </div>
+        </nav>
       </header>
 
-      {/* Hero */}
       <main>
-        <section className="container mx-auto px-6 py-24 text-center">
+        {/* Hero Section */}
+        <section className="container mx-auto px-6 py-24 text-center" aria-labelledby="hero-heading">
           <div className="mx-auto max-w-3xl">
-            <h1 className="font-display text-5xl font-bold tracking-tight sm:text-6xl">
+            <h1 id="hero-heading" className="font-display text-5xl font-bold tracking-tight sm:text-6xl">
               Generate unique
               <span className="text-primary"> profile pictures</span>
               <br />with layered traits
@@ -42,7 +42,7 @@ export default function Index() {
               <Button size="lg" asChild className="px-8">
                 <Link to="/register">
                   Start creating
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
@@ -52,56 +52,95 @@ export default function Index() {
           </div>
         </section>
 
-        {/* Features */}
-        <section className="border-t border-border/50 bg-muted/30">
+        {/* Features Section */}
+        <section className="border-t border-border/50 bg-muted/30" aria-labelledby="features-heading">
           <div className="container mx-auto px-6 py-20">
+            <h2 id="features-heading" className="sr-only">Features</h2>
             <div className="grid gap-8 md:grid-cols-3">
-              <div className="rounded-xl border border-border/50 bg-card p-6">
+              <article className="rounded-xl border border-border/50 bg-card p-6">
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                  <Palette className="h-6 w-6 text-primary" />
+                  <Palette className="h-6 w-6 text-primary" aria-hidden="true" />
                 </div>
                 <h3 className="font-display text-lg font-semibold">Layer Management</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Upload layers via drag-drop or sync from GitHub. Auto-parse filenames and 
                   customize trait names.
                 </p>
-              </div>
-              <div className="rounded-xl border border-border/50 bg-card p-6">
+              </article>
+              <article className="rounded-xl border border-border/50 bg-card p-6">
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                  <Sparkles className="h-6 w-6 text-primary" />
+                  <Sparkles className="h-6 w-6 text-primary" aria-hidden="true" />
                 </div>
                 <h3 className="font-display text-lg font-semibold">Rarity Configuration</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Set weights for each trait, preview distributions, and ensure your collection 
                   has the perfect balance.
                 </p>
-              </div>
-              <div className="rounded-xl border border-border/50 bg-card p-6">
+              </article>
+              <article className="rounded-xl border border-border/50 bg-card p-6">
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                  <Download className="h-6 w-6 text-primary" />
+                  <Download className="h-6 w-6 text-primary" aria-hidden="true" />
                 </div>
                 <h3 className="font-display text-lg font-semibold">Batch Generation</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Generate single previews or batch thousands. Export images with complete 
                   metadata in one click.
                 </p>
-              </div>
+              </article>
             </div>
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="container mx-auto px-6 py-20 text-center">
-          <h2 className="font-display text-3xl font-bold">Ready to build your collection?</h2>
-          <p className="mt-4 text-muted-foreground">
-            Join creators using LayerForge to generate unique profile pictures.
-          </p>
-          <Button size="lg" className="mt-8" asChild>
-            <Link to="/register">
-              Create free account
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+        {/* Benefits Section */}
+        <section className="container mx-auto px-6 py-20" aria-labelledby="benefits-heading">
+          <h2 id="benefits-heading" className="mb-12 text-center font-display text-3xl font-bold">
+            Why choose LayerForge?
+          </h2>
+          <div className="grid gap-8 md:grid-cols-3">
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <Zap className="h-6 w-6 text-primary" aria-hidden="true" />
+              </div>
+              <h3 className="font-display text-lg font-semibold">Lightning Fast</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Generate thousands of unique images in seconds with our optimized engine.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <Shield className="h-6 w-6 text-primary" aria-hidden="true" />
+              </div>
+              <h3 className="font-display text-lg font-semibold">Secure & Private</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Your assets are protected with enterprise-grade security and encryption.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <Globe className="h-6 w-6 text-primary" aria-hidden="true" />
+              </div>
+              <h3 className="font-display text-lg font-semibold">Collaborate Anywhere</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Invite team members to collaborate on projects from anywhere in the world.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="border-t border-border/50 bg-muted/30" aria-labelledby="cta-heading">
+          <div className="container mx-auto px-6 py-20 text-center">
+            <h2 id="cta-heading" className="font-display text-3xl font-bold">Ready to build your collection?</h2>
+            <p className="mt-4 text-muted-foreground">
+              Join creators using LayerForge to generate unique profile pictures.
+            </p>
+            <Button size="lg" className="mt-8" asChild>
+              <Link to="/register">
+                Create free account
+                <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+              </Link>
+            </Button>
+          </div>
         </section>
       </main>
 
@@ -109,8 +148,8 @@ export default function Index() {
       <footer className="border-t border-border/50">
         <div className="container mx-auto flex items-center justify-between px-6 py-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Layers className="h-4 w-4" />
-            LayerForge
+            <Layers className="h-4 w-4" aria-hidden="true" />
+            <span>LayerForge</span>
           </div>
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} All rights reserved.
