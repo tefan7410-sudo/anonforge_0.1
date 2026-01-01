@@ -69,6 +69,35 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   }
 
   const hasLayers = allLayers && allLayers.length > 0 && categories && categories.length > 0;
+  
+  // Sort categories once for reuse
+  const sortedCategories = useMemo(() => 
+    categories?.sort((a, b) => a.order_index - b.order_index) || [], 
+    [categories]
+  );
+
+  // Calculate total possible combinations
+  const totalCombinations = useMemo(() => {
+    if (!sortedCategories.length) return 0;
+    return sortedCategories.reduce((total, category) => {
+      const count = layersByCategory.get(category.id)?.length || 0;
+      return count > 0 ? total * count : total;
+    }, 1);
+  }, [sortedCategories, layersByCategory]);
+
+  // Track used combinations from existing generations
+  const usedCombinations = useMemo(() => {
+    const used = new Set<string>();
+    generations?.forEach((g) => {
+      if (g.layer_combination && g.layer_combination.length > 0) {
+        // Sort layer IDs to create consistent hash
+        used.add([...g.layer_combination].sort().join('|'));
+      }
+    });
+    return used;
+  }, [generations]);
+
+  const remainingCombinations = totalCombinations - usedCombinations.size;
 
   // Compute the next token number based on existing generations
   const nextTokenNumber = useMemo(() => {
@@ -91,6 +120,11 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     return Math.max(...tokenNumbers) + 1;
   }, [generations, project.token_start_number]);
 
+  // Helper to create a consistent hash from layer combination
+  const getCombinationHash = (layers: { category: Category; layer: Layer }[]): string => {
+    return layers.map((l) => l.layer.id).sort().join('|');
+  };
+
   // Weighted random selection
   const selectRandomLayer = (layers: Layer[]): Layer => {
     const totalWeight = layers.reduce((sum, l) => sum + l.rarity_weight, 0);
@@ -102,33 +136,55 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     return layers[layers.length - 1];
   };
 
-  // Generate a single character
-  const generateCharacter = async (tokenNumber: number): Promise<GeneratedCharacter> => {
-    const selectedLayers: { category: Category; layer: Layer }[] = [];
-    const metadata: Record<string, string> = {};
+  // Generate a single character with duplicate prevention
+  const generateCharacter = async (
+    tokenNumber: number,
+    batchUsedCombinations: Set<string>
+  ): Promise<GeneratedCharacter> => {
+    const MAX_ATTEMPTS = 50;
+    
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const selectedLayers: { category: Category; layer: Layer }[] = [];
+      const metadata: Record<string, string> = {};
 
-    for (const category of categories?.sort((a, b) => a.order_index - b.order_index) || []) {
-      const categoryLayers = layersByCategory.get(category.id) || [];
-      if (categoryLayers.length === 0) continue;
+      for (const category of sortedCategories) {
+        const categoryLayers = layersByCategory.get(category.id) || [];
+        if (categoryLayers.length === 0) continue;
 
-      let selectedLayer: Layer;
-      if (mode === 'manual' && manualSelections[category.id]) {
-        selectedLayer = categoryLayers.find((l) => l.id === manualSelections[category.id]) || categoryLayers[0];
-      } else {
-        selectedLayer = selectRandomLayer(categoryLayers);
+        let selectedLayer: Layer;
+        if (mode === 'manual' && manualSelections[category.id]) {
+          selectedLayer = categoryLayers.find((l) => l.id === manualSelections[category.id]) || categoryLayers[0];
+        } else {
+          selectedLayer = selectRandomLayer(categoryLayers);
+        }
+
+        selectedLayers.push({ category, layer: selectedLayer });
+        metadata[category.display_name] = selectedLayer.display_name;
       }
 
-      selectedLayers.push({ category, layer: selectedLayer });
-      metadata[category.display_name] = selectedLayer.display_name;
+      const hash = getCombinationHash(selectedLayers);
+
+      // Check if combination already used (in DB or current batch)
+      if (!usedCombinations.has(hash) && !batchUsedCombinations.has(hash)) {
+        // Mark as used in this batch
+        batchUsedCombinations.add(hash);
+
+        const tokenId = `${project.token_prefix}${String(tokenNumber).padStart(4, '0')}`;
+
+        return {
+          tokenId,
+          metadata,
+          layers: selectedLayers,
+        };
+      }
+      
+      // In manual mode, we can't retry with different selections
+      if (mode === 'manual') {
+        throw new Error('This exact combination already exists. Try selecting different traits.');
+      }
     }
 
-    const tokenId = `${project.token_prefix}${String(tokenNumber).padStart(4, '0')}`;
-
-    return {
-      tokenId,
-      metadata,
-      layers: selectedLayers,
-    };
+    throw new Error(`Could not generate unique combination after ${MAX_ATTEMPTS} attempts. You may have exhausted available combinations.`);
   };
 
   // Compose layers onto canvas
@@ -165,9 +221,10 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
 
   // Generate and save a single character with retry logic
   const generateAndSaveCharacter = async (
-    tokenNumber: number
+    tokenNumber: number,
+    batchUsedCombinations: Set<string>
   ): Promise<{ character: GeneratedCharacter; savedTokenNumber: number }> => {
-    const character = await generateCharacter(tokenNumber);
+    const character = await generateCharacter(tokenNumber, batchUsedCombinations);
     character.imageData = await composeLayers(character.layers);
 
     const generationId = crypto.randomUUID();
@@ -230,15 +287,26 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const handleGeneratePreview = async () => {
     if (!hasLayers) return;
 
+    // Check if we have enough remaining combinations
+    if (batchSize > remainingCombinations) {
+      toast({
+        title: 'Not enough unique combinations',
+        description: `Only ${remainingCombinations} unique combinations remaining. Reduce batch size or add more layers.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setGenerating(true);
     setGenerationProgress({ current: 0, total: batchSize });
     const generatedCharacters: GeneratedCharacter[] = [];
+    const batchUsedCombinations = new Set<string>();
 
     try {
       if (batchSize === 1) {
         // Single generation: use existing flow
         setGenerationProgress({ current: 1, total: 1 });
-        const { character } = await generateAndSaveCharacter(nextTokenNumber);
+        const { character } = await generateAndSaveCharacter(nextTokenNumber, batchUsedCombinations);
         generatedCharacters.push(character);
         if (character.imageData) {
           setPreviewImage(character.imageData);
@@ -249,7 +317,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
         
         for (let i = 0; i < batchSize; i++) {
           setGenerationProgress({ current: i + 1, total: batchSize });
-          const character = await generateCharacter(tokenNumber);
+          const character = await generateCharacter(tokenNumber, batchUsedCombinations);
           character.imageData = await composeLayers(character.layers);
           generatedCharacters.push(character);
           tokenNumber++;
@@ -497,19 +565,24 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="flex items-center gap-4">
-              <Input
-                type="number"
-                min={1}
-                max={100}
-                value={batchSize}
-                onChange={(e) => setBatchSize(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
-                className="w-24"
-              />
-              <span className="text-sm text-muted-foreground">
-                Next: {project.token_prefix}{String(nextTokenNumber).padStart(4, '0')}
-                {batchSize > 1 && ` → ${project.token_prefix}${String(nextTokenNumber + batchSize - 1).padStart(4, '0')}`}
-              </span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-4">
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={batchSize}
+                  onChange={(e) => setBatchSize(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
+                  className="w-24"
+                />
+                <span className="text-sm text-muted-foreground">
+                  Next: {project.token_prefix}{String(nextTokenNumber).padStart(4, '0')}
+                  {batchSize > 1 && ` → ${project.token_prefix}${String(nextTokenNumber + batchSize - 1).padStart(4, '0')}`}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {remainingCombinations.toLocaleString()} / {totalCombinations.toLocaleString()} unique combinations remaining
+              </p>
             </div>
           </CardContent>
         </Card>
