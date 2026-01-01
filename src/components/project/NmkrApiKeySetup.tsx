@@ -31,7 +31,9 @@ export function NmkrApiKeySetup({ onSuccess }: NmkrApiKeySetupProps) {
       onSuccess();
     } catch (error) {
       console.error('Failed to save API key:', error);
-      toast.error('Invalid API key. Please check and try again.');
+      // Show the actual error message from the API
+      const errorMessage = error instanceof Error ? error.message : 'Invalid API key. Please check and try again.';
+      toast.error(errorMessage);
     }
   };
 
