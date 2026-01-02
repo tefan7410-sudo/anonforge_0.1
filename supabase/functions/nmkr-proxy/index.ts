@@ -293,6 +293,22 @@ serve(async (req) => {
         const payLink = `https://pay.nmkr.io/?p=${params.projectUid}&c=1`;
         return jsonResponse({ success: true, data: { paymentLink: payLink } });
 
+      case "mint-royalty-token":
+        if (!params.projectUid || !params.royaltyAddress || params.percentage === undefined) {
+          return jsonResponse({ error: "Missing projectUid, royaltyAddress, or percentage" }, 400);
+        }
+        // NMKR uses GET for this endpoint with path parameters
+        nmkrEndpoint = `/MintRoyaltyToken/${params.projectUid}/${params.royaltyAddress}/${params.percentage}`;
+        nmkrMethod = "GET";
+        break;
+
+      case "get-royalty-information":
+        if (!params.policyId) {
+          return jsonResponse({ error: "Missing policyId" }, 400);
+        }
+        nmkrEndpoint = `/GetRoyaltyInformation/${params.policyId}`;
+        break;
+
       default:
         return jsonResponse({ error: `Unknown action: ${action}` }, 400);
     }

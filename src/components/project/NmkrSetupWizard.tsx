@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { useCreateNmkrProject } from '@/hooks/use-nmkr';
+import { useCreateNmkrProject, useMintRoyaltyToken } from '@/hooks/use-nmkr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
-import { Rocket, ExternalLink, Loader2, CheckCircle2, CalendarIcon, ChevronDown, Info } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Rocket, ExternalLink, Loader2, CheckCircle2, CalendarIcon, ChevronDown, Info, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NmkrSetupWizardProps {
@@ -41,10 +42,17 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
   const [projectUrl, setProjectUrl] = useState('');
   const [twitterHandle, setTwitterHandle] = useState('');
   
+  // Royalty settings
+  const [royaltyPercent, setRoyaltyPercent] = useState(5);
+  const [royaltyAddress, setRoyaltyAddress] = useState('');
+  const [usePayoutForRoyalty, setUsePayoutForRoyalty] = useState(true);
+  
   // UI state
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   
   const createProject = useCreateNmkrProject();
+  const mintRoyalty = useMintRoyaltyToken();
 
   // Validation
   const maxSupplyValue = parseInt(maxSupply) || 0;
@@ -54,24 +62,45 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
   const addressExpireTimeValue = parseInt(addressExpireTime) || 20;
   const isValidAddressExpireTime = addressExpireTimeValue >= 5 && addressExpireTimeValue <= 60;
   
-  const canSubmit = nmkrProjectName.trim() && isValidSupply && isValidWallet && isValidPrefix && isValidAddressExpireTime;
+  const isValidRoyaltyAddress = !usePayoutForRoyalty ? 
+    (royaltyAddress.startsWith('addr1') && royaltyAddress.length >= 58) : true;
+  
+  const canSubmit = nmkrProjectName.trim() && isValidSupply && isValidWallet && isValidPrefix && isValidAddressExpireTime && isValidRoyaltyAddress;
 
   const handleCreateProject = async () => {
     if (!canSubmit) return;
-    await createProject.mutateAsync({
-      projectId,
-      projectName: nmkrProjectName.trim(),
-      description: description.trim(),
-      maxNftSupply: maxSupplyValue,
-      payoutWalletAddress: payoutWallet.trim(),
-      tokenNamePrefix: tokenPrefix.trim(),
-      storageProvider,
-      policyExpires,
-      policyLocksDateTime: policyExpires && policyLockDate ? policyLockDate.toISOString() : undefined,
-      addressExpireTime: addressExpireTimeValue,
-      projectUrl: projectUrl.trim() || undefined,
-      twitterHandle: twitterHandle.trim() || undefined,
-    });
+    setIsCreating(true);
+    
+    try {
+      // 1. Create the NMKR project
+      const nmkrProject = await createProject.mutateAsync({
+        projectId,
+        projectName: nmkrProjectName.trim(),
+        description: description.trim(),
+        maxNftSupply: maxSupplyValue,
+        payoutWalletAddress: payoutWallet.trim(),
+        tokenNamePrefix: tokenPrefix.trim(),
+        storageProvider,
+        policyExpires,
+        policyLocksDateTime: policyExpires && policyLockDate ? policyLockDate.toISOString() : undefined,
+        addressExpireTime: addressExpireTimeValue,
+        projectUrl: projectUrl.trim() || undefined,
+        twitterHandle: twitterHandle.trim() || undefined,
+      });
+
+      // 2. Mint royalty token if configured
+      const finalRoyaltyAddress = usePayoutForRoyalty ? payoutWallet.trim() : royaltyAddress.trim();
+      if (finalRoyaltyAddress && royaltyPercent >= 1 && royaltyPercent <= 10) {
+        await mintRoyalty.mutateAsync({
+          nmkrProjectId: nmkrProject.id,
+          nmkrProjectUid: nmkrProject.nmkr_project_uid,
+          royaltyAddress: finalRoyaltyAddress,
+          percentage: royaltyPercent,
+        });
+      }
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -275,6 +304,77 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
           )}
         </div>
 
+        {/* Royalty Settings */}
+        <div className="space-y-3">
+          <h4 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Coins className="h-4 w-4 text-primary" />
+            Royalty Settings
+          </h4>
+          
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+            <div className="flex items-start gap-2">
+              <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                Royalties ensure you receive a percentage of every secondary sale on marketplaces 
+                like jpg.store. Highly recommended!
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Royalty Percentage</Label>
+              <Badge variant="outline">{royaltyPercent}%</Badge>
+            </div>
+            <Slider
+              value={[royaltyPercent]}
+              onValueChange={(value) => setRoyaltyPercent(value[0])}
+              min={1}
+              max={10}
+              step={1}
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground">
+              Standard is 5%. Range: 1-10%
+            </p>
+          </div>
+
+          <div className="flex items-start space-x-3 rounded-lg border p-3">
+            <Checkbox
+              id="use-payout-royalty"
+              checked={usePayoutForRoyalty}
+              onCheckedChange={(checked) => setUsePayoutForRoyalty(checked === true)}
+              className="mt-0.5"
+            />
+            <div className="flex-1">
+              <Label htmlFor="use-payout-royalty" className="cursor-pointer font-medium">
+                Use payout wallet for royalties
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Receive royalties to the same wallet as primary sales
+              </p>
+            </div>
+          </div>
+
+          {!usePayoutForRoyalty && (
+            <div className="ml-6 space-y-2">
+              <Label htmlFor="royalty-address">Royalty Wallet Address</Label>
+              <Input
+                id="royalty-address"
+                value={royaltyAddress}
+                onChange={(e) => setRoyaltyAddress(e.target.value)}
+                placeholder="addr1..."
+                className={royaltyAddress && !isValidRoyaltyAddress ? 'border-destructive' : ''}
+              />
+              {royaltyAddress && !isValidRoyaltyAddress && (
+                <p className="text-xs text-destructive">
+                  Please enter a valid Cardano mainnet address
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Advanced Options */}
         <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
           <CollapsibleTrigger asChild>
@@ -348,13 +448,13 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
 
         <Button 
           onClick={handleCreateProject}
-          disabled={createProject.isPending || !canSubmit}
+          disabled={isCreating || !canSubmit}
           className="w-full"
         >
-          {createProject.isPending ? (
+          {isCreating ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating Project...
+              {mintRoyalty.isPending ? 'Minting Royalty Token...' : 'Creating Project...'}
             </>
           ) : (
             <>
