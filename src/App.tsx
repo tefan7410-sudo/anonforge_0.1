@@ -18,6 +18,7 @@ import ProjectSettings from "./pages/ProjectSettings";
 import Profile from "./pages/Profile";
 import TermsOfService from "./pages/TermsOfService";
 import Collection from "./pages/Collection";
+import Marketplace from "./pages/Marketplace";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -76,6 +77,7 @@ const App = () => (
                 }
               />
               <Route path="/collection/:projectId" element={<Collection />} />
+              <Route path="/marketplace" element={<Marketplace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

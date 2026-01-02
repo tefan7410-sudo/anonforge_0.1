@@ -35,11 +35,17 @@ export function MobileNav() {
       </SheetTrigger>
       <SheetContent side="right" className="w-72">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Layers className="h-4 w-4 text-primary-foreground" />
-            </div>
-            AnonForge
+          <SheetTitle>
+            <Link 
+              to="/" 
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              onClick={() => setOpen(false)}
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <Layers className="h-4 w-4 text-primary-foreground" />
+              </div>
+              AnonForge
+            </Link>
           </SheetTitle>
         </SheetHeader>
         <nav className="mt-8 flex flex-col gap-2">
