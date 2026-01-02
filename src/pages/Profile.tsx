@@ -137,22 +137,22 @@ export default function Profile() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50">
-        <div className="container mx-auto flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
+        <div className="container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate('/dashboard')}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="hidden sm:flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
                 <Layers className="h-5 w-5 text-primary-foreground" />
               </div>
-              <div className="hidden sm:block">
-                <h1 className="font-display text-xl font-semibold">Profile Settings</h1>
-                <p className="text-sm text-muted-foreground">Manage your account</p>
+              <div>
+                <h1 className="font-display text-base sm:text-xl font-semibold">Profile</h1>
+                <p className="hidden sm:block text-sm text-muted-foreground">Manage your account</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <ThemeToggle />
             <Button variant="outline" onClick={handleSignOut} className="hidden md:inline-flex">
               <LogOut className="mr-2 h-4 w-4" />

@@ -214,14 +214,14 @@ export default function Marketplace() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50">
-        <nav className="container mx-auto flex items-center justify-between px-6 py-4">
-          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity" aria-label="AnonForge home">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <Layers className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
+        <nav className="container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity" aria-label="AnonForge home">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary">
+              <Layers className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" aria-hidden="true" />
             </div>
-            <span className="font-display text-xl font-semibold">AnonForge</span>
+            <span className="font-display text-lg sm:text-xl font-semibold">AnonForge</span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
             <Button variant="ghost" asChild className="hidden sm:inline-flex">
               <Link to="/login">Sign in</Link>
@@ -233,40 +233,43 @@ export default function Marketplace() {
         </nav>
       </header>
 
-      <main className="container mx-auto px-6 py-12">
+      <main className="container mx-auto px-4 py-8 sm:px-6 sm:py-12">
         {/* Breadcrumb */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <Button variant="ghost" size="sm" asChild className="gap-2">
             <Link to="/">
               <ArrowLeft className="h-4 w-4" />
-              Back to Home
+              <span className="hidden sm:inline">Back to Home</span>
+              <span className="sm:hidden">Back</span>
             </Link>
           </Button>
         </div>
 
         {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="mb-4 inline-flex items-center gap-2">
-            <Store className="h-8 w-8 text-primary" aria-hidden="true" />
+        <div className="mb-6 sm:mb-8 text-center">
+          <div className="mb-3 sm:mb-4 inline-flex items-center gap-2">
+            <Store className="h-6 w-6 sm:h-8 sm:w-8 text-primary" aria-hidden="true" />
           </div>
-          <h1 className="font-display text-4xl font-bold sm:text-5xl">
+          <h1 className="font-display text-3xl font-bold sm:text-4xl lg:text-5xl">
             Marketplace
           </h1>
-          <p className="mt-4 text-lg text-muted-foreground">
+          <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
             Discover and mint NFTs from creators on AnonForge
           </p>
         </div>
 
         {/* Filter Tabs */}
-        <div className="mb-8 flex justify-center">
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-            <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="live">Live</TabsTrigger>
-              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-              <TabsTrigger value="sold-out">Sold Out</TabsTrigger>
-            </TabsList>
-          </Tabs>
+        <div className="mb-6 sm:mb-8 flex justify-center">
+          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+            <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+              <TabsList className="w-max">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="live">Live</TabsTrigger>
+                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                <TabsTrigger value="sold-out" className="whitespace-nowrap">Sold Out</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
 
         {/* Collections Grid */}

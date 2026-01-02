@@ -125,25 +125,25 @@ export default function ProjectDetail() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50">
-        <div className="container mx-auto flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
+        <div className="container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate('/dashboard')}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <Link to="/" className="hidden sm:flex items-center gap-3 hover:opacity-80 transition-opacity shrink-0">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
                 <Layers className="h-5 w-5 text-primary-foreground" />
               </div>
             </Link>
-            <div className="hidden sm:block">
-              <h1 className="font-display text-xl font-semibold">{project.name}</h1>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="min-w-0">
+              <h1 className="font-display text-base sm:text-xl font-semibold truncate">{project.name}</h1>
+              <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 Updated {formatDistanceToNow(new Date(project.last_modified), { addSuffix: true })}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <NotificationDropdown />
             <ThemeToggle />
             <Badge variant={project.is_public ? 'secondary' : 'outline'} className="hidden sm:inline-flex">
@@ -187,16 +187,18 @@ export default function ProjectDetail() {
       </div>
 
       {/* Main content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-4 py-6 sm:px-6 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <TabsList>
-              <TabsTrigger value="layers">Layers</TabsTrigger>
-              <TabsTrigger value="generate">Generate</TabsTrigger>
-              <TabsTrigger value="history">History</TabsTrigger>
-              <TabsTrigger value="product">Product Page</TabsTrigger>
-              <TabsTrigger value="publish">Publish</TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+              <TabsList className="w-max">
+                <TabsTrigger value="layers">Layers</TabsTrigger>
+                <TabsTrigger value="generate">Generate</TabsTrigger>
+                <TabsTrigger value="history">History</TabsTrigger>
+                <TabsTrigger value="product" className="whitespace-nowrap">Product Page</TabsTrigger>
+                <TabsTrigger value="publish">Publish</TabsTrigger>
+              </TabsList>
+            </div>
 
             {activeTab === 'layers' && (
               <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
