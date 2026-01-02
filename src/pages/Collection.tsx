@@ -16,6 +16,7 @@ import {
   Copy,
   Store,
   Clock,
+  Share2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useExternalLink } from '@/hooks/use-external-link';
@@ -108,6 +109,11 @@ export default function Collection() {
     }
   };
 
+  const copyCollectionLink = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/collection/${projectId}`);
+    toast.success('Link copied!');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Sticky Header */}
@@ -121,12 +127,18 @@ export default function Collection() {
               </Link>
             </Button>
           </div>
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Layers className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-display text-sm font-semibold hidden sm:inline">AnonForge</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={copyCollectionLink}>
+              <Share2 className="mr-2 h-4 w-4" />
+              Share
+            </Button>
+            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <Layers className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="font-display text-sm font-semibold hidden sm:inline">AnonForge</span>
+            </Link>
+          </div>
         </div>
       </header>
 

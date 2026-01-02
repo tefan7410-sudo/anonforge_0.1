@@ -272,6 +272,16 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
       return;
     }
 
+    // Check if founder twitter handle is already claimed by another verified creator
+    if (founderTwitter && user?.id) {
+      const { checkTwitterHandleAvailable } = await import('@/hooks/use-admin');
+      const { available } = await checkTwitterHandleAvailable(founderTwitter, user.id);
+      if (!available) {
+        toast.error('This Twitter handle is already claimed by another verified creator');
+        return;
+      }
+    }
+
     await updateProductPage.mutateAsync({
       projectId,
       updates: {
@@ -1167,6 +1177,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
         <ProductPagePreview
           productPage={previewProductPage}
           projectName={projectName}
+          projectId={projectId}
           paymentLink={buyButtonLink}
           nmkrPolicyId={nmkrProject?.nmkr_policy_id}
           founderVerified={founderVerified}
