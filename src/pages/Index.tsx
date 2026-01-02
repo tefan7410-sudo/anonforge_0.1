@@ -334,19 +334,21 @@ export default function Index() {
 
       {/* Footer */}
       <footer className="border-t border-border/50">
-        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-6 py-6 sm:flex-row">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Layers className="h-4 w-4" aria-hidden="true" />
-            <span className="font-semibold">AnonForge</span>
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex flex-col items-center gap-4 text-center md:flex-row md:justify-between md:text-left">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Layers className="h-4 w-4" aria-hidden="true" />
+              <span className="font-semibold">AnonForge</span>
+            </div>
+            <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+              <Link to="/terms-of-service" className="transition-colors hover:text-foreground">{t('footer.terms')}</Link>
+              <Link to="/documentation" className="transition-colors hover:text-foreground">{t('footer.documentation')}</Link>
+              <Link to="/marketplace" className="transition-colors hover:text-foreground">{t('footer.marketplace')}</Link>
+            </nav>
+            <p className="text-sm text-muted-foreground">
+              © {new Date().getFullYear()} {t('footer.rights')}
+            </p>
           </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link to="/terms" className="transition-colors hover:text-foreground">{t('footer.terms')}</Link>
-            <Link to="/documentation" className="transition-colors hover:text-foreground">{t('footer.documentation')}</Link>
-            <Link to="/marketplace" className="transition-colors hover:text-foreground">{t('footer.marketplace')}</Link>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} {t('footer.rights')}
-          </p>
         </div>
       </footer>
     </div>
