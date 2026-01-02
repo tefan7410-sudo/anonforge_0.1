@@ -10,6 +10,17 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Layers, Store, ExternalLink, ArrowLeft } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useCollectionStatuses } from '@/hooks/use-collection-status';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+
+const ITEMS_PER_PAGE = 12;
 
 interface LiveCollection {
   id: string;
@@ -124,6 +135,7 @@ function CollectionCardSkeleton() {
 export default function Marketplace() {
   const { data: collections, isLoading } = useMarketplaceData();
   const [filter, setFilter] = useState<'all' | 'live' | 'sold-out'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Get project IDs for status fetching
   const projectIds = useMemo(() => 
@@ -149,7 +161,34 @@ export default function Marketplace() {
     });
   }, [collections, filter, statusMap]);
 
+  // Reset to page 1 when filter changes
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [filter]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil((filteredCollections?.length || 0) / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedCollections = filteredCollections.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   const isFullyLoading = isLoading || (statusLoading && projectIds.length > 0);
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push('ellipsis');
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        pages.push(i);
+      }
+      if (currentPage < totalPages - 2) pages.push('ellipsis');
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -216,16 +255,60 @@ export default function Marketplace() {
               <CollectionCardSkeleton key={i} />
             ))}
           </div>
-        ) : filteredCollections && filteredCollections.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredCollections.map((collection) => (
-              <CollectionCard 
-                key={collection.id} 
-                collection={collection} 
-                isSoldOut={statusMap?.[collection.project_id]?.isSoldOut}
-              />
-            ))}
-          </div>
+        ) : paginatedCollections && paginatedCollections.length > 0 ? (
+          <>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {paginatedCollections.map((collection) => (
+                <CollectionCard 
+                  key={collection.id} 
+                  collection={collection} 
+                  isSoldOut={statusMap?.[collection.project_id]?.isSoldOut}
+                />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-12 flex flex-col items-center gap-4">
+                <p className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredCollections.length)} of {filteredCollections.length} collections
+                </p>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    
+                    {getPageNumbers().map((page, idx) => (
+                      <PaginationItem key={idx}>
+                        {page === 'ellipsis' ? (
+                          <PaginationEllipsis />
+                        ) : (
+                          <PaginationLink
+                            onClick={() => setCurrentPage(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        )}
+                      </PaginationItem>
+                    ))}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/50 py-24">
             <Store className="mb-4 h-16 w-16 text-muted-foreground/30" />
