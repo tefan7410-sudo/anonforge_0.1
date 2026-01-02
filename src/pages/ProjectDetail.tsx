@@ -220,7 +220,7 @@ export default function ProjectDetail() {
 
           <TabsContent value="product">
             <ErrorBoundary>
-              <ProductPageTab projectId={id!} />
+              <ProductPageTab projectId={id!} projectName={project.name} />
             </ErrorBoundary>
           </TabsContent>
 
