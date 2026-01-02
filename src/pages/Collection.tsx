@@ -298,21 +298,6 @@ export default function Collection() {
             </p>
           </div>
         )}
-
-        {/* Buy Button - Opens directly without warning (NMKR Pay is trusted) */}
-        {productPage.buy_button_enabled && productPage.buy_button_link && !isUpcoming && (
-          <div className="mb-8">
-            <Button 
-              size="lg" 
-              className="w-full md:w-auto"
-              onClick={() => window.open(productPage.buy_button_link!, '_blank', 'noopener,noreferrer')}
-            >
-              <ShoppingCart className="mr-2 h-5 w-5" />
-              {productPage.buy_button_text || 'Mint Now'}
-            </Button>
-          </div>
-        )}
-
         {/* Founder Section */}
         {(productPage.founder_name || productPage.founder_bio) && (
           <div className="rounded-xl border bg-card p-6 mb-8">
