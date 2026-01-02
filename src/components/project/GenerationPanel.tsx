@@ -50,7 +50,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
-import { GENERATION_CONFIG } from '@/lib/generation-constants';
+import { GENERATION_CONFIG, calculateBase64Size, formatFileSize } from '@/lib/generation-constants';
 
 interface GenerationPanelProps {
   projectId: string;
@@ -82,13 +82,15 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [batchSize, setBatchSize] = useState(1);
-  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
+  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0, totalSize: 0 });
   const [showWarningDialog, setShowWarningDialog] = useState(false);
   const [generationWarnings, setGenerationWarnings] = useState<string[]>([]);
   const [isFullResolution, setIsFullResolution] = useState(false);
   const [showFullResWarning, setShowFullResWarning] = useState(false);
   const [generationComplete, setGenerationComplete] = useState(false);
   const [lastBatchZipPath, setLastBatchZipPath] = useState<string | null>(null);
+  const [lastImageSize, setLastImageSize] = useState<number | null>(null);
+  const [batchTotalSize, setBatchTotalSize] = useState<number>(0);
   
   // Metadata settings
   const [generateMetadata, setGenerateMetadata] = useState(true);
@@ -539,28 +541,40 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     setGenerationComplete(false);
     setLastBatchZipPath(null);
     setPreviewImage(null); // Clear preview during batch generation
-    setGenerationProgress({ current: 0, total: batchSize });
+    setLastImageSize(null);
+    setBatchTotalSize(0);
+    setGenerationProgress({ current: 0, total: batchSize, totalSize: 0 });
     const generatedCharacters: GeneratedCharacter[] = [];
     const batchUsedCombinations = new Set<string>();
 
     try {
       if (batchSize === 1) {
         // Single generation: use existing flow
-        setGenerationProgress({ current: 1, total: 1 });
+        setGenerationProgress({ current: 1, total: 1, totalSize: 0 });
         const { character } = await generateAndSaveCharacter(nextTokenNumber, batchUsedCombinations);
         generatedCharacters.push(character);
         if (character.imageData) {
           setPreviewImage(character.imageData);
+          const imageSize = calculateBase64Size(character.imageData);
+          setLastImageSize(imageSize);
         }
       } else {
         // Batch generation: generate all in memory without updating preview
         let tokenNumber = nextTokenNumber;
         let firstImageData: string | undefined;
+        let runningTotalSize = 0;
         
         for (let i = 0; i < batchSize; i++) {
-          setGenerationProgress({ current: i + 1, total: batchSize });
           const character = await generateCharacter(tokenNumber, batchUsedCombinations);
           character.imageData = await composeLayers(character.layers, isFullResolution);
+          
+          // Calculate and accumulate file size
+          if (character.imageData) {
+            const imageSize = calculateBase64Size(character.imageData);
+            runningTotalSize += imageSize;
+          }
+          
+          setGenerationProgress({ current: i + 1, total: batchSize, totalSize: runningTotalSize });
           generatedCharacters.push(character);
           tokenNumber++;
           
@@ -569,6 +583,9 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
             firstImageData = character.imageData;
           }
         }
+        
+        // Store final total size for display
+        setBatchTotalSize(runningTotalSize);
 
         // Create ZIP with all images + metadata (if enabled)
         const zip = new JSZip();
@@ -647,7 +664,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
       });
     } finally {
       setGenerating(false);
-      setGenerationProgress({ current: 0, total: 0 });
+      setGenerationProgress({ current: 0, total: 0, totalSize: 0 });
     }
   };
 
@@ -981,12 +998,12 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
                 <div className="space-y-3">
                   <p>You are about to generate at full resolution ({GENERATION_CONFIG.MAX_EXPORT_RESOLUTION}×{GENERATION_CONFIG.MAX_EXPORT_RESOLUTION} pixels).</p>
                   <ul className="list-inside list-disc space-y-1 text-sm">
-                    <li>Each image will be approximately 1-3MB (JPG format)</li>
+                    <li>File sizes vary based on art complexity</li>
                     <li>Generation will take significantly longer</li>
                     {batchSize > 1 && (
                       <li>Batch of {batchSize} images may take several minutes</li>
                     )}
-                    <li>Estimated total size: ~{(batchSize * 2).toFixed(0)}MB</li>
+                    <li>Actual sizes will be shown during generation</li>
                   </ul>
                   <p className="text-sm font-medium text-amber-600">
                     This process is resource-intensive and may take a while to complete.
@@ -1045,6 +1062,11 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
                 <p className="mt-2 text-sm text-muted-foreground">
                   {isFullResolution ? 'Creating full resolution images...' : 'Creating preview images...'}
                 </p>
+                {generationProgress.totalSize > 0 && (
+                  <p className="mt-1 text-sm font-medium text-primary">
+                    Total size: {formatFileSize(generationProgress.totalSize)}
+                  </p>
+                )}
                 <Progress 
                   value={(generationProgress.current / generationProgress.total) * 100} 
                   className="mt-4 w-48" 
@@ -1068,6 +1090,11 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
                   <p className="text-sm text-muted-foreground">
                     {generated.length} {isFullResolution ? 'full resolution' : 'preview'} characters generated
                   </p>
+                  {batchTotalSize > 0 && (
+                    <p className="mt-1 text-sm font-medium text-primary">
+                      Total size: {formatFileSize(batchTotalSize)}
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button 
@@ -1097,6 +1124,11 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
                     className="h-auto w-full"
                   />
                 </div>
+                {lastImageSize && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Image size: <span className="font-medium text-foreground">{formatFileSize(lastImageSize)}</span>
+                  </p>
+                )}
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1" onClick={handleDownload}>
                     <ImageIcon className="mr-2 h-4 w-4" />
