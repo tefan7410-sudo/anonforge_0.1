@@ -7,12 +7,20 @@ import {
   useDeleteProductImage,
   type PortfolioItem 
 } from '@/hooks/use-product-page';
+import { useProfile } from '@/hooks/use-profile';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNmkrProject, useGetNmkrPayLink } from '@/hooks/use-nmkr';
+import { useCreatorCollections } from '@/hooks/use-creator-collections';
+import { ProductPagePreview } from './ProductPagePreview';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { 
   Image as ImageIcon, 
   Upload, 
@@ -26,19 +34,30 @@ import {
   MessageCircle,
   User,
   Briefcase,
-  ExternalLink
+  ExternalLink,
+  Eye,
+  Rocket,
+  ShoppingCart,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface ProductPageTabProps {
   projectId: string;
+  projectName?: string;
 }
 
-export function ProductPageTab({ projectId }: ProductPageTabProps) {
+export function ProductPageTab({ projectId, projectName = 'Collection' }: ProductPageTabProps) {
+  const { user } = useAuth();
   const { data: productPage, isLoading } = useProductPage(projectId);
+  const { data: profile } = useProfile(user?.id);
+  const { data: nmkrProject } = useNmkrProject(projectId);
+  const { data: creatorCollections } = useCreatorCollections(user?.id, projectId);
   const updateProductPage = useUpdateProductPage();
   const uploadImage = useUploadProductImage();
   const deleteImage = useDeleteProductImage();
+  const getPayLink = useGetNmkrPayLink();
 
   // Form state
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
@@ -52,6 +71,16 @@ export function ProductPageTab({ projectId }: ProductPageTabProps) {
   const [founderBio, setFounderBio] = useState('');
   const [founderTwitter, setFounderTwitter] = useState('');
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
+  
+  // Buy button state
+  const [buyButtonEnabled, setBuyButtonEnabled] = useState(false);
+  const [buyButtonText, setBuyButtonText] = useState('Mint Now');
+  const [buyButtonLink, setBuyButtonLink] = useState<string | null>(null);
+  const [isLive, setIsLive] = useState(false);
+  
+  // Preview state
+  const [showPreview, setShowPreview] = useState(false);
+  const [founderPrefilled, setFounderPrefilled] = useState(false);
 
   // Initialize form with existing data
   useEffect(() => {
@@ -67,8 +96,25 @@ export function ProductPageTab({ projectId }: ProductPageTabProps) {
       setFounderBio(productPage.founder_bio || '');
       setFounderTwitter(productPage.founder_twitter || '');
       setPortfolio(productPage.portfolio || []);
+      setBuyButtonEnabled(productPage.buy_button_enabled || false);
+      setBuyButtonText(productPage.buy_button_text || 'Mint Now');
+      setBuyButtonLink(productPage.buy_button_link);
+      setIsLive(productPage.is_live || false);
     }
   }, [productPage]);
+
+  // Prefill founder info from profile if empty
+  useEffect(() => {
+    if (profile && !founderPrefilled && !productPage?.founder_name) {
+      if (profile.display_name && !founderName) {
+        setFounderName(profile.display_name);
+      }
+      if (profile.avatar_url && !founderPfpUrl) {
+        setFounderPfpUrl(profile.avatar_url);
+      }
+      setFounderPrefilled(true);
+    }
+  }, [profile, founderPrefilled, productPage, founderName, founderPfpUrl]);
 
   // Banner upload
   const onBannerDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -142,6 +188,24 @@ export function ProductPageTab({ projectId }: ProductPageTabProps) {
     updatePortfolioItem(id, 'image_url', url);
   };
 
+  // Generate payment link
+  const handleGeneratePayLink = async () => {
+    if (!nmkrProject) {
+      toast.error('Set up NMKR project in Publish tab first');
+      return;
+    }
+    try {
+      const result = await getPayLink.mutateAsync({
+        projectUid: nmkrProject.nmkr_project_uid,
+      });
+      const link = result.href || result.paymentLink;
+      setBuyButtonLink(link);
+      toast.success('Payment link generated!');
+    } catch {
+      // Error handled by hook
+    }
+  };
+
   // Save handler
   const handleSave = async () => {
     await updateProductPage.mutateAsync({
@@ -158,8 +222,30 @@ export function ProductPageTab({ projectId }: ProductPageTabProps) {
         founder_bio: founderBio || null,
         founder_twitter: founderTwitter || null,
         portfolio,
+        buy_button_enabled: buyButtonEnabled,
+        buy_button_text: buyButtonText || 'Mint Now',
+        buy_button_link: buyButtonLink,
+        is_live: isLive,
       },
     });
+  };
+
+  // Go live handler
+  const handleGoLive = async () => {
+    if (!buyButtonLink && !nmkrProject?.price_in_lovelace) {
+      toast.error('Generate a payment link in the Publish tab first');
+      return;
+    }
+    
+    setIsLive(true);
+    await updateProductPage.mutateAsync({
+      projectId,
+      updates: {
+        is_live: true,
+        buy_button_link: buyButtonLink,
+      },
+    });
+    toast.success('Your collection page is now live!');
   };
 
   // Clear image helpers
@@ -189,9 +275,75 @@ export function ProductPageTab({ projectId }: ProductPageTabProps) {
   }
 
   const isSaving = updateProductPage.isPending || uploadImage.isPending;
+  const canGoLive = buyButtonLink || nmkrProject?.price_in_lovelace;
+
+  // Build preview product page object
+  const previewProductPage = {
+    id: productPage?.id || '',
+    project_id: projectId,
+    banner_url: bannerUrl,
+    logo_url: logoUrl,
+    tagline,
+    twitter_url: twitterUrl,
+    discord_url: discordUrl,
+    website_url: websiteUrl,
+    founder_name: founderName,
+    founder_pfp_url: founderPfpUrl,
+    founder_bio: founderBio,
+    founder_twitter: founderTwitter,
+    portfolio,
+    buy_button_enabled: buyButtonEnabled,
+    buy_button_text: buyButtonText,
+    buy_button_link: buyButtonLink,
+    is_live: isLive,
+    created_at: productPage?.created_at || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
 
   return (
     <div className="space-y-6">
+      {/* Action Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-muted/30 p-4">
+        <div className="flex items-center gap-2">
+          {isLive ? (
+            <Badge variant="default" className="gap-1 bg-green-600">
+              <Rocket className="h-3 w-3" />
+              Live
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="gap-1">
+              Draft
+            </Badge>
+          )}
+          {isLive && (
+            <a 
+              href={`/collection/${projectId}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-xs text-primary hover:underline flex items-center gap-1"
+            >
+              View public page
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
+            <Eye className="mr-2 h-4 w-4" />
+            Preview
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={handleGoLive}
+            disabled={isLive || !canGoLive || isSaving}
+            title={!canGoLive ? 'Generate a payment link first' : undefined}
+          >
+            <Rocket className="mr-2 h-4 w-4" />
+            Go Live!
+          </Button>
+        </div>
+      </div>
+
       {/* Banner Section */}
       <Card>
         <CardHeader>
@@ -299,6 +451,83 @@ export function ProductPageTab({ projectId }: ProductPageTabProps) {
         </CardContent>
       </Card>
 
+      {/* Buy Now Button Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display">
+            <ShoppingCart className="h-5 w-5 text-primary" />
+            Buy Now Button
+          </CardTitle>
+          <CardDescription>
+            Add a call-to-action button for collectors to mint your NFTs
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="buy-button-enabled">Enable Buy Button</Label>
+              <p className="text-xs text-muted-foreground">
+                Show a prominent mint button on your product page
+              </p>
+            </div>
+            <Switch
+              id="buy-button-enabled"
+              checked={buyButtonEnabled}
+              onCheckedChange={setBuyButtonEnabled}
+            />
+          </div>
+
+          {buyButtonEnabled && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="buy-button-text">Button Text</Label>
+                <Input
+                  id="buy-button-text"
+                  value={buyButtonText}
+                  onChange={(e) => setBuyButtonText(e.target.value)}
+                  placeholder="Mint Now"
+                  maxLength={30}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Payment Link</Label>
+                {buyButtonLink ? (
+                  <div className="flex items-center gap-2">
+                    <Input value={buyButtonLink} readOnly className="font-mono text-xs" />
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setBuyButtonLink(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    onClick={handleGeneratePayLink}
+                    disabled={!nmkrProject || getPayLink.isPending}
+                  >
+                    {getPayLink.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="mr-2 h-4 w-4" />
+                    )}
+                    Generate Payment Link
+                  </Button>
+                )}
+                {!nmkrProject && (
+                  <p className="text-xs text-muted-foreground">
+                    Set up NMKR project and pricing in the Publish tab first
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Social Links */}
       <Card>
         <CardHeader>
@@ -364,6 +593,9 @@ export function ProductPageTab({ projectId }: ProductPageTabProps) {
           </CardTitle>
           <CardDescription>
             Introduce yourself to potential collectors
+            {founderPrefilled && !productPage?.founder_name && (
+              <span className="ml-2 text-primary">(Prefilled from your profile)</span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6 md:grid-cols-2">
@@ -451,15 +683,63 @@ export function ProductPageTab({ projectId }: ProductPageTabProps) {
         </CardContent>
       </Card>
 
+      {/* Your AnonForge Collections (Auto-populated) */}
+      {creatorCollections && creatorCollections.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display">
+              <Rocket className="h-5 w-5 text-primary" />
+              Your AnonForge Collections
+            </CardTitle>
+            <CardDescription>
+              Your other live collections on AnonForge (auto-populated)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {creatorCollections.map((collection) => (
+                <a
+                  key={collection.id}
+                  href={`/collection/${collection.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group rounded-lg border overflow-hidden transition-all hover:shadow-lg hover:border-primary"
+                >
+                  {collection.banner_url ? (
+                    <div className="aspect-video overflow-hidden">
+                      <img
+                        src={collection.banner_url}
+                        alt={collection.name}
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-video bg-muted flex items-center justify-center">
+                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="p-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium truncate">{collection.name}</h4>
+                      <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Portfolio Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-display">
             <Briefcase className="h-5 w-5 text-primary" />
-            Past Work / Portfolio
+            Other Work / Portfolio
           </CardTitle>
           <CardDescription>
-            Showcase your previous projects or artwork to build credibility
+            Showcase your previous projects or artwork from outside AnonForge
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -579,6 +859,16 @@ export function ProductPageTab({ projectId }: ProductPageTabProps) {
           )}
         </Button>
       </div>
+
+      {/* Preview Modal */}
+      {showPreview && (
+        <ProductPagePreview
+          productPage={previewProductPage}
+          projectName={projectName}
+          paymentLink={buyButtonLink}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
     </div>
   );
 }

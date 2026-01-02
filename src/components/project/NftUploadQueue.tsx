@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react';
 import { useGenerations, getGenerationFileUrl } from '@/hooks/use-generations';
 import { useNmkrUploads, useUploadNft, NmkrProject } from '@/hooks/use-nmkr';
+import { ZipUploadSection } from './ZipUploadSection';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { 
   Upload, 
   Loader2, 
@@ -145,14 +147,21 @@ export function NftUploadQueue({ projectId, nmkrProject }: NftUploadQueueProps) 
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-display">Upload NFTs</CardTitle>
-        <CardDescription>
-          Select generated images to upload to your NMKR project
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="space-y-6">
+      {/* ZIP Upload Section */}
+      <ZipUploadSection nmkrProject={nmkrProject} />
+
+      <Separator />
+
+      {/* Generated NFTs Upload */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-display">Generated NFTs</CardTitle>
+          <CardDescription>
+            Select generated images to upload to your NMKR project
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
         {/* Upload progress */}
         {uploading && (
           <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-4">
@@ -282,7 +291,8 @@ export function NftUploadQueue({ projectId, nmkrProject }: NftUploadQueueProps) 
             </p>
           </div>
         )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
