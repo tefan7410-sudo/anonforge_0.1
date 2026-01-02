@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Layers, Store, ExternalLink, ArrowLeft } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useCollectionStatuses } from '@/hooks/use-collection-status';
 
 interface LiveCollection {
   id: string;
@@ -16,7 +17,6 @@ interface LiveCollection {
   banner_url: string | null;
   logo_url: string | null;
   tagline: string | null;
-  nmkr_project_uid: string | null;
   project: {
     id: string;
     name: string;
@@ -24,15 +24,10 @@ interface LiveCollection {
   };
 }
 
-interface NmkrCountsMap {
-  [projectUid: string]: { sold: number; free: number; total: number } | null;
-}
-
 function useMarketplaceData() {
   return useQuery({
     queryKey: ['marketplace-data-full'],
     queryFn: async () => {
-      // Fetch all live, non-hidden collections
       const { data: collections, error } = await supabase
         .from('product_pages')
         .select(`
@@ -49,19 +44,7 @@ function useMarketplaceData() {
 
       if (error) throw error;
       
-      // Fetch NMKR projects separately
-      const projectIds = (collections || []).map(c => c.project_id);
-      const { data: nmkrProjects } = await supabase
-        .from('nmkr_projects')
-        .select('project_id, nmkr_project_uid')
-        .in('project_id', projectIds);
-      
-      const nmkrMap = new Map((nmkrProjects || []).map(n => [n.project_id, n.nmkr_project_uid]));
-      
-      return (collections || []).map(c => ({
-        ...c,
-        nmkr_project_uid: nmkrMap.get(c.project_id) || null,
-      })) as LiveCollection[];
+      return (collections || []) as unknown as LiveCollection[];
     },
   });
 }
@@ -142,9 +125,31 @@ export default function Marketplace() {
   const { data: collections, isLoading } = useMarketplaceData();
   const [filter, setFilter] = useState<'all' | 'live' | 'sold-out'>('all');
 
-  // For now, we'll show all as "live" since we don't have batch NMKR counts
-  // In a production app, you'd fetch counts for each collection
-  const filteredCollections = collections;
+  // Get project IDs for status fetching
+  const projectIds = useMemo(() => 
+    (collections || []).map(c => c.project_id), 
+    [collections]
+  );
+  
+  // Fetch NMKR counts for all collections
+  const { data: statusMap, isLoading: statusLoading } = useCollectionStatuses(projectIds);
+
+  // Filter collections based on selected tab
+  const filteredCollections = useMemo(() => {
+    if (!collections) return [];
+    if (filter === 'all') return collections;
+    
+    return collections.filter(c => {
+      const status = statusMap?.[c.project_id];
+      if (!status) {
+        // If no status data, treat as live
+        return filter === 'live';
+      }
+      return filter === 'live' ? !status.isSoldOut : status.isSoldOut;
+    });
+  }, [collections, filter, statusMap]);
+
+  const isFullyLoading = isLoading || (statusLoading && projectIds.length > 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -205,7 +210,7 @@ export default function Marketplace() {
         </div>
 
         {/* Collections Grid */}
-        {isLoading ? (
+        {isFullyLoading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <CollectionCardSkeleton key={i} />
@@ -214,19 +219,27 @@ export default function Marketplace() {
         ) : filteredCollections && filteredCollections.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredCollections.map((collection) => (
-              <CollectionCard key={collection.id} collection={collection} />
+              <CollectionCard 
+                key={collection.id} 
+                collection={collection} 
+                isSoldOut={statusMap?.[collection.project_id]?.isSoldOut}
+              />
             ))}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/50 py-24">
             <Store className="mb-4 h-16 w-16 text-muted-foreground/30" />
-            <h2 className="font-display text-xl font-medium">No live collections yet</h2>
+            <h2 className="font-display text-xl font-medium">
+              {filter === 'all' ? 'No live collections yet' : `No ${filter === 'live' ? 'live' : 'sold out'} collections`}
+            </h2>
             <p className="mt-2 text-muted-foreground">
-              Check back soon for new drops from creators
+              {filter === 'all' ? 'Check back soon for new drops from creators' : 'Try changing the filter'}
             </p>
-            <Button asChild className="mt-6">
-              <Link to="/register">Become a Creator</Link>
-            </Button>
+            {filter === 'all' && (
+              <Button asChild className="mt-6">
+                <Link to="/register">Become a Creator</Link>
+              </Button>
+            )}
           </div>
         )}
       </main>

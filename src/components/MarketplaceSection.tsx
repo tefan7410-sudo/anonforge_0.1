@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Store, ArrowRight, ExternalLink } from 'lucide-react';
 import { useScrollAnimation } from '@/hooks/use-scroll-animation';
+import { useCollectionStatuses } from '@/hooks/use-collection-status';
 import { cn } from '@/lib/utils';
 
 interface LiveCollection {
@@ -52,7 +54,7 @@ const useMarketplaceCollections = (limit?: number) => {
   });
 };
 
-function CollectionCard({ collection, index }: { collection: LiveCollection; index: number }) {
+function CollectionCard({ collection, index, isSoldOut }: { collection: LiveCollection; index: number; isSoldOut?: boolean }) {
   const { ref, isVisible } = useScrollAnimation<HTMLDivElement>();
   
   return (
@@ -88,13 +90,17 @@ function CollectionCard({ collection, index }: { collection: LiveCollection; ind
             </div>
           )}
           
-          {/* Live badge */}
-          <Badge 
-            className="absolute right-2 top-2 bg-green-500/90 text-white hover:bg-green-500"
-          >
-            <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-            LIVE
-          </Badge>
+          {/* Status badge */}
+          {isSoldOut ? (
+            <Badge className="absolute right-2 top-2 bg-orange-500/90 text-white hover:bg-orange-500">
+              SOLD OUT
+            </Badge>
+          ) : (
+            <Badge className="absolute right-2 top-2 bg-green-500/90 text-white hover:bg-green-500">
+              <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+              LIVE
+            </Badge>
+          )}
         </div>
 
         <CardContent className="pt-6">
@@ -131,6 +137,15 @@ function CollectionCardSkeleton() {
 export function MarketplaceSection() {
   const { data: collections, isLoading } = useMarketplaceCollections(6);
   const headerAnimation = useScrollAnimation<HTMLDivElement>();
+
+  // Get project IDs for status fetching
+  const projectIds = useMemo(() => 
+    (collections || []).map(c => c.project_id), 
+    [collections]
+  );
+  
+  // Fetch NMKR counts for all collections
+  const { data: statusMap } = useCollectionStatuses(projectIds);
 
   const collectionCount = collections?.length || 0;
 
@@ -178,7 +193,12 @@ export function MarketplaceSection() {
         ) : collections && collections.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {collections.map((collection, index) => (
-              <CollectionCard key={collection.id} collection={collection} index={index} />
+              <CollectionCard 
+                key={collection.id} 
+                collection={collection} 
+                index={index}
+                isSoldOut={statusMap?.[collection.project_id]?.isSoldOut}
+              />
             ))}
           </div>
         ) : (
