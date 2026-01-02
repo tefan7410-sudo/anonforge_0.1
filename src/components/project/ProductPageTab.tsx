@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNmkrProject, useGetNmkrPayLink } from '@/hooks/use-nmkr';
 import { useCreatorCollections } from '@/hooks/use-creator-collections';
 import { ProductPagePreview } from './ProductPagePreview';
+import { CountdownTimer } from '@/components/CountdownTimer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,9 @@ import {
   AlertCircle,
   Hash,
   Store,
+  Clock,
+  EyeOff,
+  Calendar,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -86,6 +90,8 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
   const [buyButtonText, setBuyButtonText] = useState('Mint Now');
   const [buyButtonLink, setBuyButtonLink] = useState<string | null>(null);
   const [isLive, setIsLive] = useState(false);
+  const [scheduledLaunchAt, setScheduledLaunchAt] = useState<string | null>(null);
+  const [isHidden, setIsHidden] = useState(false);
   
   // URL validation errors
   const [twitterError, setTwitterError] = useState<string | null>(null);
@@ -118,8 +124,10 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
       setBuyButtonText(productPage.buy_button_text || 'Mint Now');
       setBuyButtonLink(productPage.buy_button_link);
       setIsLive(productPage.is_live || false);
-      setSecondaryMarketUrl((productPage as { secondary_market_url?: string }).secondary_market_url || '');
-      setMaxSupply((productPage as { max_supply?: number | null }).max_supply ?? null);
+      setSecondaryMarketUrl(productPage.secondary_market_url || '');
+      setMaxSupply(productPage.max_supply ?? null);
+      setScheduledLaunchAt(productPage.scheduled_launch_at);
+      setIsHidden(productPage.is_hidden || false);
     }
   }, [productPage]);
 
@@ -284,26 +292,62 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
         is_live: isLive,
         secondary_market_url: secondaryMarketUrl || null,
         max_supply: maxSupply,
+        scheduled_launch_at: scheduledLaunchAt,
+        is_hidden: isHidden,
       },
     });
   };
 
-  // Go live handler
-  const handleGoLive = async () => {
+  // Schedule launch handler (24h waitlist)
+  const handleScheduleLaunch = async () => {
     if (!buyButtonLink && !nmkrProject?.price_in_lovelace) {
       toast.error('Generate a payment link in the Publish tab first');
       return;
     }
     
+    const launchTime = new Date();
+    launchTime.setHours(launchTime.getHours() + 24);
+    const launchTimeStr = launchTime.toISOString();
+    
     setIsLive(true);
+    setScheduledLaunchAt(launchTimeStr);
+    
     await updateProductPage.mutateAsync({
       projectId,
       updates: {
         is_live: true,
+        scheduled_launch_at: launchTimeStr,
         buy_button_link: buyButtonLink,
       },
     });
-    toast.success('Your collection page is now live!');
+    toast.success('Your collection is scheduled to launch in 24 hours!');
+  };
+
+  // Cancel scheduled launch
+  const handleCancelLaunch = async () => {
+    setIsLive(false);
+    setScheduledLaunchAt(null);
+    
+    await updateProductPage.mutateAsync({
+      projectId,
+      updates: {
+        is_live: false,
+        scheduled_launch_at: null,
+      },
+    });
+    toast.success('Scheduled launch cancelled');
+  };
+
+  // Toggle collection visibility (pause/unpause)
+  const handleToggleHidden = async (hidden: boolean) => {
+    setIsHidden(hidden);
+    await updateProductPage.mutateAsync({
+      projectId,
+      updates: {
+        is_hidden: hidden,
+      },
+    });
+    toast.success(hidden ? 'Collection hidden from marketplace' : 'Collection visible on marketplace');
   };
 
   // Clear image helpers
@@ -356,16 +400,34 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
     is_live: isLive,
     secondary_market_url: secondaryMarketUrl,
     max_supply: maxSupply,
+    scheduled_launch_at: scheduledLaunchAt,
+    is_hidden: isHidden,
     created_at: productPage?.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
+
+  // Determine launch status
+  const isScheduled = scheduledLaunchAt && new Date(scheduledLaunchAt) > new Date();
+  const isActuallyLive = isLive && !isScheduled;
 
   return (
     <div className="space-y-6">
       {/* Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-muted/30 p-4">
-        <div className="flex items-center gap-2">
-          {isLive ? (
+        <div className="flex items-center gap-2 flex-wrap">
+          {isScheduled ? (
+            <>
+              <Badge variant="default" className="gap-1 bg-amber-500">
+                <Clock className="h-3 w-3" />
+                Scheduled
+              </Badge>
+              <CountdownTimer 
+                targetDate={new Date(scheduledLaunchAt!)} 
+                compact 
+                className="text-muted-foreground"
+              />
+            </>
+          ) : isActuallyLive ? (
             <Badge variant="default" className="gap-1 bg-green-600">
               <Rocket className="h-3 w-3" />
               Live
@@ -375,7 +437,13 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
               Draft
             </Badge>
           )}
-          {isLive && (
+          {isHidden && (
+            <Badge variant="outline" className="gap-1">
+              <EyeOff className="h-3 w-3" />
+              Hidden
+            </Badge>
+          )}
+          {(isActuallyLive || isScheduled) && (
             <a 
               href={`/collection/${projectId}`} 
               target="_blank" 
@@ -392,19 +460,73 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
             <Eye className="mr-2 h-4 w-4" />
             Preview
           </Button>
-          <Button 
-            size="sm" 
-            onClick={handleGoLive}
-            disabled={isLive || !canGoLive || isSaving}
-            title={!canGoLive ? 'Generate a payment link first' : undefined}
-          >
-            <Rocket className="mr-2 h-4 w-4" />
-            Go Live!
-          </Button>
+          {isScheduled ? (
+            <Button 
+              size="sm" 
+              variant="destructive"
+              onClick={handleCancelLaunch}
+              disabled={isSaving}
+            >
+              <X className="mr-2 h-4 w-4" />
+              Cancel Launch
+            </Button>
+          ) : !isActuallyLive ? (
+            <Button 
+              size="sm" 
+              onClick={handleScheduleLaunch}
+              disabled={!canGoLive || isSaving}
+              title={!canGoLive ? 'Generate a payment link first' : undefined}
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Schedule Launch
+            </Button>
+          ) : null}
         </div>
       </div>
 
-      {/* Banner Section */}
+      {/* Scheduled Launch Info */}
+      {isScheduled && (
+        <Alert>
+          <Clock className="h-4 w-4" />
+          <AlertDescription>
+            Your collection is scheduled to launch on{' '}
+            <strong>{new Date(scheduledLaunchAt!).toLocaleString()}</strong>. 
+            It will appear as "Upcoming" in the marketplace until then. 
+            We review all scheduled collections before they go live.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Collection Visibility (for live collections) */}
+      {isActuallyLive && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display">
+              <EyeOff className="h-5 w-5 text-primary" />
+              Collection Visibility
+            </CardTitle>
+            <CardDescription>
+              Temporarily hide your collection from the marketplace
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="pause-collection">Pause Collection</Label>
+                <p className="text-xs text-muted-foreground">
+                  When paused, your collection won't appear in the marketplace and the mint button will be hidden
+                </p>
+              </div>
+              <Switch
+                id="pause-collection"
+                checked={isHidden}
+                onCheckedChange={handleToggleHidden}
+                disabled={isSaving}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-display">
@@ -1046,6 +1168,9 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
           productPage={previewProductPage}
           projectName={projectName}
           paymentLink={buyButtonLink}
+          nmkrPolicyId={nmkrProject?.nmkr_policy_id}
+          founderVerified={founderVerified}
+          creatorCollections={creatorCollections}
           onClose={() => setShowPreview(false)}
         />
       )}

@@ -30,6 +30,8 @@ export interface ProductPage {
   is_live: boolean;
   secondary_market_url: string | null;
   max_supply: number | null;
+  scheduled_launch_at: string | null;
+  is_hidden: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -52,6 +54,8 @@ export interface ProductPageUpdate {
   is_live?: boolean;
   secondary_market_url?: string | null;
   max_supply?: number | null;
+  scheduled_launch_at?: string | null;
+  is_hidden?: boolean;
 }
 
 // Fetch product page for a project
@@ -82,6 +86,8 @@ export function useProductPage(projectId: string) {
         buy_button_text: data.buy_button_text,
         buy_button_link: data.buy_button_link,
         is_live: data.is_live ?? false,
+        scheduled_launch_at: data.scheduled_launch_at ?? null,
+        is_hidden: data.is_hidden ?? false,
       } as ProductPage;
     },
     enabled: !!projectId,
