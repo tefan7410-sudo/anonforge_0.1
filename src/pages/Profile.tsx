@@ -2,13 +2,16 @@ import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile, useUpdateProfile, useUploadAvatar, useResetPassword } from '@/hooks/use-profile';
+import { useMyVerificationRequest, useSubmitVerificationRequest } from '@/hooks/use-verification-request';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Layers, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Layers, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, HelpCircle, BadgeCheck, Clock, X, Twitter } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 
@@ -32,12 +35,19 @@ export default function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: profile, isLoading, error } = useProfile(user?.id);
+  const { data: verificationRequest, isLoading: verificationLoading } = useMyVerificationRequest();
   const updateProfile = useUpdateProfile();
   const uploadAvatar = useUploadAvatar();
   const resetPassword = useResetPassword();
+  const submitVerification = useSubmitVerificationRequest();
 
   const [displayName, setDisplayName] = useState('');
   const [initialized, setInitialized] = useState(false);
+
+  // Verification form state
+  const [showVerificationForm, setShowVerificationForm] = useState(false);
+  const [verificationTwitter, setVerificationTwitter] = useState('');
+  const [verificationBio, setVerificationBio] = useState('');
 
   // Initialize form when profile loads
   if (profile && !initialized) {
@@ -95,6 +105,25 @@ export default function Profile() {
     navigate('/login');
   };
 
+  const handleSubmitVerification = async () => {
+    if (!verificationTwitter.trim()) {
+      toast({ title: 'Twitter handle required', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      await submitVerification.mutateAsync({
+        twitterHandle: verificationTwitter.trim(),
+        bio: verificationBio.trim() || undefined,
+      });
+      setShowVerificationForm(false);
+      setVerificationTwitter('');
+      setVerificationBio('');
+    } catch (error: any) {
+      toast({ title: 'Failed to submit', description: error.message, variant: 'destructive' });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -132,6 +161,8 @@ export default function Profile() {
       </div>
     );
   }
+
+  const isVerifiedCreator = (profile as any)?.is_verified_creator;
 
   return (
     <div className="min-h-screen bg-background">
@@ -252,6 +283,121 @@ export default function Profile() {
                   Save Changes
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Creator Verification */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-display">
+                <BadgeCheck className="h-5 w-5" />
+                Creator Verification
+              </CardTitle>
+              <CardDescription>
+                Get verified to show a badge on all your collections
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {verificationLoading ? (
+                <Skeleton className="h-20 w-full" />
+              ) : isVerifiedCreator ? (
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/10 border border-primary/20">
+                  <BadgeCheck className="h-8 w-8 text-primary" />
+                  <div>
+                    <p className="font-semibold text-primary">Verified Creator</p>
+                    <p className="text-sm text-muted-foreground">
+                      Your verified badge appears on all your collections
+                    </p>
+                  </div>
+                </div>
+              ) : verificationRequest?.status === 'pending' ? (
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <Clock className="h-8 w-8 text-amber-500" />
+                  <div>
+                    <p className="font-semibold text-amber-600">Verification Pending</p>
+                    <p className="text-sm text-muted-foreground">
+                      Your request is being reviewed by our team
+                    </p>
+                  </div>
+                </div>
+              ) : verificationRequest?.status === 'rejected' ? (
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                    <X className="h-6 w-6 text-destructive mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-destructive">Verification Rejected</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Reason: {verificationRequest.rejection_reason || 'No reason provided'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowVerificationForm(true)}
+                  >
+                    Resubmit Request
+                  </Button>
+                </div>
+              ) : showVerificationForm ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="verificationTwitter">
+                      Twitter Handle <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Twitter className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="verificationTwitter"
+                        value={verificationTwitter}
+                        onChange={(e) => setVerificationTwitter(e.target.value)}
+                        placeholder="@yourhandle"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="verificationBio">Bio / About You</Label>
+                    <Textarea
+                      id="verificationBio"
+                      value={verificationBio}
+                      onChange={(e) => setVerificationBio(e.target.value)}
+                      placeholder="Tell us about your work in the NFT space..."
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSubmitVerification}
+                      disabled={submitVerification.isPending}
+                    >
+                      {submitVerification.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <BadgeCheck className="mr-2 h-4 w-4" />
+                      )}
+                      Submit Request
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowVerificationForm(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium">Not Verified</p>
+                    <p className="text-sm text-muted-foreground">
+                      Request verification to get a badge on your collections
+                    </p>
+                  </div>
+                  <Button onClick={() => setShowVerificationForm(true)}>
+                    <BadgeCheck className="mr-2 h-4 w-4" />
+                    Request Verification
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 

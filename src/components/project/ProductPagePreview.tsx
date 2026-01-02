@@ -32,6 +32,7 @@ interface ProductPagePreviewProps {
   nmkrPolicyId?: string | null;
   priceInLovelace?: number | null;
   founderVerified?: boolean;
+  isVerifiedCreator?: boolean;
   creatorCollections?: CreatorCollection[];
   onClose: () => void;
 }
@@ -44,9 +45,12 @@ export function ProductPagePreview({
   nmkrPolicyId,
   priceInLovelace,
   founderVerified = false,
+  isVerifiedCreator = false,
   creatorCollections,
   onClose 
 }: ProductPagePreviewProps) {
+  // Show verified badge if either the collection has founder_verified OR the creator is a verified creator
+  const showVerifiedBadge = founderVerified || isVerifiedCreator;
   const copyPolicyId = () => {
     if (nmkrPolicyId) {
       navigator.clipboard.writeText(nmkrPolicyId);
@@ -242,7 +246,7 @@ export function ProductPagePreview({
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold">{productPage.founder_name || 'Anonymous'}</h3>
-                  {founderVerified && (
+                  {showVerifiedBadge && (
                     <span title="Verified Creator">
                       <BadgeCheck className="h-5 w-5 text-primary" />
                     </span>
