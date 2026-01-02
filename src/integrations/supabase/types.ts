@@ -372,6 +372,7 @@ export type Database = {
           max_supply: number | null
           portfolio: Json | null
           project_id: string
+          scheduled_launch_at: string | null
           secondary_market_url: string | null
           tagline: string | null
           twitter_url: string | null
@@ -397,6 +398,7 @@ export type Database = {
           max_supply?: number | null
           portfolio?: Json | null
           project_id: string
+          scheduled_launch_at?: string | null
           secondary_market_url?: string | null
           tagline?: string | null
           twitter_url?: string | null
@@ -422,6 +424,7 @@ export type Database = {
           max_supply?: number | null
           portfolio?: Json | null
           project_id?: string
+          scheduled_launch_at?: string | null
           secondary_market_url?: string | null
           tagline?: string | null
           twitter_url?: string | null

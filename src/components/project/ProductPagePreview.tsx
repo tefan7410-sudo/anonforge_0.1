@@ -8,13 +8,29 @@ import {
   Globe, 
   ExternalLink,
   ShoppingCart,
+  BadgeCheck,
+  Store,
+  Copy,
+  Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { CountdownTimer } from '@/components/CountdownTimer';
+
+interface CreatorCollection {
+  id: string;
+  name: string;
+  banner_url: string | null;
+  logo_url: string | null;
+}
 
 interface ProductPagePreviewProps {
   productPage: ProductPage;
   projectName: string;
   paymentLink?: string | null;
+  nmkrPolicyId?: string | null;
+  founderVerified?: boolean;
+  creatorCollections?: CreatorCollection[];
   onClose: () => void;
 }
 
@@ -22,8 +38,21 @@ export function ProductPagePreview({
   productPage, 
   projectName, 
   paymentLink,
+  nmkrPolicyId,
+  founderVerified = false,
+  creatorCollections,
   onClose 
 }: ProductPagePreviewProps) {
+  const copyPolicyId = () => {
+    if (nmkrPolicyId) {
+      navigator.clipboard.writeText(nmkrPolicyId);
+      toast.success('Policy ID copied!');
+    }
+  };
+
+  const isScheduled = productPage.scheduled_launch_at && 
+    new Date(productPage.scheduled_launch_at) > new Date();
+
   return (
     <div className="fixed inset-0 z-50 bg-background overflow-auto">
       {/* Close button */}
@@ -73,8 +102,31 @@ export function ProductPagePreview({
           </div>
         </div>
 
+        {/* Collection Stats */}
+        {(productPage.max_supply || nmkrPolicyId) && (
+          <div className="flex flex-wrap gap-4 mb-8 p-4 rounded-xl border bg-card">
+            {productPage.max_supply && (
+              <div className="text-center">
+                <p className="text-2xl font-bold">{productPage.max_supply.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Max Supply</p>
+              </div>
+            )}
+            {nmkrPolicyId && (
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground mb-1">Policy ID</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-xs font-mono truncate flex-1">{nmkrPolicyId}</code>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={copyPolicyId}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Social Links */}
-        {(productPage.twitter_url || productPage.discord_url || productPage.website_url) && (
+        {(productPage.twitter_url || productPage.discord_url || productPage.website_url || productPage.secondary_market_url) && (
           <div className="flex flex-wrap gap-2 mb-8">
             {productPage.twitter_url && (
               <Button asChild variant="outline" size="sm">
@@ -100,11 +152,29 @@ export function ProductPagePreview({
                 </a>
               </Button>
             )}
+            {productPage.secondary_market_url && (
+              <Button asChild variant="outline" size="sm">
+                <a href={productPage.secondary_market_url} target="_blank" rel="noopener noreferrer">
+                  <Store className="mr-2 h-4 w-4" />
+                  Secondary Market
+                </a>
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Scheduled Launch Countdown */}
+        {isScheduled && (
+          <div className="mb-8 p-4 rounded-xl border bg-primary/5 border-primary/20">
+            <CountdownTimer targetDate={new Date(productPage.scheduled_launch_at!)} />
+            <p className="mt-2 text-sm text-muted-foreground">
+              This collection will be available for minting soon!
+            </p>
           </div>
         )}
 
         {/* Buy Button */}
-        {productPage.buy_button_enabled && paymentLink && (
+        {productPage.buy_button_enabled && paymentLink && !isScheduled && (
           <div className="mb-8">
             <Button asChild size="lg" className="w-full md:w-auto">
               <a href={paymentLink} target="_blank" rel="noopener noreferrer">
@@ -136,6 +206,11 @@ export function ProductPagePreview({
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold">{productPage.founder_name || 'Anonymous'}</h3>
+                  {founderVerified && (
+                    <span title="Verified Creator">
+                      <BadgeCheck className="h-5 w-5 text-primary" />
+                    </span>
+                  )}
                   {productPage.founder_twitter && (
                     <a 
                       href={`https://twitter.com/${productPage.founder_twitter}`}
@@ -155,7 +230,50 @@ export function ProductPagePreview({
           </div>
         )}
 
-        {/* Portfolio Section */}
+        {/* More from this Creator */}
+        {creatorCollections && creatorCollections.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-display font-semibold mb-4">More from this Creator</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {creatorCollections.map((collection) => (
+                <div
+                  key={collection.id}
+                  className={cn(
+                    "group rounded-xl border bg-card overflow-hidden"
+                  )}
+                >
+                  <div className="relative h-24 overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5">
+                    {collection.banner_url ? (
+                      <img
+                        src={collection.banner_url}
+                        alt={collection.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Store className="h-6 w-6 text-muted-foreground/30" />
+                      </div>
+                    )}
+                    {collection.logo_url && (
+                      <div className="absolute -bottom-4 left-3">
+                        <img
+                          src={collection.logo_url}
+                          alt={collection.name}
+                          className="h-10 w-10 rounded-lg border-2 border-background object-cover shadow-md"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 pt-6">
+                    <h3 className="font-semibold truncate">{collection.name}</h3>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Portfolio Section (Past Work) */}
         {productPage.portfolio && productPage.portfolio.length > 0 && (
           <div className="mb-8">
             <h2 className="text-xl font-display font-semibold mb-4">Past Work</h2>

@@ -7,8 +7,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Layers, Store, ExternalLink, ArrowLeft } from 'lucide-react';
+import { Layers, Store, ExternalLink, ArrowLeft, Clock } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useCollectionStatuses } from '@/hooks/use-collection-status';
+import { CountdownTimer } from '@/components/CountdownTimer';
 import { useCollectionStatuses } from '@/hooks/use-collection-status';
 import {
   Pagination,
@@ -28,6 +30,7 @@ interface LiveCollection {
   banner_url: string | null;
   logo_url: string | null;
   tagline: string | null;
+  scheduled_launch_at: string | null;
   project: {
     id: string;
     name: string;
@@ -47,6 +50,7 @@ function useMarketplaceData() {
           banner_url,
           logo_url,
           tagline,
+          scheduled_launch_at,
           project:projects!inner(id, name, description)
         `)
         .eq('is_live', true)
@@ -61,6 +65,9 @@ function useMarketplaceData() {
 }
 
 function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection; isSoldOut?: boolean }) {
+  const isUpcoming = collection.scheduled_launch_at && 
+    new Date(collection.scheduled_launch_at) > new Date();
+
   return (
     <Link to={`/collection/${collection.project_id}`}>
       <Card className="group cursor-pointer overflow-hidden border-border/50 transition-all hover:border-primary/30 hover:shadow-lg">
@@ -90,7 +97,12 @@ function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection;
           )}
           
           {/* Status badge */}
-          {isSoldOut ? (
+          {isUpcoming ? (
+            <Badge className="absolute right-3 top-3 bg-amber-500/90 text-white hover:bg-amber-500">
+              <Clock className="mr-1 h-3 w-3" />
+              UPCOMING
+            </Badge>
+          ) : isSoldOut ? (
             <Badge className="absolute right-3 top-3 bg-orange-500/90 text-white hover:bg-orange-500">
               SOLD OUT
             </Badge>
@@ -109,6 +121,11 @@ function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection;
           <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
             {collection.tagline || collection.project.description || 'Explore this collection'}
           </p>
+          {isUpcoming && (
+            <div className="mt-3">
+              <CountdownTimer targetDate={new Date(collection.scheduled_launch_at!)} compact />
+            </div>
+          )}
           <div className="mt-4 flex items-center justify-between">
             <span className="text-sm text-muted-foreground">View Collection</span>
             <ExternalLink className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
@@ -134,7 +151,7 @@ function CollectionCardSkeleton() {
 
 export default function Marketplace() {
   const { data: collections, isLoading } = useMarketplaceData();
-  const [filter, setFilter] = useState<'all' | 'live' | 'sold-out'>('all');
+  const [filter, setFilter] = useState<'all' | 'live' | 'upcoming' | 'sold-out'>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
   // Get project IDs for status fetching
@@ -149,15 +166,19 @@ export default function Marketplace() {
   // Filter collections based on selected tab
   const filteredCollections = useMemo(() => {
     if (!collections) return [];
-    if (filter === 'all') return collections;
+    
+    const now = new Date();
     
     return collections.filter(c => {
+      const isUpcoming = c.scheduled_launch_at && new Date(c.scheduled_launch_at) > now;
       const status = statusMap?.[c.project_id];
-      if (!status) {
-        // If no status data, treat as live
-        return filter === 'live';
-      }
-      return filter === 'live' ? !status.isSoldOut : status.isSoldOut;
+      const isSoldOut = status?.isSoldOut;
+      
+      if (filter === 'all') return true;
+      if (filter === 'upcoming') return isUpcoming;
+      if (filter === 'live') return !isUpcoming && !isSoldOut;
+      if (filter === 'sold-out') return !isUpcoming && isSoldOut;
+      return true;
     });
   }, [collections, filter, statusMap]);
 
@@ -243,6 +264,7 @@ export default function Marketplace() {
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="live">Live</TabsTrigger>
+              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
               <TabsTrigger value="sold-out">Sold Out</TabsTrigger>
             </TabsList>
           </Tabs>
