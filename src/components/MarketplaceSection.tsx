@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Store, ArrowRight, ExternalLink } from 'lucide-react';
+import { Store, ArrowRight, ExternalLink, Sparkles } from 'lucide-react';
 
 interface LiveCollection {
   id: string;
@@ -120,20 +120,35 @@ function CollectionCardSkeleton() {
 export function MarketplaceSection() {
   const { data: collections, isLoading } = useMarketplaceCollections(6);
 
+  const collectionCount = collections?.length || 0;
+
   return (
-    <section className="border-t border-border/50" aria-labelledby="marketplace-heading">
+    <section className="border-t border-border/50 bg-card/50" aria-labelledby="marketplace-heading">
       <div className="container mx-auto px-6 py-20">
-        <div className="mb-12 text-center">
-          <div className="mb-4 inline-flex items-center gap-2">
-            <Store className="h-6 w-6 text-primary" aria-hidden="true" />
-            <Badge variant="secondary" className="text-sm">Marketplace</Badge>
+        <div className="mb-12 flex flex-col items-center justify-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2">
+              <Store className="h-5 w-5 text-primary" aria-hidden="true" />
+              <span className="text-sm font-medium text-primary">Live Collections</span>
+              {!isLoading && collectionCount > 0 && (
+                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                  {collectionCount}
+                </span>
+              )}
+            </div>
+            <h2 id="marketplace-heading" className="font-display text-3xl font-bold">
+              Discover & Mint
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              Browse NFT collections from creators on AnonForge
+            </p>
           </div>
-          <h2 id="marketplace-heading" className="font-display text-3xl font-bold">
-            Discover Live Collections
-          </h2>
-          <p className="mt-4 text-muted-foreground">
-            Browse and mint NFTs from creators on AnonForge
-          </p>
+          <Button variant="outline" asChild className="shrink-0">
+            <Link to="/marketplace">
+              View All
+              <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+            </Link>
+          </Button>
         </div>
 
         {isLoading ? (
@@ -160,14 +175,6 @@ export function MarketplaceSection() {
           </div>
         )}
 
-        <div className="mt-12 text-center">
-          <Button size="lg" asChild>
-            <Link to="/marketplace">
-              Explore Marketplace
-              <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
-            </Link>
-          </Button>
-        </div>
       </div>
     </section>
   );

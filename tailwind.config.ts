@@ -14,9 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Space Mono", "monospace"],
-        display: ["Syne", "sans-serif"],
-        mono: ["Space Mono", "monospace"],
+        sans: ["Plus Jakarta Sans", "sans-serif"],
+        display: ["Plus Jakarta Sans", "sans-serif"],
+        mono: ["monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
