@@ -65,23 +65,38 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
     >
     <Link to={`/collection/${collection.project_id}`}>
       <Card className="group cursor-pointer overflow-hidden border-border/50 transition-all hover:border-primary/30 hover:shadow-lg">
-        {/* Banner */}
-        <div className="relative h-32 overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5">
-          {collection.banner_url ? (
-            <img
-              src={collection.banner_url}
-              alt={`${collection.project.name} banner`}
-              className="h-full w-full object-cover transition-transform group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <Store className="h-8 w-8 text-muted-foreground/30" />
-            </div>
-          )}
+        {/* Banner wrapper - relative without overflow-hidden to allow logo overlap */}
+        <div className="relative">
+          {/* Banner image container - overflow-hidden to crop image */}
+          <div className="relative h-32 overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5">
+            {collection.banner_url ? (
+              <img
+                src={collection.banner_url}
+                alt={`${collection.project.name} banner`}
+                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <Store className="h-8 w-8 text-muted-foreground/30" />
+              </div>
+            )}
+            
+            {/* Status badge */}
+            {isSoldOut ? (
+              <Badge className="absolute right-2 top-2 bg-orange-500/90 text-white hover:bg-orange-500">
+                SOLD OUT
+              </Badge>
+            ) : (
+              <Badge className="absolute right-2 top-2 bg-green-500/90 text-white hover:bg-green-500">
+                <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                LIVE
+              </Badge>
+            )}
+          </div>
           
-          {/* Logo overlay */}
+          {/* Logo overlay - positioned on outer wrapper to allow overlap */}
           {collection.logo_url && (
-            <div className="absolute -bottom-4 left-4 z-10">
+            <div className="absolute left-4 bottom-0 translate-y-1/2 z-20">
               <img
                 src={collection.logo_url}
                 alt={`${collection.project.name} logo`}
@@ -89,21 +104,9 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
               />
             </div>
           )}
-          
-          {/* Status badge */}
-          {isSoldOut ? (
-            <Badge className="absolute right-2 top-2 bg-orange-500/90 text-white hover:bg-orange-500">
-              SOLD OUT
-            </Badge>
-          ) : (
-            <Badge className="absolute right-2 top-2 bg-green-500/90 text-white hover:bg-green-500">
-              <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-              LIVE
-            </Badge>
-          )}
         </div>
 
-        <CardContent className="pt-8">
+        <CardContent className={cn("pt-6", collection.logo_url && "pt-10")}>
           <h3 className="font-display text-lg font-semibold group-hover:text-primary transition-colors">
             {collection.project.name}
           </h3>
