@@ -301,6 +301,7 @@ export function useUploadNft() {
       displayName,
       description,
       imageBase64,
+      metadata,
     }: {
       nmkrProjectId: string;
       nmkrProjectUid: string;
@@ -309,6 +310,7 @@ export function useUploadNft() {
       displayName: string;
       description?: string;
       imageBase64: string;
+      metadata?: Record<string, string>;
     }) => {
       // Create upload record
       const { data: uploadRecord, error: insertError } = await supabase
@@ -325,6 +327,11 @@ export function useUploadNft() {
       if (insertError) throw insertError;
 
       try {
+        // Convert metadata object to NMKR format: [{ name, value }]
+        const metadataPlaceholder = metadata 
+          ? Object.entries(metadata).map(([name, value]) => ({ name, value: String(value) }))
+          : [];
+
         // Upload to NMKR
         const response = await callNmkrProxy('upload-nft', {
           projectUid: nmkrProjectUid,
@@ -335,6 +342,7 @@ export function useUploadNft() {
             mimetype: 'image/png',
             base64: imageBase64,
           },
+          metadataPlaceholder,
         });
         const result = response.data;
 
@@ -370,6 +378,19 @@ export function useUploadNft() {
   });
 }
 
+// Get NMKR pricelist
+export function useGetPricelist(nmkrProjectUid: string | undefined) {
+  return useQuery({
+    queryKey: ['nmkr-pricelist', nmkrProjectUid],
+    queryFn: async () => {
+      if (!nmkrProjectUid) return null;
+      const response = await callNmkrProxy('get-pricelist', { projectUid: nmkrProjectUid });
+      return response.data;
+    },
+    enabled: !!nmkrProjectUid,
+  });
+}
+
 // Update NMKR pricelist
 export function useUpdateNmkrPrice() {
   const queryClient = useQueryClient();
@@ -379,14 +400,16 @@ export function useUpdateNmkrPrice() {
       nmkrProjectId,
       nmkrProjectUid,
       priceInLovelace,
+      countNft = 1,
     }: {
       nmkrProjectId: string;
       nmkrProjectUid: string;
       priceInLovelace: number;
+      countNft?: number;
     }) => {
       await callNmkrProxy('update-pricelist', {
         projectUid: nmkrProjectUid,
-        priceInLovelace,
+        priceTiers: [{ countNft, priceInLovelace, isActive: true }],
       });
 
       // Update local record
@@ -400,6 +423,7 @@ export function useUpdateNmkrPrice() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['nmkr-project'] });
       queryClient.invalidateQueries({ queryKey: ['nmkr-project-details', variables.nmkrProjectUid] });
+      queryClient.invalidateQueries({ queryKey: ['nmkr-pricelist', variables.nmkrProjectUid] });
       toast.success('Price updated successfully!');
     },
     onError: (error: Error) => {
