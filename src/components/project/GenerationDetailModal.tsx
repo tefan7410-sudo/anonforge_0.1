@@ -152,7 +152,7 @@ export function GenerationDetailModal({
           type: 'comment_mention',
           title: 'You were mentioned',
           message: `Someone mentioned you in a comment on ${generation.token_id}`,
-          link: `/project/${projectId}`,
+          link: `/project/${projectId}?generation=${generation.id}`,
           metadata: { generation_id: generation.id },
         });
       }
