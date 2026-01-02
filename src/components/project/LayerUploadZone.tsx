@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCreateCategory, useCreateLayer, useCategories } from '@/hooks/use-project';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { GENERATION_CONFIG } from '@/lib/generation-constants';
 
 interface LayerUploadZoneProps {
   projectId: string;
@@ -22,6 +23,23 @@ interface FileWithParsed {
   parsed: ParsedFilename;
 }
 
+// Helper to check image dimensions
+const checkImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.width, height: img.height });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image'));
+    };
+    img.src = url;
+  });
+};
+
 export function LayerUploadZone({ projectId, onComplete }: LayerUploadZoneProps) {
   const [files, setFiles] = useState<FileWithParsed[]>([]);
   const [invalidFiles, setInvalidFiles] = useState<{ file: File; error: string }[]>([]);
@@ -32,13 +50,30 @@ export function LayerUploadZone({ projectId, onComplete }: LayerUploadZoneProps)
   const createCategory = useCreateCategory();
   const createLayer = useCreateLayer();
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const validFiles: FileWithParsed[] = [];
     const invalid: { file: File; error: string }[] = [];
 
     for (const file of acceptedFiles) {
       if (!file.type.startsWith('image/png')) {
         invalid.push({ file, error: 'Only PNG files are allowed' });
+        continue;
+      }
+
+      // Check image dimensions
+      try {
+        const { width, height } = await checkImageDimensions(file);
+        const maxRes = GENERATION_CONFIG.MAX_LAYER_RESOLUTION;
+        
+        if (width > maxRes || height > maxRes) {
+          invalid.push({ 
+            file, 
+            error: `Image too large (${width}x${height}). Max: ${maxRes}x${maxRes}` 
+          });
+          continue;
+        }
+      } catch {
+        invalid.push({ file, error: 'Failed to read image dimensions' });
         continue;
       }
 

@@ -176,7 +176,7 @@ export async function uploadGenerationImage(
   projectId: string,
   generationId: string,
   imageData: string,
-  fileExtension: 'png' | 'zip' = 'png'
+  fileExtension: 'jpg' | 'zip' = 'jpg'
 ): Promise<string> {
   // Convert base64 to blob
   const response = await fetch(imageData);
@@ -187,7 +187,7 @@ export async function uploadGenerationImage(
   const { error } = await supabase.storage
     .from('generations')
     .upload(filePath, blob, {
-      contentType: fileExtension === 'png' ? 'image/png' : 'application/zip',
+      contentType: fileExtension === 'jpg' ? 'image/jpeg' : 'application/zip',
       upsert: true,
     });
 

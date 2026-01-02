@@ -50,6 +50,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
+import { GENERATION_CONFIG } from '@/lib/generation-constants';
 
 interface GenerationPanelProps {
   projectId: string;
@@ -96,6 +97,9 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Image cache for performance optimization
+  const imageCache = useRef(new Map<string, HTMLImageElement>());
 
   // Build exclusion map: layer_id -> Set of excluded layer IDs
   const exclusionMap = useMemo(() => {
@@ -323,6 +327,42 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     throw new Error(`Could not generate unique combination after ${MAX_ATTEMPTS} attempts. You may have exhausted available combinations or exclusion rules are too restrictive.`);
   };
 
+  // Load image with caching for performance
+  const loadImageWithCache = async (storagePath: string): Promise<HTMLImageElement> => {
+    // Check cache first
+    const cached = imageCache.current.get(storagePath);
+    if (cached) return cached;
+    
+    const { data: publicUrl } = supabase.storage.from('layers').getPublicUrl(storagePath);
+    
+    return new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        imageCache.current.set(storagePath, img);
+        resolve(img);
+      };
+      img.onerror = reject;
+      img.src = publicUrl.publicUrl;
+    });
+  };
+
+  // Preload all layers for batch generation
+  const preloadLayers = async (layers: { category: Category; layer: Layer }[]) => {
+    const allPaths: string[] = [];
+    
+    layers.forEach(({ layer }) => {
+      allPaths.push(layer.storage_path);
+      // Also preload effect layers
+      const layerEffects = effectMap.get(layer.id) || [];
+      layerEffects.forEach(({ layer: effectLayer }) => {
+        allPaths.push(effectLayer.storage_path);
+      });
+    });
+    
+    await Promise.all(allPaths.map(path => loadImageWithCache(path)));
+  };
+
   // Compose layers onto canvas (including effect layers)
   const composeLayers = async (
     layers: { category: Category; layer: Layer }[],
@@ -331,14 +371,20 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     const canvas = canvasRef.current;
     if (!canvas) throw new Error('Canvas not available');
 
-    const ctx = canvas.getContext('2d');
+    // Use alpha: false for JPG export optimization
+    const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) throw new Error('Canvas context not available');
 
-    // Use 5000x5000 for full resolution, 512x512 for preview
-    const size = fullResolution ? 5000 : 512;
+    // Use max resolution for full res, reduced preview size for faster generation
+    const size = fullResolution 
+      ? GENERATION_CONFIG.MAX_EXPORT_RESOLUTION 
+      : GENERATION_CONFIG.PREVIEW_RESOLUTION;
     canvas.width = size;
     canvas.height = size;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Fill with white background (needed for JPG since it doesn't support transparency)
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Build render list with effect layers
     const renderList: { layer: Layer; order: number }[] = [];
@@ -357,23 +403,16 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     // Sort by render order
     renderList.sort((a, b) => a.order - b.order);
 
-    // Load and draw each layer in order
+    // Load and draw each layer in order using cache
     for (const { layer } of renderList) {
-      const { data: publicUrl } = supabase.storage.from('layers').getPublicUrl(layer.storage_path);
-      
-      await new Promise<void>((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          resolve();
-        };
-        img.onerror = reject;
-        img.src = publicUrl.publicUrl;
-      });
+      const img = await loadImageWithCache(layer.storage_path);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
-    return canvas.toDataURL('image/png');
+    return canvas.toDataURL(
+      GENERATION_CONFIG.EXPORT_FORMAT, 
+      GENERATION_CONFIG.EXPORT_QUALITY
+    );
   };
 
   // Generate and save a single character with retry logic
@@ -546,7 +585,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
           if (char.imageData) {
             const response = await fetch(char.imageData);
             const blob = await response.blob();
-            zip.file(`${char.tokenId}.png`, blob);
+            zip.file(`${char.tokenId}.${GENERATION_CONFIG.EXPORT_EXTENSION}`, blob);
           }
         }
 
@@ -636,7 +675,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const handleDownload = () => {
     if (!previewImage) return;
     const link = document.createElement('a');
-    link.download = `${generated[0]?.tokenId || 'preview'}.png`;
+    link.download = `${generated[0]?.tokenId || 'preview'}.${GENERATION_CONFIG.EXPORT_EXTENSION}`;
     link.href = previewImage;
     link.target = '_blank';
     link.click();
