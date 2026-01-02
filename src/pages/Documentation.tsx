@@ -262,7 +262,7 @@ export default function Documentation() {
                 </div>
                 <div>
                   <p className="font-medium text-sm">File Size</p>
-                  <p className="text-xs text-muted-foreground">~1-3MB per image at full resolution</p>
+                  <p className="text-xs text-muted-foreground">Displayed in real-time during generation</p>
                 </div>
               </div>
             </div>
