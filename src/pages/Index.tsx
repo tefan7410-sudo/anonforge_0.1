@@ -2,8 +2,10 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Layers, ArrowRight, Sparkles, Palette, Store, Zap, Shield, Users, CreditCard, LayoutGrid, Rocket } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageSelector } from '@/components/LanguageSelector';
 import { MarketplaceSection } from '@/components/MarketplaceSection';
 import { useScrollAnimation } from '@/hooks/use-scroll-animation';
+import { useTranslations } from '@/hooks/use-translations';
 import { cn } from '@/lib/utils';
 
 function AnimatedSection({ 
@@ -33,15 +35,31 @@ function AnimatedSection({
 }
 
 export default function Index() {
+  const { t } = useTranslations();
   const heroAnimation = useScrollAnimation<HTMLDivElement>();
   const creatorsAnimation = useScrollAnimation<HTMLDivElement>();
   const benefitsAnimation = useScrollAnimation<HTMLDivElement>();
   const ctaAnimation = useScrollAnimation<HTMLDivElement>();
 
+  const creatorFeatures = [
+    { icon: Palette, titleKey: 'creators.layerGeneration', descKey: 'creators.layerGenerationDesc' },
+    { icon: LayoutGrid, titleKey: 'creators.productPage', descKey: 'creators.productPageDesc' },
+    { icon: CreditCard, titleKey: 'creators.nmkrMinting', descKey: 'creators.nmkrMintingDesc' },
+    { icon: Users, titleKey: 'creators.teamCollab', descKey: 'creators.teamCollabDesc' },
+    { icon: Sparkles, titleKey: 'creators.royalties', descKey: 'creators.royaltiesDesc' },
+    { icon: Store, titleKey: 'creators.marketplaceListing', descKey: 'creators.marketplaceListingDesc' },
+  ];
+
+  const benefits = [
+    { icon: Zap, titleKey: 'benefits.fast', descKey: 'benefits.fastDesc' },
+    { icon: Shield, titleKey: 'benefits.secure', descKey: 'benefits.secureDesc' },
+    { icon: Users, titleKey: 'benefits.teams', descKey: 'benefits.teamsDesc' },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border/50">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <nav className="container mx-auto flex items-center justify-between px-6 py-4" aria-label="Main navigation">
           <Link to="/" className="flex items-center gap-3" aria-label="AnonForge home">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
@@ -51,17 +69,18 @@ export default function Index() {
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
             <Button variant="ghost" asChild className="hidden md:inline-flex">
-              <Link to="/marketplace">Marketplace</Link>
+              <Link to="/marketplace">{t('nav.marketplace')}</Link>
             </Button>
             <a href="#for-creators" className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground md:inline-flex">
-              For Creators
+              {t('nav.forCreators')}
             </a>
+            <LanguageSelector />
             <ThemeToggle />
             <Button variant="ghost" asChild className="hidden sm:inline-flex">
-              <Link to="/login">Sign in</Link>
+              <Link to="/login">{t('nav.signIn')}</Link>
             </Button>
             <Button asChild>
-              <Link to="/register">Get started</Link>
+              <Link to="/register">{t('nav.getStarted')}</Link>
             </Button>
           </div>
         </nav>
@@ -81,28 +100,27 @@ export default function Index() {
             <div className="mx-auto max-w-4xl text-center">
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
                 <Sparkles className="h-4 w-4" />
-                NFT Platform on Cardano
+                {t('hero.badge')}
               </div>
               <h1 id="hero-heading" className="font-display text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-                Discover & mint
-                <span className="text-primary"> unique NFTs</span>
+                {t('hero.title1')}
+                <span className="text-primary"> {t('hero.title2')}</span>
                 <br />
-                <span className="text-muted-foreground">or launch your own collection</span>
+                <span className="text-muted-foreground">{t('hero.title3')}</span>
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-                Browse curated collections from independent creators, or build and launch 
-                your own NFT project with built-in minting powered by NMKR.
+                {t('hero.description')}
               </p>
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                 <Button size="lg" asChild className="px-8">
                   <Link to="/marketplace">
                     <Store className="mr-2 h-4 w-4" aria-hidden="true" />
-                    Explore Marketplace
+                    {t('hero.exploreMarketplace')}
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild>
                   <Link to="/register">
-                    Start Creating
+                    {t('hero.startCreating')}
                     <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
                   </Link>
                 </Button>
@@ -126,27 +144,20 @@ export default function Index() {
             )}>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-1.5 text-sm font-medium">
                 <Rocket className="h-4 w-4 text-primary" />
-                For Creators
+                {t('creators.badge')}
               </div>
               <h2 id="creators-heading" className="font-display text-3xl font-bold sm:text-4xl">
-                Launch your NFT collection in minutes
+                {t('creators.title')}
               </h2>
               <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-                Generate art, set up minting, create your product page, and go live — all in one place.
+                {t('creators.description')}
               </p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[
-                { icon: Palette, title: "Layer-Based Generation", desc: "Upload layers, set rarity weights, and generate thousands of unique combinations with metadata ready for minting." },
-                { icon: LayoutGrid, title: "Product Page Builder", desc: "Create a stunning landing page for your drop with custom branding, banners, and social links — no coding required." },
-                { icon: CreditCard, title: "NMKR Minting", desc: "Launch on Cardano with integrated NMKR minting. Upload NFTs, set prices, and accept payments with built-in buy buttons." },
-                { icon: Users, title: "Team Collaboration", desc: "Invite team members with role-based permissions. Work together on layers, review generations, and manage your project." },
-                { icon: Sparkles, title: "Royalty Management", desc: "Set up royalties for secondary sales. Configure percentages and payment addresses directly in your project settings." },
-                { icon: Store, title: "Marketplace Listing", desc: "Go live and get discovered. Your collection appears in the AnonForge marketplace for collectors to browse and mint." },
-              ].map((feature, index) => (
+              {creatorFeatures.map((feature, index) => (
                 <article 
-                  key={feature.title}
+                  key={feature.titleKey}
                   className={cn(
                     "group rounded-xl border border-border/50 bg-card p-6 transition-all hover:border-primary/30 hover:shadow-lg opacity-0",
                     creatorsAnimation.isVisible && "animate-slide-up"
@@ -156,8 +167,8 @@ export default function Index() {
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
                     <feature.icon className="h-6 w-6 text-primary" aria-hidden="true" />
                   </div>
-                  <h3 className="font-display text-lg font-semibold">{feature.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">{feature.desc}</p>
+                  <h3 className="font-display text-lg font-semibold">{t(feature.titleKey)}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">{t(feature.descKey)}</p>
                 </article>
               ))}
             </div>
@@ -174,16 +185,12 @@ export default function Index() {
                 benefitsAnimation.isVisible && "animate-slide-up"
               )}
             >
-              Why choose AnonForge?
+              {t('benefits.title')}
             </h2>
             <div className="grid gap-8 md:grid-cols-3">
-              {[
-                { icon: Zap, title: "Lightning Fast", desc: "Generate thousands of unique images in seconds. Launch your collection in minutes, not weeks." },
-                { icon: Shield, title: "Secure & Private", desc: "Your assets are protected with enterprise-grade security. Your API keys stay encrypted." },
-                { icon: Users, title: "Built for Teams", desc: "Invite collaborators, assign roles, and work together on your NFT project seamlessly." },
-              ].map((benefit, index) => (
+              {benefits.map((benefit, index) => (
                 <div 
-                  key={benefit.title}
+                  key={benefit.titleKey}
                   className={cn(
                     "text-center opacity-0",
                     benefitsAnimation.isVisible && "animate-slide-up"
@@ -193,8 +200,8 @@ export default function Index() {
                   <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
                     <benefit.icon className="h-7 w-7 text-primary" aria-hidden="true" />
                   </div>
-                  <h3 className="font-display text-lg font-semibold">{benefit.title}</h3>
-                  <p className="mt-2 text-muted-foreground">{benefit.desc}</p>
+                  <h3 className="font-display text-lg font-semibold">{t(benefit.titleKey)}</h3>
+                  <p className="mt-2 text-muted-foreground">{t(benefit.descKey)}</p>
                 </div>
               ))}
             </div>
@@ -211,21 +218,21 @@ export default function Index() {
             )}
           >
             <h2 id="cta-heading" className="font-display text-3xl font-bold sm:text-4xl">
-              Ready to get started?
+              {t('cta.title')}
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-              Whether you're collecting or creating, AnonForge has everything you need to explore the world of NFTs on Cardano.
+              {t('cta.description')}
             </p>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Button size="lg" asChild className="px-8">
                 <Link to="/marketplace">
                   <Store className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Explore Marketplace
+                  {t('cta.exploreMarketplace')}
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
                 <Link to="/register">
-                  Create Account
+                  {t('cta.createAccount')}
                   <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
                 </Link>
               </Button>
@@ -242,11 +249,11 @@ export default function Index() {
             <span className="font-semibold">AnonForge</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link to="/terms" className="transition-colors hover:text-foreground">Terms</Link>
-            <Link to="/marketplace" className="transition-colors hover:text-foreground">Marketplace</Link>
+            <Link to="/terms" className="transition-colors hover:text-foreground">{t('footer.terms')}</Link>
+            <Link to="/marketplace" className="transition-colors hover:text-foreground">{t('footer.marketplace')}</Link>
           </div>
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} All rights reserved.
+            © {new Date().getFullYear()} {t('footer.rights')}
           </p>
         </div>
       </footer>
