@@ -135,6 +135,10 @@ export default function Documentation() {
               </li>
               <li className="flex items-start gap-2">
                 <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                Maximum resolution: 3000×3000 pixels
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 Keep all images the same dimensions
               </li>
               <li className="flex items-start gap-2">
@@ -179,7 +183,7 @@ export default function Documentation() {
       id: 'nft-generation',
       title: 'NFT Generation',
       icon: Sparkles,
-      keywords: ['generate', 'batch', 'single', 'unique', 'combination', 'history', 'favorite', 'metadata', 'comment', 'random', 'manual', 'select', 'preview', 'resolution', 'download', 'image', 'json', 'token', 'id', 'prefix', 'weight', 'rarity', 'trait', 'attribute'],
+      keywords: ['generate', 'batch', 'single', 'unique', 'combination', 'history', 'favorite', 'metadata', 'comment', 'random', 'manual', 'select', 'preview', 'resolution', 'download', 'image', 'json', 'token', 'id', 'prefix', 'weight', 'rarity', 'trait', 'attribute', 'jpg', 'jpeg', 'format', 'quality'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -214,6 +218,54 @@ export default function Documentation() {
                 </CardDescription>
               </CardContent>
             </Card>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold flex items-center gap-2">
+              <Settings className="h-4 w-4 text-primary" />
+              Technical Specifications
+            </h4>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-card">
+                <div className="h-8 w-8 rounded bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                  <FileImage className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Export Format</p>
+                  <p className="text-xs text-muted-foreground">High-quality JPG (92% quality)</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-card">
+                <div className="h-8 w-8 rounded bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                  <LayoutGrid className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Full Resolution</p>
+                  <p className="text-xs text-muted-foreground">Up to 3000×3000 pixels</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-card">
+                <div className="h-8 w-8 rounded bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                  <Zap className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Preview Mode</p>
+                  <p className="text-xs text-muted-foreground">384×384 pixels for faster generation</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-card">
+                <div className="h-8 w-8 rounded bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">File Size</p>
+                  <p className="text-xs text-muted-foreground">~1-3MB per image at full resolution</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -492,10 +544,88 @@ export default function Documentation() {
       ),
     },
     {
+      id: 'creator-verification',
+      title: 'Creator Verification',
+      icon: Shield,
+      keywords: ['verification', 'verified', 'badge', 'creator', 'twitter', 'trust', 'approve', 'request', 'founder'],
+      content: (
+        <div className="space-y-6">
+          <p className="text-muted-foreground">
+            Get verified as a creator to build trust with collectors. Verified creators display a badge on all their collections.
+          </p>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold">How to Get Verified</h4>
+            <div className="space-y-3">
+              <div className="flex gap-4 items-start">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                  <span className="text-sm font-bold text-primary">1</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Go to Product Page Tab</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Navigate to your project's Product Page tab.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex gap-4 items-start">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                  <span className="text-sm font-bold text-primary">2</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Request Verification</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    In the "Founder / Creator" section, click "Request Verification".
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex gap-4 items-start">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                  <span className="text-sm font-bold text-primary">3</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Submit Details</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Enter your Twitter handle and optional bio, then submit for admin review.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold">Verification Status</h4>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/20 bg-amber-500/5">
+                <div className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-xs font-medium">
+                  Pending
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-green-500/20 bg-green-500/5">
+                <div className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 text-xs font-medium">
+                  Approved
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-red-500/20 bg-red-500/5">
+                <div className="px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 text-xs font-medium">
+                  Rejected
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              If rejected, you can update your information and resubmit for review.
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
       id: 'marketplace',
       title: 'Marketplace Listing',
       icon: Store,
-      keywords: ['marketplace', 'listing', 'live', 'publish', 'discover', 'collectors', 'review', 'approval', 'visibility'],
+      keywords: ['marketplace', 'listing', 'live', 'publish', 'discover', 'collectors', 'review', 'approval', 'visibility', '24 hours', 'automatic'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -524,7 +654,7 @@ export default function Documentation() {
                 <div>
                   <p className="font-medium text-sm">Submit for Review</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Toggle your page to "Live" status. It will be reviewed by the AnonForge team.
+                    Toggle your page to "Live" status. It will enter a 24-hour review period.
                   </p>
                 </div>
               </div>
@@ -534,11 +664,23 @@ export default function Documentation() {
                   <span className="text-sm font-bold text-primary">3</span>
                 </div>
                 <div>
-                  <p className="font-medium text-sm">Get Approved</p>
+                  <p className="font-medium text-sm">Automatic or Early Approval</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Once approved, your collection appears in the marketplace for everyone to see.
+                    Collections automatically go live after 24 hours, or admin can approve early.
                   </p>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+            <div className="flex gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">24-Hour Review Period</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  After setting your page to "Live", there's a 24-hour waiting period. Admin can approve early or reject during this time. If not rejected, your collection automatically goes live after 24 hours.
+                </p>
               </div>
             </div>
           </div>
