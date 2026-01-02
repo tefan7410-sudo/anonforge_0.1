@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,8 +11,29 @@ import { Layers, ExternalLink, Sparkles } from 'lucide-react';
 
 const STORAGE_KEY = 'anonforge-welcome-seen';
 
+interface Particle {
+  id: number;
+  x: string;
+  y: string;
+  size: number;
+  delay: string;
+  duration: string;
+}
+
+function generateParticles(): Particle[] {
+  return Array.from({ length: 12 }, (_, i) => ({
+    id: i,
+    x: `${Math.random() * 100}%`,
+    y: `${60 + Math.random() * 40}%`,
+    size: 4 + Math.random() * 4,
+    delay: `${Math.random() * 0.5}s`,
+    duration: `${1.5 + Math.random() * 1}s`,
+  }));
+}
+
 export function WelcomeModal() {
   const [open, setOpen] = useState(false);
+  const particles = useMemo(() => generateParticles(), []);
 
   useEffect(() => {
     const hasSeenWelcome = localStorage.getItem(STORAGE_KEY);
@@ -29,8 +49,28 @@ export function WelcomeModal() {
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader className="text-center sm:text-center">
+      <DialogContent className="sm:max-w-md overflow-hidden">
+        {/* Particle animation */}
+        {open && (
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            {particles.map((particle) => (
+              <div
+                key={particle.id}
+                className="absolute rounded-full bg-primary/60 shadow-[0_0_6px_hsl(var(--primary)/0.6)] animate-particle-float"
+                style={{
+                  left: particle.x,
+                  top: particle.y,
+                  width: particle.size,
+                  height: particle.size,
+                  animationDelay: particle.delay,
+                  animationDuration: particle.duration,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        <DialogHeader className="text-center sm:text-center relative z-10">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Layers className="h-8 w-8 text-primary" />
           </div>
@@ -41,7 +81,7 @@ export function WelcomeModal() {
           </Badge>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 relative z-10">
           <p className="text-center text-muted-foreground">
             Hi! I'm{' '}
             <a
@@ -68,18 +108,18 @@ export function WelcomeModal() {
             </p>
             <Button variant="outline" size="sm" asChild>
               <a
-                href="https://www.jpg.store/collection/anonforge"
+                href="https://24f02d5b-359d-40ba-8edd-d8a8c0ad3888.lovableproject.com/collection/a1cab3d9-2351-4df9-9988-5f0621e40085"
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
-                Check out Anon Collection
+                View Anon Collection
               </a>
             </Button>
           </div>
         </div>
 
-        <Button onClick={handleClose} className="w-full">
+        <Button onClick={handleClose} className="w-full relative z-10">
           Let's Explore!
         </Button>
       </DialogContent>
