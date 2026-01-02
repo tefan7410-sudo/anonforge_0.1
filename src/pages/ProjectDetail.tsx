@@ -22,6 +22,7 @@ import {
   Layers,
   Image as ImageIcon,
   Clock,
+  FileText,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { LayerUploadZone } from '@/components/project/LayerUploadZone';
@@ -29,6 +30,7 @@ import { CategoryList } from '@/components/project/CategoryList';
 import { GenerationPanel } from '@/components/project/GenerationPanel';
 import { GenerationHistory } from '@/components/project/GenerationHistory';
 import { PublishPanel } from '@/components/project/PublishPanel';
+import { ProductPageTab } from '@/components/project/ProductPageTab';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
@@ -170,6 +172,7 @@ export default function ProjectDetail() {
               <TabsTrigger value="layers">Layers</TabsTrigger>
               <TabsTrigger value="generate">Generate</TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
+              <TabsTrigger value="product">Product Page</TabsTrigger>
               <TabsTrigger value="publish">Publish</TabsTrigger>
             </TabsList>
 
@@ -212,6 +215,12 @@ export default function ProjectDetail() {
           <TabsContent value="history">
             <ErrorBoundary>
               <GenerationHistory projectId={id!} />
+            </ErrorBoundary>
+          </TabsContent>
+
+          <TabsContent value="product">
+            <ErrorBoundary>
+              <ProductPageTab projectId={id!} />
             </ErrorBoundary>
           </TabsContent>
 

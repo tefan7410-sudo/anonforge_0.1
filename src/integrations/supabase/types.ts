@@ -352,6 +352,68 @@ export type Database = {
         }
         Relationships: []
       }
+      product_pages: {
+        Row: {
+          banner_url: string | null
+          created_at: string
+          discord_url: string | null
+          founder_bio: string | null
+          founder_name: string | null
+          founder_pfp_url: string | null
+          founder_twitter: string | null
+          id: string
+          logo_url: string | null
+          portfolio: Json | null
+          project_id: string
+          tagline: string | null
+          twitter_url: string | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          created_at?: string
+          discord_url?: string | null
+          founder_bio?: string | null
+          founder_name?: string | null
+          founder_pfp_url?: string | null
+          founder_twitter?: string | null
+          id?: string
+          logo_url?: string | null
+          portfolio?: Json | null
+          project_id: string
+          tagline?: string | null
+          twitter_url?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          created_at?: string
+          discord_url?: string | null
+          founder_bio?: string | null
+          founder_name?: string | null
+          founder_pfp_url?: string | null
+          founder_twitter?: string | null
+          id?: string
+          logo_url?: string | null
+          portfolio?: Json | null
+          project_id?: string
+          tagline?: string | null
+          twitter_url?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_pages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           accepted_terms_at: string | null

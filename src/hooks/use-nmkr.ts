@@ -192,6 +192,7 @@ export function useCreateNmkrProject() {
       addressExpireTime,
       projectUrl,
       twitterHandle,
+      projectLogo,
     }: {
       projectId: string;
       projectName: string;
@@ -205,6 +206,7 @@ export function useCreateNmkrProject() {
       addressExpireTime: number;
       projectUrl?: string;
       twitterHandle?: string;
+      projectLogo?: string;
     }) => {
       // Create project on NMKR
       const result = await callNmkrProxy('create-project', {

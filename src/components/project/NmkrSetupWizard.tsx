@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { format } from 'date-fns';
+import { useDropzone } from 'react-dropzone';
 import { useCreateNmkrProject, useMintRoyaltyToken } from '@/hooks/use-nmkr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { Rocket, ExternalLink, Loader2, CheckCircle2, CalendarIcon, ChevronDown, Info, Coins } from 'lucide-react';
+import { Rocket, ExternalLink, Loader2, CheckCircle2, CalendarIcon, ChevronDown, Info, Coins, ImageIcon, X, Globe, Twitter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NmkrSetupWizardProps {
@@ -37,10 +38,15 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
   const [policyExpires, setPolicyExpires] = useState(true);
   const [policyLockDate, setPolicyLockDate] = useState<Date | undefined>(undefined);
   
-  // Advanced options
-  const [addressExpireTime, setAddressExpireTime] = useState('20');
+  // Marketing & Branding
   const [projectUrl, setProjectUrl] = useState('');
   const [twitterHandle, setTwitterHandle] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  
+  // Advanced options
+  const [addressExpireTime, setAddressExpireTime] = useState('20');
   
   // Royalty settings
   const [royaltyPercent, setRoyaltyPercent] = useState(5);
@@ -53,6 +59,56 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
   
   const createProject = useCreateNmkrProject();
   const mintRoyalty = useMintRoyaltyToken();
+
+  // Logo upload handler
+  const onLogoDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+    
+    setLogoError(null);
+    
+    // Validate file size (max 500KB)
+    if (file.size > 500000) {
+      setLogoError('Logo must be smaller than 500KB');
+      return;
+    }
+    
+    // Validate dimensions
+    const img = new Image();
+    img.onload = () => {
+      if (img.width > 300 || img.height > 300) {
+        setLogoError('Logo must be 300x300 pixels or smaller');
+        URL.revokeObjectURL(img.src);
+        return;
+      }
+      if (img.width !== img.height) {
+        setLogoError('Logo should be square (same width and height)');
+        URL.revokeObjectURL(img.src);
+        return;
+      }
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+    };
+    img.onerror = () => {
+      setLogoError('Invalid image file');
+    };
+    img.src = URL.createObjectURL(file);
+  }, []);
+
+  const { getRootProps: getLogoRootProps, getInputProps: getLogoInputProps, isDragActive: isLogoDragActive } = useDropzone({
+    onDrop: onLogoDrop,
+    accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp'] },
+    maxFiles: 1,
+  });
+
+  const clearLogo = () => {
+    if (logoPreview) {
+      URL.revokeObjectURL(logoPreview);
+    }
+    setLogoFile(null);
+    setLogoPreview(null);
+    setLogoError(null);
+  };
 
   // Validation
   const maxSupplyValue = parseInt(maxSupply) || 0;
@@ -72,6 +128,20 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
     setIsCreating(true);
     
     try {
+      // Convert logo to base64 if present
+      let logoBase64: string | undefined;
+      if (logoFile) {
+        logoBase64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const result = reader.result as string;
+            // Remove data URL prefix to get pure base64
+            resolve(result.split(',')[1]);
+          };
+          reader.readAsDataURL(logoFile);
+        });
+      }
+
       // 1. Create the NMKR project
       const nmkrProject = await createProject.mutateAsync({
         projectId,
@@ -86,6 +156,7 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
         addressExpireTime: addressExpireTimeValue,
         projectUrl: projectUrl.trim() || undefined,
         twitterHandle: twitterHandle.trim() || undefined,
+        projectLogo: logoBase64,
       });
 
       // 2. Mint royalty token if configured (but don't block project creation if it fails)
@@ -235,6 +306,102 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
                 Please enter a valid Cardano mainnet address (starts with addr1)
               </p>
             )}
+          </div>
+        </div>
+
+        {/* Marketing & Branding */}
+        <div className="space-y-4">
+          <h4 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Globe className="h-4 w-4 text-primary" />
+            Marketing & Branding
+          </h4>
+          
+          {/* Logo Upload */}
+          <div className="space-y-2">
+            <Label>Collection Logo (Optional)</Label>
+            <p className="text-xs text-muted-foreground">
+              Square image, max 300x300px. Displayed on NMKR payment gateway.
+            </p>
+            
+            {logoPreview ? (
+              <div className="flex items-start gap-4">
+                <div className="relative">
+                  <img 
+                    src={logoPreview} 
+                    alt="Logo preview" 
+                    className="h-20 w-20 rounded-lg border object-cover"
+                  />
+                  <Button 
+                    variant="destructive" 
+                    size="icon" 
+                    className="absolute -right-2 -top-2 h-6 w-6"
+                    onClick={clearLogo}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Logo uploaded successfully
+                </p>
+              </div>
+            ) : (
+              <div
+                {...getLogoRootProps()}
+                className={cn(
+                  "flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 transition-colors",
+                  isLogoDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                )}
+              >
+                <input {...getLogoInputProps()} />
+                <ImageIcon className="mb-2 h-8 w-8 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground text-center">
+                  {isLogoDragActive ? "Drop logo here" : "Drag & drop logo or click to select"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Max 300x300px, square, under 500KB
+                </p>
+              </div>
+            )}
+            
+            {logoError && (
+              <p className="text-xs text-destructive">{logoError}</p>
+            )}
+          </div>
+
+          {/* Project URL */}
+          <div className="space-y-2">
+            <Label htmlFor="project-url">Project URL (Optional)</Label>
+            <Input
+              id="project-url"
+              type="url"
+              value={projectUrl}
+              onChange={(e) => setProjectUrl(e.target.value)}
+              placeholder="https://myproject.com"
+            />
+            <p className="text-xs text-muted-foreground">
+              Website URL for your collection
+            </p>
+          </div>
+
+          {/* Twitter Handle */}
+          <div className="space-y-2">
+            <Label htmlFor="twitter-handle" className="flex items-center gap-2">
+              <Twitter className="h-3 w-3" />
+              Twitter/X Handle (Optional)
+            </Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+              <Input
+                id="twitter-handle"
+                value={twitterHandle}
+                onChange={(e) => setTwitterHandle(e.target.value.replace('@', ''))}
+                placeholder="yourhandle"
+                className="pl-7"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Buyers can tag you when sharing purchases
+            </p>
           </div>
         </div>
 
@@ -414,37 +581,6 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
               />
               <p className="text-xs text-muted-foreground">
                 How long a token is reserved for a buyer before expiring (5-60 minutes, default: 20)
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="project-url">Project URL (Optional)</Label>
-              <Input
-                id="project-url"
-                type="url"
-                value={projectUrl}
-                onChange={(e) => setProjectUrl(e.target.value)}
-                placeholder="https://myproject.com"
-              />
-              <p className="text-xs text-muted-foreground">
-                Website URL for your collection
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="twitter-handle">Twitter/X Handle (Optional)</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
-                <Input
-                  id="twitter-handle"
-                  value={twitterHandle}
-                  onChange={(e) => setTwitterHandle(e.target.value.replace('@', ''))}
-                  placeholder="yourhandle"
-                  className="pl-7"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Buyers can tag you when sharing purchases
               </p>
             </div>
           </CollapsibleContent>
