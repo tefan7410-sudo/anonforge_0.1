@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { type PortfolioItem } from '@/hooks/use-product-page';
 import { useExternalLink } from '@/hooks/use-external-link';
 import { ExternalLinkWarning } from '@/components/ExternalLinkWarning';
-import { useNmkrCounts } from '@/hooks/use-nmkr';
+import { MintStatusCard } from '@/components/MintStatusCard';
 import { toast } from 'sonner';
 
 export default function Collection() {
@@ -230,6 +230,12 @@ export default function Collection() {
             )}
           </div>
         )}
+
+        {/* Mint Status */}
+        <MintStatusCard 
+          nmkrProjectUid={nmkrProject?.nmkr_project_uid} 
+          maxSupply={maxSupply}
+        />
 
         {/* Buy Button */}
         {productPage.buy_button_enabled && productPage.buy_button_link && (
