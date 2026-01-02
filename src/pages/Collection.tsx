@@ -1,4 +1,4 @@
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -9,12 +9,18 @@ import {
   Globe, 
   ExternalLink,
   ShoppingCart,
+  ArrowLeft,
+  Layers,
+  BadgeCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type PortfolioItem } from '@/hooks/use-product-page';
+import { useExternalLink } from '@/hooks/use-external-link';
+import { ExternalLinkWarning } from '@/components/ExternalLinkWarning';
 
 export default function Collection() {
   const { projectId } = useParams<{ projectId: string }>();
+  const externalLink = useExternalLink();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['public-collection', projectId],
@@ -71,9 +77,30 @@ export default function Collection() {
   }
 
   const { project, productPage } = data;
+  const founderVerified = (productPage as { founder_verified?: boolean }).founder_verified;
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Sticky Header */}
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
+        <div className="container mx-auto flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/marketplace">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Marketplace
+              </Link>
+            </Button>
+          </div>
+          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+              <Layers className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <span className="font-display text-sm font-semibold hidden sm:inline">AnonForge</span>
+          </Link>
+        </div>
+      </header>
+
       {/* Banner */}
       <div className="relative h-64 md:h-80 w-full bg-gradient-to-br from-primary/20 to-primary/5">
         {productPage.banner_url && (
@@ -115,27 +142,33 @@ export default function Collection() {
         {(productPage.twitter_url || productPage.discord_url || productPage.website_url) && (
           <div className="flex flex-wrap gap-2 mb-8">
             {productPage.twitter_url && (
-              <Button asChild variant="outline" size="sm">
-                <a href={productPage.twitter_url} target="_blank" rel="noopener noreferrer">
-                  <Twitter className="mr-2 h-4 w-4" />
-                  Twitter
-                </a>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={(e) => externalLink.handleExternalClick(productPage.twitter_url!, e)}
+              >
+                <Twitter className="mr-2 h-4 w-4" />
+                Twitter
               </Button>
             )}
             {productPage.discord_url && (
-              <Button asChild variant="outline" size="sm">
-                <a href={productPage.discord_url} target="_blank" rel="noopener noreferrer">
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  Discord
-                </a>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={(e) => externalLink.handleExternalClick(productPage.discord_url!, e)}
+              >
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Discord
               </Button>
             )}
             {productPage.website_url && (
-              <Button asChild variant="outline" size="sm">
-                <a href={productPage.website_url} target="_blank" rel="noopener noreferrer">
-                  <Globe className="mr-2 h-4 w-4" />
-                  Website
-                </a>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={(e) => externalLink.handleExternalClick(productPage.website_url!, e)}
+              >
+                <Globe className="mr-2 h-4 w-4" />
+                Website
               </Button>
             )}
           </div>
@@ -144,11 +177,13 @@ export default function Collection() {
         {/* Buy Button */}
         {productPage.buy_button_enabled && productPage.buy_button_link && (
           <div className="mb-8">
-            <Button asChild size="lg" className="w-full md:w-auto">
-              <a href={productPage.buy_button_link} target="_blank" rel="noopener noreferrer">
-                <ShoppingCart className="mr-2 h-5 w-5" />
-                {productPage.buy_button_text || 'Mint Now'}
-              </a>
+            <Button 
+              size="lg" 
+              className="w-full md:w-auto"
+              onClick={(e) => externalLink.handleExternalClick(productPage.buy_button_link!, e)}
+            >
+              <ShoppingCart className="mr-2 h-5 w-5" />
+              {productPage.buy_button_text || 'Mint Now'}
             </Button>
           </div>
         )}
@@ -174,15 +209,18 @@ export default function Collection() {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold">{productPage.founder_name || 'Anonymous'}</h3>
+                  {founderVerified && (
+                    <span title="Verified Creator">
+                      <BadgeCheck className="h-5 w-5 text-primary" />
+                    </span>
+                  )}
                   {productPage.founder_twitter && (
-                    <a 
-                      href={`https://twitter.com/${productPage.founder_twitter}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-muted-foreground hover:text-primary"
+                    <button 
+                      onClick={(e) => externalLink.handleExternalClick(`https://twitter.com/${productPage.founder_twitter}`, e)}
+                      className="text-muted-foreground hover:text-primary transition-colors"
                     >
                       <Twitter className="h-4 w-4" />
-                    </a>
+                    </button>
                   )}
                 </div>
                 {productPage.founder_bio && (
@@ -199,14 +237,12 @@ export default function Collection() {
             <h2 className="text-xl font-display font-semibold mb-4">Past Work</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {productPage.portfolio.map((item) => (
-                <a
+                <div
                   key={item.id}
-                  href={item.link || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={(e) => item.link && externalLink.handleExternalClick(item.link, e)}
                   className={cn(
                     "group rounded-xl border bg-card overflow-hidden transition-all hover:shadow-lg",
-                    item.link && "hover:border-primary"
+                    item.link && "cursor-pointer hover:border-primary"
                   )}
                 >
                   {item.image_url && (
@@ -231,7 +267,7 @@ export default function Collection() {
                       </p>
                     )}
                   </div>
-                </a>
+                </div>
               ))}
             </div>
           </div>
@@ -239,9 +275,21 @@ export default function Collection() {
 
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground pt-8 border-t">
-          <p>Powered by AnonForge</p>
+          <Link to="/" className="hover:text-primary transition-colors">
+            Powered by AnonForge
+          </Link>
         </div>
       </div>
+
+      {/* External Link Warning Modal */}
+      <ExternalLinkWarning
+        isOpen={externalLink.isOpen}
+        url={externalLink.pendingUrl}
+        dontShowAgain={externalLink.dontShowAgain}
+        onContinue={externalLink.handleContinue}
+        onCancel={externalLink.handleCancel}
+        onToggleDontShowAgain={externalLink.toggleDontShowAgain}
+      />
     </div>
   );
 }

@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Image as ImageIcon, 
   Upload, 
@@ -39,9 +40,13 @@ import {
   Rocket,
   ShoppingCart,
   Sparkles,
+  Info,
+  BadgeCheck,
+  AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { isValidTwitterUrl, isValidDiscordUrl, isValidWebsiteUrl } from '@/lib/url-validation';
 
 interface ProductPageTabProps {
   projectId: string;
@@ -78,9 +83,17 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
   const [buyButtonLink, setBuyButtonLink] = useState<string | null>(null);
   const [isLive, setIsLive] = useState(false);
   
+  // URL validation errors
+  const [twitterError, setTwitterError] = useState<string | null>(null);
+  const [discordError, setDiscordError] = useState<string | null>(null);
+  const [websiteError, setWebsiteError] = useState<string | null>(null);
+  
   // Preview state
   const [showPreview, setShowPreview] = useState(false);
   const [founderPrefilled, setFounderPrefilled] = useState(false);
+  
+  // Founder verification status
+  const founderVerified = (productPage as { founder_verified?: boolean } | undefined)?.founder_verified ?? false;
 
   // Initialize form with existing data
   useEffect(() => {
@@ -206,8 +219,37 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
     }
   };
 
+  // URL validation handlers
+  const validateTwitterUrl = (url: string) => {
+    const result = isValidTwitterUrl(url);
+    setTwitterError(result.isValid ? null : result.error || null);
+    return result.isValid;
+  };
+
+  const validateDiscordUrl = (url: string) => {
+    const result = isValidDiscordUrl(url);
+    setDiscordError(result.isValid ? null : result.error || null);
+    return result.isValid;
+  };
+
+  const validateWebsiteUrl = (url: string) => {
+    const result = isValidWebsiteUrl(url);
+    setWebsiteError(result.isValid ? null : result.error || null);
+    return result.isValid;
+  };
+
   // Save handler
   const handleSave = async () => {
+    // Validate all URLs first
+    const isTwitterValid = validateTwitterUrl(twitterUrl);
+    const isDiscordValid = validateDiscordUrl(discordUrl);
+    const isWebsiteValid = validateWebsiteUrl(websiteUrl);
+    
+    if (!isTwitterValid || !isDiscordValid || !isWebsiteValid) {
+      toast.error('Please fix the URL validation errors before saving');
+      return;
+    }
+
     await updateProductPage.mutateAsync({
       projectId,
       updates: {
@@ -549,9 +591,20 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
               id="twitter-url"
               type="url"
               value={twitterUrl}
-              onChange={(e) => setTwitterUrl(e.target.value)}
+              onChange={(e) => {
+                setTwitterUrl(e.target.value);
+                if (twitterError) validateTwitterUrl(e.target.value);
+              }}
+              onBlur={() => validateTwitterUrl(twitterUrl)}
               placeholder="https://twitter.com/yourhandle"
+              className={cn(twitterError && "border-destructive")}
             />
+            {twitterError && (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {twitterError}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -563,9 +616,20 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
               id="discord-url"
               type="url"
               value={discordUrl}
-              onChange={(e) => setDiscordUrl(e.target.value)}
+              onChange={(e) => {
+                setDiscordUrl(e.target.value);
+                if (discordError) validateDiscordUrl(e.target.value);
+              }}
+              onBlur={() => validateDiscordUrl(discordUrl)}
               placeholder="https://discord.gg/yourserver"
+              className={cn(discordError && "border-destructive")}
             />
+            {discordError && (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {discordError}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -577,9 +641,20 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
               id="website-url"
               type="url"
               value={websiteUrl}
-              onChange={(e) => setWebsiteUrl(e.target.value)}
+              onChange={(e) => {
+                setWebsiteUrl(e.target.value);
+                if (websiteError) validateWebsiteUrl(e.target.value);
+              }}
+              onBlur={() => validateWebsiteUrl(websiteUrl)}
               placeholder="https://yourwebsite.com"
+              className={cn(websiteError && "border-destructive")}
             />
+            {websiteError && (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {websiteError}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -590,6 +665,12 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
           <CardTitle className="flex items-center gap-2 font-display">
             <User className="h-5 w-5 text-primary" />
             Founder / Creator
+            {founderVerified && (
+              <Badge variant="default" className="gap-1 bg-primary">
+                <BadgeCheck className="h-3 w-3" />
+                Verified
+              </Badge>
+            )}
           </CardTitle>
           <CardDescription>
             Introduce yourself to potential collectors
@@ -598,7 +679,27 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
             )}
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
+        <CardContent className="space-y-6">
+          {/* Verification Notice */}
+          {!founderVerified && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Want a verified badge?</strong> DM{' '}
+                <a 
+                  href="https://twitter.com/bajuzki" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline font-medium"
+                >
+                  @bajuzki
+                </a>
+                {' '}on Twitter/X with a link to your collection. We'll verify and add the badge to your profile.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-4">
             {/* Founder PFP */}
             <div className="space-y-2">
@@ -679,6 +780,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
             <p className="text-xs text-muted-foreground">
               {founderBio.length}/500 characters
             </p>
+          </div>
           </div>
         </CardContent>
       </Card>
