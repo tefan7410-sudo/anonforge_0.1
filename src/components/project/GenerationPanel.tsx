@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useCategories, useAllLayers, type Project, type Layer, type Category } from '@/hooks/use-project';
+import { useCategories, useAllLayers, useAllExclusions, useAllEffects, type Project, type Layer, type Category } from '@/hooks/use-project';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -62,7 +62,10 @@ interface GeneratedCharacter {
 export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const { data: categories } = useCategories(projectId);
   const { data: allLayers } = useAllLayers(projectId);
+  const { data: allLayersWithEffects } = useAllLayers(projectId, true);
   const { data: generations } = useGenerations(projectId);
+  const { data: exclusions } = useAllExclusions(projectId);
+  const { data: effects } = useAllEffects(projectId);
   const { toast } = useToast();
   const createGeneration = useCreateGeneration();
   const cleanupGenerations = useCleanupGenerations();
@@ -84,7 +87,27 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Group layers by category
+  // Build exclusion map: layer_id -> Set of excluded layer IDs
+  const exclusionMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    exclusions?.forEach((e) => {
+      if (!map.has(e.layer_id)) map.set(e.layer_id, new Set());
+      map.get(e.layer_id)!.add(e.excluded_layer_id);
+    });
+    return map;
+  }, [exclusions]);
+
+  // Build effect map: parent_layer_id -> effect layers with render order
+  const effectMap = useMemo(() => {
+    const map = new Map<string, { layer: Layer; renderOrder: number }[]>();
+    effects?.forEach((e) => {
+      if (!map.has(e.parent_layer_id)) map.set(e.parent_layer_id, []);
+      map.get(e.parent_layer_id)!.push({ layer: e.effect_layer, renderOrder: e.render_order });
+    });
+    return map;
+  }, [effects]);
+
+  // Group layers by category (excluding effect layers)
   const layersByCategory = new Map<string, Layer[]>();
   for (const layer of allLayers || []) {
     const existing = layersByCategory.get(layer.category_id) || [];
@@ -211,7 +234,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     return layers[layers.length - 1];
   };
 
-  // Generate a single character with duplicate prevention
+  // Generate a single character with duplicate prevention and exclusion rules
   const generateCharacter = async (
     tokenNumber: number,
     batchUsedCombinations: Set<string>
@@ -221,20 +244,48 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       const selectedLayers: { category: Category; layer: Layer }[] = [];
       const metadata: Record<string, string> = {};
+      const selectedLayerIds = new Set<string>();
 
       for (const category of sortedCategories) {
         const categoryLayers = layersByCategory.get(category.id) || [];
         if (categoryLayers.length === 0) continue;
 
+        // Filter out layers excluded by already-selected layers
+        const validLayers = categoryLayers.filter((layer) => {
+          for (const selectedId of selectedLayerIds) {
+            const excludedSet = exclusionMap.get(selectedId);
+            if (excludedSet?.has(layer.id)) return false;
+          }
+          return true;
+        });
+
+        if (validLayers.length === 0) {
+          // All layers in this category are excluded - retry from scratch
+          if (mode === 'manual') {
+            throw new Error(`No valid layers available for "${category.display_name}" due to exclusion rules.`);
+          }
+          break; // Break inner loop to retry
+        }
+
         let selectedLayer: Layer;
         if (mode === 'manual' && manualSelections[category.id]) {
-          selectedLayer = categoryLayers.find((l) => l.id === manualSelections[category.id]) || categoryLayers[0];
+          const manualLayer = validLayers.find((l) => l.id === manualSelections[category.id]);
+          if (!manualLayer) {
+            throw new Error(`Selected trait for "${category.display_name}" is excluded by another selection.`);
+          }
+          selectedLayer = manualLayer;
         } else {
-          selectedLayer = selectRandomLayer(categoryLayers);
+          selectedLayer = selectRandomLayer(validLayers);
         }
 
         selectedLayers.push({ category, layer: selectedLayer });
+        selectedLayerIds.add(selectedLayer.id);
         metadata[category.display_name] = selectedLayer.display_name;
+      }
+
+      // Check if we got all categories
+      if (selectedLayers.length !== sortedCategories.filter(c => (layersByCategory.get(c.id)?.length || 0) > 0).length) {
+        continue; // Retry
       }
 
       const hash = getCombinationHash(selectedLayers);
@@ -259,10 +310,10 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
       }
     }
 
-    throw new Error(`Could not generate unique combination after ${MAX_ATTEMPTS} attempts. You may have exhausted available combinations.`);
+    throw new Error(`Could not generate unique combination after ${MAX_ATTEMPTS} attempts. You may have exhausted available combinations or exclusion rules are too restrictive.`);
   };
 
-  // Compose layers onto canvas
+  // Compose layers onto canvas (including effect layers)
   const composeLayers = async (
     layers: { category: Category; layer: Layer }[],
     fullResolution: boolean = false
@@ -279,8 +330,25 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     canvas.height = size;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Build render list with effect layers
+    const renderList: { layer: Layer; order: number }[] = [];
+    
+    layers.forEach(({ layer }, index) => {
+      // Add the main layer
+      renderList.push({ layer, order: index * 10 }); // Base order
+
+      // Add any effect layers for this layer
+      const layerEffects = effectMap.get(layer.id) || [];
+      layerEffects.forEach(({ layer: effectLayer, renderOrder }) => {
+        renderList.push({ layer: effectLayer, order: index * 10 + renderOrder });
+      });
+    });
+
+    // Sort by render order
+    renderList.sort((a, b) => a.order - b.order);
+
     // Load and draw each layer in order
-    for (const { layer } of layers) {
+    for (const { layer } of renderList) {
       const { data: publicUrl } = supabase.storage.from('layers').getPublicUrl(layer.storage_path);
       
       await new Promise<void>((resolve, reject) => {

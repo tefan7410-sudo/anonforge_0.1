@@ -171,6 +171,81 @@ export type Database = {
           },
         ]
       }
+      layer_effects: {
+        Row: {
+          created_at: string
+          effect_layer_id: string
+          id: string
+          parent_layer_id: string
+          render_order: number
+        }
+        Insert: {
+          created_at?: string
+          effect_layer_id: string
+          id?: string
+          parent_layer_id: string
+          render_order?: number
+        }
+        Update: {
+          created_at?: string
+          effect_layer_id?: string
+          id?: string
+          parent_layer_id?: string
+          render_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "layer_effects_effect_layer_id_fkey"
+            columns: ["effect_layer_id"]
+            isOneToOne: false
+            referencedRelation: "layers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "layer_effects_parent_layer_id_fkey"
+            columns: ["parent_layer_id"]
+            isOneToOne: false
+            referencedRelation: "layers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      layer_exclusions: {
+        Row: {
+          created_at: string
+          excluded_layer_id: string
+          id: string
+          layer_id: string
+        }
+        Insert: {
+          created_at?: string
+          excluded_layer_id: string
+          id?: string
+          layer_id: string
+        }
+        Update: {
+          created_at?: string
+          excluded_layer_id?: string
+          id?: string
+          layer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "layer_exclusions_excluded_layer_id_fkey"
+            columns: ["excluded_layer_id"]
+            isOneToOne: false
+            referencedRelation: "layers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "layer_exclusions_layer_id_fkey"
+            columns: ["layer_id"]
+            isOneToOne: false
+            referencedRelation: "layers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       layers: {
         Row: {
           category_id: string
@@ -178,6 +253,7 @@ export type Database = {
           display_name: string
           filename: string
           id: string
+          is_effect_layer: boolean
           order_index: number
           rarity_weight: number
           storage_path: string
@@ -190,6 +266,7 @@ export type Database = {
           display_name: string
           filename: string
           id?: string
+          is_effect_layer?: boolean
           order_index?: number
           rarity_weight?: number
           storage_path: string
@@ -202,6 +279,7 @@ export type Database = {
           display_name?: string
           filename?: string
           id?: string
+          is_effect_layer?: boolean
           order_index?: number
           rarity_weight?: number
           storage_path?: string
