@@ -55,6 +55,9 @@ export default function Index() {
           </div>
         </section>
 
+        {/* Marketplace Section - Prominent position */}
+        <MarketplaceSection />
+
         {/* Features Section */}
         <section className="border-t border-border/50 bg-muted/30" aria-labelledby="features-heading">
           <div className="container mx-auto px-6 py-20">
@@ -129,9 +132,6 @@ export default function Index() {
             </div>
           </div>
         </section>
-
-        {/* Marketplace Section */}
-        <MarketplaceSection />
 
         {/* CTA Section */}
         <section className="border-t border-border/50 bg-muted/30" aria-labelledby="cta-heading">
