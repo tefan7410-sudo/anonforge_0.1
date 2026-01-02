@@ -108,16 +108,16 @@ export default function ProjectDetail() {
             <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
                 <Layers className="h-5 w-5 text-primary-foreground" />
               </div>
-              <div className="hidden sm:block">
-                <h1 className="font-display text-xl font-semibold">{project.name}</h1>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  Updated {formatDistanceToNow(new Date(project.last_modified), { addSuffix: true })}
-                </div>
+            </Link>
+            <div className="hidden sm:block">
+              <h1 className="font-display text-xl font-semibold">{project.name}</h1>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                Updated {formatDistanceToNow(new Date(project.last_modified), { addSuffix: true })}
               </div>
             </div>
           </div>
