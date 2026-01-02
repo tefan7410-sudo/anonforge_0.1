@@ -355,6 +355,9 @@ export type Database = {
       product_pages: {
         Row: {
           banner_url: string | null
+          buy_button_enabled: boolean | null
+          buy_button_link: string | null
+          buy_button_text: string | null
           created_at: string
           discord_url: string | null
           founder_bio: string | null
@@ -362,6 +365,7 @@ export type Database = {
           founder_pfp_url: string | null
           founder_twitter: string | null
           id: string
+          is_live: boolean | null
           logo_url: string | null
           portfolio: Json | null
           project_id: string
@@ -372,6 +376,9 @@ export type Database = {
         }
         Insert: {
           banner_url?: string | null
+          buy_button_enabled?: boolean | null
+          buy_button_link?: string | null
+          buy_button_text?: string | null
           created_at?: string
           discord_url?: string | null
           founder_bio?: string | null
@@ -379,6 +386,7 @@ export type Database = {
           founder_pfp_url?: string | null
           founder_twitter?: string | null
           id?: string
+          is_live?: boolean | null
           logo_url?: string | null
           portfolio?: Json | null
           project_id: string
@@ -389,6 +397,9 @@ export type Database = {
         }
         Update: {
           banner_url?: string | null
+          buy_button_enabled?: boolean | null
+          buy_button_link?: string | null
+          buy_button_text?: string | null
           created_at?: string
           discord_url?: string | null
           founder_bio?: string | null
@@ -396,6 +407,7 @@ export type Database = {
           founder_pfp_url?: string | null
           founder_twitter?: string | null
           id?: string
+          is_live?: boolean | null
           logo_url?: string | null
           portfolio?: Json | null
           project_id?: string
@@ -423,6 +435,7 @@ export type Database = {
           email: string
           id: string
           marketing_consent: boolean | null
+          twitter_handle: string | null
           updated_at: string
         }
         Insert: {
@@ -433,6 +446,7 @@ export type Database = {
           email: string
           id: string
           marketing_consent?: boolean | null
+          twitter_handle?: string | null
           updated_at?: string
         }
         Update: {
@@ -443,6 +457,7 @@ export type Database = {
           email?: string
           id?: string
           marketing_consent?: boolean | null
+          twitter_handle?: string | null
           updated_at?: string
         }
         Relationships: []

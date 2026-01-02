@@ -24,6 +24,10 @@ export interface ProductPage {
   founder_bio: string | null;
   founder_twitter: string | null;
   portfolio: PortfolioItem[];
+  buy_button_enabled: boolean;
+  buy_button_text: string | null;
+  buy_button_link: string | null;
+  is_live: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +44,10 @@ export interface ProductPageUpdate {
   founder_bio?: string | null;
   founder_twitter?: string | null;
   portfolio?: PortfolioItem[];
+  buy_button_enabled?: boolean;
+  buy_button_text?: string | null;
+  buy_button_link?: string | null;
+  is_live?: boolean;
 }
 
 // Fetch product page for a project
@@ -66,6 +74,10 @@ export function useProductPage(projectId: string) {
       return {
         ...data,
         portfolio: portfolioItems,
+        buy_button_enabled: data.buy_button_enabled ?? false,
+        buy_button_text: data.buy_button_text,
+        buy_button_link: data.buy_button_link,
+        is_live: data.is_live ?? false,
       } as ProductPage;
     },
     enabled: !!projectId,

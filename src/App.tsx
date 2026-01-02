@@ -17,6 +17,7 @@ import ProjectDetail from "./pages/ProjectDetail";
 import ProjectSettings from "./pages/ProjectSettings";
 import Profile from "./pages/Profile";
 import TermsOfService from "./pages/TermsOfService";
+import Collection from "./pages/Collection";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -74,6 +75,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/collection/:projectId" element={<Collection />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
