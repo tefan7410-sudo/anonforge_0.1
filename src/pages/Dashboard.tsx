@@ -162,6 +162,7 @@ export default function Dashboard() {
               <Layers className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
             </div>
             <span className="font-display text-lg sm:text-xl font-semibold">AnonForge</span>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground border-muted-foreground/30">BETA</Badge>
           </Link>
           <div className="flex items-center gap-1 sm:gap-2">
             <Button variant="ghost" size="icon" asChild title="Help & Documentation">

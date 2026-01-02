@@ -836,6 +836,10 @@ export type Database = {
         Args: { project_uuid: string; user_uuid: string }
         Returns: boolean
       }
+      has_project_write_access: {
+        Args: { project_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

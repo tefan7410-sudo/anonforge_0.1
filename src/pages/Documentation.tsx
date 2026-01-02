@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -9,6 +9,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Layers,
   ArrowLeft,
@@ -34,6 +35,7 @@ import { LanguageSelector } from '@/components/LanguageSelector';
 
 export default function Documentation() {
   const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
   
   // Scroll to top on mount
   useEffect(() => {
@@ -592,16 +594,15 @@ export default function Documentation() {
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <nav className="container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/">
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4" />
             </Button>
             <Link to="/" className="flex items-center gap-2 sm:gap-3">
               <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary">
                 <Layers className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
               </div>
               <span className="font-display text-lg sm:text-xl font-bold">AnonForge</span>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground border-muted-foreground/30">BETA</Badge>
             </Link>
           </div>
           
