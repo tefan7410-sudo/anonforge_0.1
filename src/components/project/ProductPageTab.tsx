@@ -11,6 +11,7 @@ import { useProfile } from '@/hooks/use-profile';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNmkrProject, useGetNmkrPayLink } from '@/hooks/use-nmkr';
 import { useCreatorCollections } from '@/hooks/use-creator-collections';
+import { useIsVerifiedCreator, useMyVerificationRequest, useSubmitVerificationRequest } from '@/hooks/use-verification-request';
 import { ProductPagePreview } from './ProductPagePreview';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +50,9 @@ import {
   Clock,
   EyeOff,
   Calendar,
+  CheckCircle,
+  XCircle,
+  Send,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -65,10 +69,18 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
   const { data: profile } = useProfile(user?.id);
   const { data: nmkrProject } = useNmkrProject(projectId);
   const { data: creatorCollections } = useCreatorCollections(user?.id, projectId);
+  const { data: isVerifiedCreator } = useIsVerifiedCreator(user?.id);
+  const { data: verificationRequest, refetch: refetchVerificationRequest } = useMyVerificationRequest();
+  const submitVerification = useSubmitVerificationRequest();
   const updateProductPage = useUpdateProductPage();
   const uploadImage = useUploadProductImage();
   const deleteImage = useDeleteProductImage();
   const getPayLink = useGetNmkrPayLink();
+  
+  // Verification request form state
+  const [showVerificationForm, setShowVerificationForm] = useState(false);
+  const [verificationTwitter, setVerificationTwitter] = useState('');
+  const [verificationBio, setVerificationBio] = useState('');
 
   // Form state
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
@@ -103,8 +115,15 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
   const [showPreview, setShowPreview] = useState(false);
   const [founderPrefilled, setFounderPrefilled] = useState(false);
   
-  // Founder verification status
+  // Legacy founder verification status (collection-specific)
   const founderVerified = (productPage as { founder_verified?: boolean } | undefined)?.founder_verified ?? false;
+  
+  // Prefill verification twitter from founder twitter
+  useEffect(() => {
+    if (founderTwitter && !verificationTwitter) {
+      setVerificationTwitter(founderTwitter);
+    }
+  }, [founderTwitter, verificationTwitter]);
 
   // Initialize form with existing data
   useEffect(() => {
@@ -875,7 +894,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
           <CardTitle className="flex items-center gap-2 font-display">
             <User className="h-5 w-5 text-primary" />
             Founder / Creator
-            {founderVerified && (
+            {(isVerifiedCreator || founderVerified) && (
               <Badge variant="default" className="gap-1 bg-primary">
                 <BadgeCheck className="h-3 w-3" />
                 Verified
@@ -890,23 +909,148 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Verification Notice */}
-          {!founderVerified && (
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Want a verified badge?</strong> DM{' '}
-                <a 
-                  href="https://twitter.com/bajuzki" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline font-medium"
-                >
-                  @bajuzki
-                </a>
-                {' '}on Twitter/X with a link to your collection. We'll verify and add the badge to your profile.
+          {/* Creator Verification Section */}
+          {isVerifiedCreator ? (
+            <Alert className="border-green-500/50 bg-green-500/10">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <AlertDescription className="text-green-700 dark:text-green-300">
+                You are a <strong>verified creator</strong>. Your verified badge will appear on all your collections.
               </AlertDescription>
             </Alert>
+          ) : verificationRequest?.status === 'pending' ? (
+            <Alert className="border-amber-500/50 bg-amber-500/10">
+              <Clock className="h-4 w-4 text-amber-500" />
+              <AlertDescription className="text-amber-700 dark:text-amber-300">
+                Your verification request is <strong>pending review</strong>. We'll notify you once it's processed.
+              </AlertDescription>
+            </Alert>
+          ) : verificationRequest?.status === 'rejected' ? (
+            <div className="space-y-3">
+              <Alert variant="destructive">
+                <XCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Your verification request was rejected: <strong>{verificationRequest.rejection_reason || 'No reason provided'}</strong>
+                </AlertDescription>
+              </Alert>
+              {!showVerificationForm && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowVerificationForm(true)}
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Resubmit Request
+                </Button>
+              )}
+            </div>
+          ) : !showVerificationForm && !founderVerified ? (
+            <Alert>
+              <BadgeCheck className="h-4 w-4" />
+              <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                  <strong>Want a verified badge?</strong> Request verification to build trust with collectors.
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowVerificationForm(true)}
+                  className="shrink-0"
+                >
+                  <BadgeCheck className="mr-2 h-4 w-4" />
+                  Request Verification
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          
+          {/* Verification Request Form */}
+          {showVerificationForm && !isVerifiedCreator && (
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium flex items-center gap-2">
+                  <BadgeCheck className="h-4 w-4 text-primary" />
+                  Request Creator Verification
+                </h4>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6"
+                  onClick={() => setShowVerificationForm(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="verification-twitter" className="flex items-center gap-2">
+                    <Twitter className="h-3 w-3" />
+                    Twitter Handle <span className="text-destructive">*</span>
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+                    <Input
+                      id="verification-twitter"
+                      value={verificationTwitter}
+                      onChange={(e) => setVerificationTwitter(e.target.value.replace('@', ''))}
+                      placeholder="yourhandle"
+                      className="pl-7"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    We'll use this to verify your identity
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="verification-bio">About You (Optional)</Label>
+                  <Textarea
+                    id="verification-bio"
+                    value={verificationBio}
+                    onChange={(e) => setVerificationBio(e.target.value)}
+                    placeholder="Tell us about your background as a creator, previous collections, etc."
+                    rows={3}
+                    maxLength={500}
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    onClick={async () => {
+                      if (!verificationTwitter.trim()) {
+                        toast.error('Twitter handle is required');
+                        return;
+                      }
+                      await submitVerification.mutateAsync({
+                        twitterHandle: verificationTwitter.trim(),
+                        bio: verificationBio.trim() || undefined,
+                      });
+                      setShowVerificationForm(false);
+                      refetchVerificationRequest();
+                    }}
+                    disabled={submitVerification.isPending || !verificationTwitter.trim()}
+                  >
+                    {submitVerification.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" />
+                        Submit Request
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setShowVerificationForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
           )}
           
           <div className="grid gap-6 md:grid-cols-2">
@@ -1181,6 +1325,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
           paymentLink={buyButtonLink}
           nmkrPolicyId={nmkrProject?.nmkr_policy_id}
           founderVerified={founderVerified}
+          isVerifiedCreator={isVerifiedCreator ?? false}
           creatorCollections={creatorCollections}
           onClose={() => setShowPreview(false)}
         />
