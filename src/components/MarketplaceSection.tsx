@@ -120,11 +120,6 @@ function CollectionCardSkeleton() {
 export function MarketplaceSection() {
   const { data: collections, isLoading } = useMarketplaceCollections(6);
 
-  // Don't render section if no live collections
-  if (!isLoading && (!collections || collections.length === 0)) {
-    return null;
-  }
-
   return (
     <section className="border-t border-border/50" aria-labelledby="marketplace-heading">
       <div className="container mx-auto px-6 py-20">
@@ -147,11 +142,21 @@ export function MarketplaceSection() {
               <CollectionCardSkeleton key={i} />
             ))}
           </div>
-        ) : (
+        ) : collections && collections.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {collections?.map((collection) => (
+            {collections.map((collection) => (
               <CollectionCard key={collection.id} collection={collection} />
             ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Store className="h-12 w-12 mx-auto text-muted-foreground/30" aria-hidden="true" />
+            <p className="mt-4 text-muted-foreground">
+              No live collections yet. Be the first to launch!
+            </p>
+            <Button className="mt-6" asChild>
+              <Link to="/register">Create Your Collection</Link>
+            </Button>
           </div>
         )}
 
