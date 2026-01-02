@@ -60,6 +60,7 @@ export const translations: Record<LanguageCode, Record<string, Record<string, st
     },
     footer: {
       terms: 'Terms',
+      documentation: 'Documentation',
       marketplace: 'Marketplace',
       rights: 'All rights reserved.',
     },
@@ -114,6 +115,7 @@ export const translations: Record<LanguageCode, Record<string, Record<string, st
     },
     footer: {
       terms: 'AGB',
+      documentation: 'Dokumentation',
       marketplace: 'Marktplatz',
       rights: 'Alle Rechte vorbehalten.',
     },
@@ -168,6 +170,7 @@ export const translations: Record<LanguageCode, Record<string, Record<string, st
     },
     footer: {
       terms: 'Términos',
+      documentation: 'Documentación',
       marketplace: 'Mercado',
       rights: 'Todos los derechos reservados.',
     },
@@ -222,6 +225,7 @@ export const translations: Record<LanguageCode, Record<string, Record<string, st
     },
     footer: {
       terms: 'Условия',
+      documentation: 'Документация',
       marketplace: 'Маркетплейс',
       rights: 'Все права защищены.',
     },
@@ -276,6 +280,7 @@ export const translations: Record<LanguageCode, Record<string, Record<string, st
     },
     footer: {
       terms: '利用規約',
+      documentation: 'ドキュメント',
       marketplace: 'マーケットプレイス',
       rights: '全著作権所有。',
     },
@@ -330,6 +335,7 @@ export const translations: Record<LanguageCode, Record<string, Record<string, st
     },
     footer: {
       terms: '条款',
+      documentation: '文档',
       marketplace: '市场',
       rights: '版权所有。',
     },
