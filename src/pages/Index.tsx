@@ -1,12 +1,20 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Layers, ArrowRight, Sparkles, Palette, Store, Zap, Shield, Users, CreditCard, LayoutGrid, Rocket } from 'lucide-react';
+import { Layers, ArrowRight, Sparkles, Palette, Store, Zap, Shield, Users, CreditCard, LayoutGrid, Rocket, Menu } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { MarketplaceSection } from '@/components/MarketplaceSection';
 import { useScrollAnimation } from '@/hooks/use-scroll-animation';
 import { useTranslations } from '@/hooks/use-translations';
 import { cn } from '@/lib/utils';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 function AnimatedSection({ 
   children, 
@@ -36,6 +44,7 @@ function AnimatedSection({
 
 export default function Index() {
   const { t } = useTranslations();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const heroAnimation = useScrollAnimation<HTMLDivElement>();
   const creatorsAnimation = useScrollAnimation<HTMLDivElement>();
   const benefitsAnimation = useScrollAnimation<HTMLDivElement>();
@@ -60,28 +69,100 @@ export default function Index() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
-        <nav className="container mx-auto flex items-center justify-between px-6 py-4" aria-label="Main navigation">
-          <Link to="/" className="flex items-center gap-3" aria-label="AnonForge home">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <Layers className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
+        <nav className="container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4" aria-label="Main navigation">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3" aria-label="AnonForge home">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary">
+              <Layers className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" aria-hidden="true" />
             </div>
-            <span className="font-display text-xl font-bold">AnonForge</span>
+            <span className="font-display text-lg sm:text-xl font-bold">AnonForge</span>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" asChild className="hidden md:inline-flex">
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-4">
+            <Button variant="ghost" asChild>
               <Link to="/marketplace">{t('nav.marketplace')}</Link>
             </Button>
-            <a href="#for-creators" className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground md:inline-flex">
+            <a href="#for-creators" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               {t('nav.forCreators')}
             </a>
             <LanguageSelector />
             <ThemeToggle />
-            <Button variant="ghost" asChild className="hidden sm:inline-flex">
+            <Button variant="ghost" asChild>
               <Link to="/login">{t('nav.signIn')}</Link>
             </Button>
             <Button asChild>
               <Link to="/register">{t('nav.getStarted')}</Link>
             </Button>
+          </div>
+
+          {/* Mobile Navigation */}
+          <div className="flex items-center gap-2 md:hidden">
+            <LanguageSelector />
+            <ThemeToggle />
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72">
+                <SheetHeader>
+                  <SheetTitle>
+                    <Link 
+                      to="/" 
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                        <Layers className="h-4 w-4 text-primary-foreground" />
+                      </div>
+                      AnonForge
+                    </Link>
+                  </SheetTitle>
+                </SheetHeader>
+                <nav className="mt-8 flex flex-col gap-2">
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/marketplace">
+                      <Store className="mr-3 h-4 w-4" />
+                      {t('nav.marketplace')}
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <a href="#for-creators">
+                      <Palette className="mr-3 h-4 w-4" />
+                      {t('nav.forCreators')}
+                    </a>
+                  </Button>
+                  <div className="my-2 border-t border-border" />
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/login">{t('nav.signIn')}</Link>
+                  </Button>
+                  <Button
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/register">{t('nav.getStarted')}</Link>
+                  </Button>
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </nav>
       </header>

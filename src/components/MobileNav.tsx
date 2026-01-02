@@ -1,7 +1,8 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Sheet,
   SheetContent,
@@ -9,15 +10,22 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Menu, LayoutDashboard, User, LogOut, Layers, Bell } from 'lucide-react';
+import { Menu, LayoutDashboard, User, LogOut, Layers, Bell, Store, Settings, Home } from 'lucide-react';
 import { useState } from 'react';
 import { useUnreadCount } from '@/hooks/use-notifications';
+import { useProfile } from '@/hooks/use-profile';
 
 export function MobileNav() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const { data: unreadCount } = useUnreadCount(user?.id);
+  const { data: profile } = useProfile(user?.id);
+
+  // Check if we're on a project page to show settings link
+  const projectMatch = location.pathname.match(/^\/project\/([^/]+)$/);
+  const projectId = projectMatch?.[1];
 
   const handleSignOut = async () => {
     await signOut();
@@ -48,7 +56,39 @@ export function MobileNav() {
             </Link>
           </SheetTitle>
         </SheetHeader>
-        <nav className="mt-8 flex flex-col gap-2">
+
+        {/* User Info */}
+        {user && (
+          <div className="mt-6 flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={profile?.avatar_url || undefined} />
+              <AvatarFallback>
+                {(profile?.display_name || user.email || 'U')[0].toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">
+                {profile?.display_name || 'User'}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                {user.email}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <nav className="mt-6 flex flex-col gap-1">
+          <Button
+            variant="ghost"
+            className="justify-start"
+            asChild
+            onClick={() => setOpen(false)}
+          >
+            <Link to="/">
+              <Home className="mr-3 h-4 w-4" />
+              Home
+            </Link>
+          </Button>
           <Button
             variant="ghost"
             className="justify-start"
@@ -58,6 +98,17 @@ export function MobileNav() {
             <Link to="/dashboard">
               <LayoutDashboard className="mr-3 h-4 w-4" />
               Dashboard
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            className="justify-start"
+            asChild
+            onClick={() => setOpen(false)}
+          >
+            <Link to="/marketplace">
+              <Store className="mr-3 h-4 w-4" />
+              Marketplace
             </Link>
           </Button>
           <Button
@@ -79,6 +130,25 @@ export function MobileNav() {
               )}
             </Link>
           </Button>
+
+          {projectId && (
+            <>
+              <div className="my-2 border-t border-border" />
+              <Button
+                variant="ghost"
+                className="justify-start"
+                asChild
+                onClick={() => setOpen(false)}
+              >
+                <Link to={`/project/${projectId}/settings`}>
+                  <Settings className="mr-3 h-4 w-4" />
+                  Project Settings
+                </Link>
+              </Button>
+            </>
+          )}
+
+          <div className="my-2 border-t border-border" />
           <Button
             variant="ghost"
             className="justify-start"
@@ -92,7 +162,7 @@ export function MobileNav() {
           </Button>
           <Button
             variant="ghost"
-            className="justify-start text-destructive hover:text-destructive"
+            className="justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
             onClick={handleSignOut}
           >
             <LogOut className="mr-3 h-4 w-4" />
