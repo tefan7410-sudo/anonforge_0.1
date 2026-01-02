@@ -30,6 +30,7 @@ interface ProductPagePreviewProps {
   projectId: string;
   paymentLink?: string | null;
   nmkrPolicyId?: string | null;
+  priceInLovelace?: number | null;
   founderVerified?: boolean;
   creatorCollections?: CreatorCollection[];
   onClose: () => void;
@@ -41,6 +42,7 @@ export function ProductPagePreview({
   projectId,
   paymentLink,
   nmkrPolicyId,
+  priceInLovelace,
   founderVerified = false,
   creatorCollections,
   onClose 
@@ -59,6 +61,12 @@ export function ProductPagePreview({
 
   const isScheduled = productPage.scheduled_launch_at && 
     new Date(productPage.scheduled_launch_at) > new Date();
+
+  // Format price from lovelace to ADA
+  const formatPrice = (lovelace: number) => {
+    const ada = lovelace / 1_000_000;
+    return `${ada.toLocaleString()} ₳`;
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-background overflow-auto">
@@ -119,6 +127,28 @@ export function ProductPagePreview({
             )}
           </div>
         </div>
+
+        {/* Hero Action Card - Price & Mint Button */}
+        {(priceInLovelace || (productPage.buy_button_enabled && paymentLink)) && !isScheduled && (
+          <div className="mb-8 p-6 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-transparent">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              {priceInLovelace && (
+                <div className="text-center sm:text-left">
+                  <p className="text-sm text-muted-foreground">Mint Price</p>
+                  <p className="text-3xl font-bold text-primary">{formatPrice(priceInLovelace)}</p>
+                </div>
+              )}
+              {productPage.buy_button_enabled && paymentLink && (
+                <Button asChild size="lg" className="w-full sm:w-auto text-lg px-8">
+                  <a href={paymentLink} target="_blank" rel="noopener noreferrer">
+                    <ShoppingCart className="mr-2 h-5 w-5" />
+                    {productPage.buy_button_text || 'Mint Now'}
+                  </a>
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Collection Stats */}
         {(productPage.max_supply || nmkrPolicyId) && (
@@ -188,18 +218,6 @@ export function ProductPagePreview({
             <p className="mt-2 text-sm text-muted-foreground">
               This collection will be available for minting soon!
             </p>
-          </div>
-        )}
-
-        {/* Buy Button */}
-        {productPage.buy_button_enabled && paymentLink && !isScheduled && (
-          <div className="mb-8">
-            <Button asChild size="lg" className="w-full md:w-auto">
-              <a href={paymentLink} target="_blank" rel="noopener noreferrer">
-                <ShoppingCart className="mr-2 h-5 w-5" />
-                {productPage.buy_button_text || 'Mint Now'}
-              </a>
-            </Button>
           </div>
         )}
 
