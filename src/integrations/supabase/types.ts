@@ -364,6 +364,7 @@ export type Database = {
           founder_name: string | null
           founder_pfp_url: string | null
           founder_twitter: string | null
+          founder_verified: boolean | null
           id: string
           is_live: boolean | null
           logo_url: string | null
@@ -385,6 +386,7 @@ export type Database = {
           founder_name?: string | null
           founder_pfp_url?: string | null
           founder_twitter?: string | null
+          founder_verified?: boolean | null
           id?: string
           is_live?: boolean | null
           logo_url?: string | null
@@ -406,6 +408,7 @@ export type Database = {
           founder_name?: string | null
           founder_pfp_url?: string | null
           founder_twitter?: string | null
+          founder_verified?: boolean | null
           id?: string
           is_live?: boolean | null
           logo_url?: string | null
