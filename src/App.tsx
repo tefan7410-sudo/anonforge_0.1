@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { CookieBanner } from "@/components/CookieBanner";
+import { WelcomeModal } from "@/components/WelcomeModal";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -94,6 +95,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <CookieBanner />
+              <WelcomeModal />
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
