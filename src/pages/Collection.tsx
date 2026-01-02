@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { 
   Twitter, 
   MessageCircle, 
@@ -12,11 +14,15 @@ import {
   ArrowLeft,
   Layers,
   BadgeCheck,
+  Copy,
+  Store,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type PortfolioItem } from '@/hooks/use-product-page';
 import { useExternalLink } from '@/hooks/use-external-link';
 import { ExternalLinkWarning } from '@/components/ExternalLinkWarning';
+import { useNmkrCounts } from '@/hooks/use-nmkr';
+import { toast } from 'sonner';
 
 export default function Collection() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -36,17 +42,25 @@ export default function Collection() {
 
       if (projectError) throw projectError;
 
-      // Fetch product page (must be live)
+      // Fetch product page (must be live and not hidden)
       const { data: productPage, error: pageError } = await supabase
         .from('product_pages')
         .select('*')
         .eq('project_id', projectId)
         .eq('is_live', true)
+        .eq('is_hidden', false)
         .single();
 
       if (pageError || !productPage) {
-        return null; // Not live
+        return null; // Not live or hidden
       }
+
+      // Fetch NMKR project for policy ID
+      const { data: nmkrProject } = await supabase
+        .from('nmkr_projects')
+        .select('nmkr_project_uid, nmkr_policy_id')
+        .eq('project_id', projectId)
+        .maybeSingle();
 
       return {
         project,
@@ -54,6 +68,7 @@ export default function Collection() {
           ...productPage,
           portfolio: (productPage.portfolio as unknown as PortfolioItem[]) || [],
         },
+        nmkrProject,
       };
     },
     enabled: !!projectId,
@@ -76,8 +91,17 @@ export default function Collection() {
     return <Navigate to="/not-found" replace />;
   }
 
-  const { project, productPage } = data;
+  const { project, productPage, nmkrProject } = data;
   const founderVerified = (productPage as { founder_verified?: boolean }).founder_verified;
+  const secondaryMarketUrl = (productPage as { secondary_market_url?: string }).secondary_market_url;
+  const maxSupply = (productPage as { max_supply?: number }).max_supply;
+
+  const copyPolicyId = () => {
+    if (nmkrProject?.nmkr_policy_id) {
+      navigator.clipboard.writeText(nmkrProject.nmkr_policy_id);
+      toast.success('Policy ID copied!');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -138,8 +162,31 @@ export default function Collection() {
           </div>
         </div>
 
+        {/* Collection Stats */}
+        {(maxSupply || nmkrProject?.nmkr_policy_id) && (
+          <div className="flex flex-wrap gap-4 mb-8 p-4 rounded-xl border bg-card">
+            {maxSupply && (
+              <div className="text-center">
+                <p className="text-2xl font-bold">{maxSupply.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Max Supply</p>
+              </div>
+            )}
+            {nmkrProject?.nmkr_policy_id && (
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground mb-1">Policy ID</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-xs font-mono truncate flex-1">{nmkrProject.nmkr_policy_id}</code>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={copyPolicyId}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Social Links */}
-        {(productPage.twitter_url || productPage.discord_url || productPage.website_url) && (
+        {(productPage.twitter_url || productPage.discord_url || productPage.website_url || secondaryMarketUrl) && (
           <div className="flex flex-wrap gap-2 mb-8">
             {productPage.twitter_url && (
               <Button 
@@ -169,6 +216,16 @@ export default function Collection() {
               >
                 <Globe className="mr-2 h-4 w-4" />
                 Website
+              </Button>
+            )}
+            {secondaryMarketUrl && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={(e) => externalLink.handleExternalClick(secondaryMarketUrl, e)}
+              >
+                <Store className="mr-2 h-4 w-4" />
+                Secondary Market
               </Button>
             )}
           </div>

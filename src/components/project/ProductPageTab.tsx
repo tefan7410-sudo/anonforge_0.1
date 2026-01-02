@@ -43,10 +43,12 @@ import {
   Info,
   BadgeCheck,
   AlertCircle,
+  Hash,
+  Store,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { isValidTwitterUrl, isValidDiscordUrl, isValidWebsiteUrl } from '@/lib/url-validation';
+import { isValidTwitterUrl, isValidDiscordUrl, isValidWebsiteUrl, isValidSecondaryMarketUrl } from '@/lib/url-validation';
 
 interface ProductPageTabProps {
   projectId: string;
@@ -76,6 +78,8 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
   const [founderBio, setFounderBio] = useState('');
   const [founderTwitter, setFounderTwitter] = useState('');
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
+  const [secondaryMarketUrl, setSecondaryMarketUrl] = useState('');
+  const [maxSupply, setMaxSupply] = useState<number | null>(null);
   
   // Buy button state
   const [buyButtonEnabled, setBuyButtonEnabled] = useState(false);
@@ -87,6 +91,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
   const [twitterError, setTwitterError] = useState<string | null>(null);
   const [discordError, setDiscordError] = useState<string | null>(null);
   const [websiteError, setWebsiteError] = useState<string | null>(null);
+  const [secondaryMarketError, setSecondaryMarketError] = useState<string | null>(null);
   
   // Preview state
   const [showPreview, setShowPreview] = useState(false);
@@ -113,6 +118,8 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
       setBuyButtonText(productPage.buy_button_text || 'Mint Now');
       setBuyButtonLink(productPage.buy_button_link);
       setIsLive(productPage.is_live || false);
+      setSecondaryMarketUrl((productPage as { secondary_market_url?: string }).secondary_market_url || '');
+      setMaxSupply((productPage as { max_supply?: number | null }).max_supply ?? null);
     }
   }, [productPage]);
 
@@ -238,14 +245,21 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
     return result.isValid;
   };
 
+  const validateSecondaryMarketUrl = (url: string) => {
+    const result = isValidSecondaryMarketUrl(url);
+    setSecondaryMarketError(result.isValid ? null : result.error || null);
+    return result.isValid;
+  };
+
   // Save handler
   const handleSave = async () => {
     // Validate all URLs first
     const isTwitterValid = validateTwitterUrl(twitterUrl);
     const isDiscordValid = validateDiscordUrl(discordUrl);
     const isWebsiteValid = validateWebsiteUrl(websiteUrl);
+    const isSecondaryMarketValid = validateSecondaryMarketUrl(secondaryMarketUrl);
     
-    if (!isTwitterValid || !isDiscordValid || !isWebsiteValid) {
+    if (!isTwitterValid || !isDiscordValid || !isWebsiteValid || !isSecondaryMarketValid) {
       toast.error('Please fix the URL validation errors before saving');
       return;
     }
@@ -268,6 +282,8 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
         buy_button_text: buyButtonText || 'Mint Now',
         buy_button_link: buyButtonLink,
         is_live: isLive,
+        secondary_market_url: secondaryMarketUrl || null,
+        max_supply: maxSupply,
       },
     });
   };
@@ -338,6 +354,8 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
     buy_button_text: buyButtonText,
     buy_button_link: buyButtonLink,
     is_live: isLive,
+    secondary_market_url: secondaryMarketUrl,
+    max_supply: maxSupply,
     created_at: productPage?.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -567,6 +585,66 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
               </div>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Collection Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display">
+            <Hash className="h-5 w-5 text-primary" />
+            Collection Details
+          </CardTitle>
+          <CardDescription>
+            Supply and marketplace information
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="max-supply">Max Supply</Label>
+              <Input
+                id="max-supply"
+                type="number"
+                min="1"
+                value={maxSupply ?? ''}
+                onChange={(e) => setMaxSupply(e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="e.g., 10000"
+              />
+              <p className="text-xs text-muted-foreground">
+                Total number of NFTs in this collection
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="secondary-market" className="flex items-center gap-2">
+                <Store className="h-4 w-4" />
+                Secondary Market
+              </Label>
+              <Input
+                id="secondary-market"
+                type="url"
+                value={secondaryMarketUrl}
+                onChange={(e) => {
+                  setSecondaryMarketUrl(e.target.value);
+                  if (secondaryMarketError) validateSecondaryMarketUrl(e.target.value);
+                }}
+                onBlur={() => validateSecondaryMarketUrl(secondaryMarketUrl)}
+                placeholder="https://jpg.store/collection/..."
+                className={cn(secondaryMarketError && "border-destructive")}
+              />
+              {secondaryMarketError ? (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {secondaryMarketError}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Link to jpg.store or wayup.io collection page
+                </p>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

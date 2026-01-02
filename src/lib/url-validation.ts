@@ -8,6 +8,11 @@ const DISCORD_PATTERNS = [
   /^https?:\/\/(www\.)?(discord\.gg|discord\.com\/invite|discordapp\.com\/invite)\/.+/i,
 ];
 
+const SECONDARY_MARKET_PATTERNS = [
+  /^https?:\/\/(www\.)?jpg\.store\/.+/i,
+  /^https?:\/\/(www\.)?wayup\.io\/.+/i,
+];
+
 const URL_PATTERN = /^https?:\/\/.+/i;
 
 export interface ValidationResult {
@@ -81,4 +86,27 @@ export function isValidWebsiteUrl(url: string): ValidationResult {
   } catch {
     return { isValid: false, error: 'Please enter a valid URL' };
   }
+}
+
+export function isValidSecondaryMarketUrl(url: string): ValidationResult {
+  if (!url || url.trim() === '') {
+    return { isValid: true }; // Empty is valid (optional field)
+  }
+  
+  const trimmedUrl = url.trim();
+  
+  if (!URL_PATTERN.test(trimmedUrl)) {
+    return { isValid: false, error: 'Please enter a valid URL starting with https://' };
+  }
+  
+  const isValid = SECONDARY_MARKET_PATTERNS.some(pattern => pattern.test(trimmedUrl));
+  
+  if (!isValid) {
+    return { 
+      isValid: false, 
+      error: 'Please enter a valid jpg.store or wayup.io URL' 
+    };
+  }
+  
+  return { isValid: true };
 }

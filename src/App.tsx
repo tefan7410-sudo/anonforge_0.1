@@ -19,6 +19,7 @@ import Profile from "./pages/Profile";
 import TermsOfService from "./pages/TermsOfService";
 import Collection from "./pages/Collection";
 import Marketplace from "./pages/Marketplace";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,14 @@ const App = () => (
               />
               <Route path="/collection/:projectId" element={<Collection />} />
               <Route path="/marketplace" element={<Marketplace />} />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <Admin />
+                  </ProtectedRoute>
+                }
+              />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
