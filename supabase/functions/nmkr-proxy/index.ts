@@ -190,10 +190,16 @@ serve(async (req) => {
         nmkrBody = JSON.stringify({
           projectname: params.projectName,
           description: params.description || "",
+          tokennamePrefix: params.tokenNamePrefix || "",
+          projecturl: params.projectUrl || "",
+          twitterHandle: params.twitterHandle || "",
           policyExpires: params.policyExpires ?? false,
+          policyLocksDateTime: params.policyLocksDateTime || undefined,
           addressExpiretime: params.addressExpireTime ?? 20,
           maxNftSupply: params.maxNftSupply ?? 10000,
           payoutWalletaddress: params.payoutWalletAddress,
+          // Storage provider: 0 = IPFS, 1 = Iagon (based on NMKR API enum)
+          nftStorageProvider: params.storageProvider === 'iagon' ? 1 : 0,
           enableFiat: params.enableFiat ?? false,
           enableDecentralPayments: params.enableDecentralPayments ?? true,
           enableCrossSaleOnPaymentgateway: false,
