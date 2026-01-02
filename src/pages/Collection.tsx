@@ -64,10 +64,18 @@ export default function Collection() {
         .eq('project_id', projectId)
         .maybeSingle();
 
+      // Fetch creator's profile to check verified status
+      const { data: creatorProfile } = await supabase
+        .from('profiles')
+        .select('is_verified_creator')
+        .eq('id', project.owner_id)
+        .maybeSingle();
+
       return {
         project,
         productPage,
         nmkrProject,
+        isVerifiedCreator: creatorProfile?.is_verified_creator ?? false,
       };
     },
     enabled: !!projectId,
@@ -93,16 +101,18 @@ export default function Collection() {
     return <Navigate to="/not-found" replace />;
   }
 
-  const { project, productPage, nmkrProject } = data;
+  const { project, productPage, nmkrProject, isVerifiedCreator } = data;
   const founderVerified = (productPage as { founder_verified?: boolean }).founder_verified;
   const secondaryMarketUrl = (productPage as { secondary_market_url?: string }).secondary_market_url;
   const maxSupply = (productPage as { max_supply?: number }).max_supply;
   const scheduledLaunchAt = (productPage as { scheduled_launch_at?: string }).scheduled_launch_at;
   const priceInLovelace = nmkrProject?.price_in_lovelace;
   
+  // Show verified badge if either the collection has founder_verified OR the creator is a verified creator
+  const showVerifiedBadge = founderVerified || isVerifiedCreator;
+  
   // Check if collection is upcoming (scheduled but not yet launched)
   const isUpcoming = scheduledLaunchAt && new Date(scheduledLaunchAt) > new Date();
-
   // Format price from lovelace to ADA
   const formatPrice = (lovelace: number) => {
     const ada = lovelace / 1_000_000;
@@ -319,7 +329,7 @@ export default function Collection() {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold">{productPage.founder_name || 'Anonymous'}</h3>
-                  {founderVerified && (
+                  {showVerifiedBadge && (
                     <span title="Verified Creator">
                       <BadgeCheck className="h-5 w-5 text-primary" />
                     </span>

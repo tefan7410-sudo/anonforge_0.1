@@ -100,6 +100,48 @@ export type Database = {
           },
         ]
       }
+      creator_verification_requests: {
+        Row: {
+          bio: string | null
+          created_at: string
+          id: string
+          portfolio_links: Json | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          twitter_handle: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          id?: string
+          portfolio_links?: Json | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          twitter_handle: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          id?: string
+          portfolio_links?: Json | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          twitter_handle?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       generation_comments: {
         Row: {
           content: string
@@ -533,6 +575,7 @@ export type Database = {
           display_name: string | null
           email: string
           id: string
+          is_verified_creator: boolean | null
           marketing_consent: boolean | null
           twitter_handle: string | null
           updated_at: string
@@ -544,6 +587,7 @@ export type Database = {
           display_name?: string | null
           email: string
           id: string
+          is_verified_creator?: boolean | null
           marketing_consent?: boolean | null
           twitter_handle?: string | null
           updated_at?: string
@@ -555,6 +599,7 @@ export type Database = {
           display_name?: string | null
           email?: string
           id?: string
+          is_verified_creator?: boolean | null
           marketing_consent?: boolean | null
           twitter_handle?: string | null
           updated_at?: string

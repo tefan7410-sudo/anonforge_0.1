@@ -5,10 +5,12 @@ import {
   useIsAdmin, 
   useAdminCollections, 
   usePendingCollections,
-  useToggleFounderVerified, 
+  usePendingVerificationRequests,
   useToggleCollectionHidden,
   useApproveCollection,
   useRejectCollection,
+  useApproveVerification,
+  useRejectVerification,
 } from '@/hooks/use-admin';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   Dialog,
   DialogContent,
@@ -41,6 +44,8 @@ import {
   X,
   Copy,
   AlertTriangle,
+  UserCheck,
+  Twitter,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -49,29 +54,39 @@ export default function Admin() {
   const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
   const { data: collections, isLoading: collectionsLoading } = useAdminCollections();
   const { data: pendingCollections, isLoading: pendingLoading } = usePendingCollections();
-  const toggleVerified = useToggleFounderVerified();
+  const { data: pendingVerifications, isLoading: verificationsLoading } = usePendingVerificationRequests();
   const toggleHidden = useToggleCollectionHidden();
   const approveCollection = useApproveCollection();
   const rejectCollection = useRejectCollection();
+  const approveVerification = useApproveVerification();
+  const rejectVerification = useRejectVerification();
 
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectType, setRejectType] = useState<'collection' | 'verification'>('collection');
 
   const copyCollectionLink = (projectId: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/collection/${projectId}`);
     toast.success('Link copied!');
   };
 
-  const handleRejectClick = (productPageId: string) => {
-    setRejectingId(productPageId);
+  const handleRejectClick = (id: string, type: 'collection' | 'verification') => {
+    setRejectingId(id);
+    setRejectType(type);
     setRejectReason('');
     setRejectDialogOpen(true);
   };
 
   const handleRejectConfirm = async () => {
     if (!rejectingId || !rejectReason.trim()) return;
-    await rejectCollection.mutateAsync({ productPageId: rejectingId, reason: rejectReason });
+    
+    if (rejectType === 'collection') {
+      await rejectCollection.mutateAsync({ productPageId: rejectingId, reason: rejectReason });
+    } else {
+      await rejectVerification.mutateAsync({ requestId: rejectingId, reason: rejectReason });
+    }
+    
     setRejectDialogOpen(false);
     setRejectingId(null);
     setRejectReason('');
@@ -164,25 +179,6 @@ export default function Admin() {
         <TableCell className="text-center">
           <div className="flex items-center justify-center gap-2">
             <Switch
-              checked={collection.founder_verified}
-              onCheckedChange={(checked) => 
-                toggleVerified.mutate({ 
-                  productPageId: collection.id, 
-                  verified: checked,
-                  founderTwitter: collection.founder_twitter,
-                  ownerId: collection.project.owner_id,
-                })
-              }
-              disabled={toggleVerified.isPending}
-            />
-            {collection.founder_verified && (
-              <BadgeCheck className="h-4 w-4 text-primary" />
-            )}
-          </div>
-        </TableCell>
-        <TableCell className="text-center">
-          <div className="flex items-center justify-center gap-2">
-            <Switch
               checked={!collection.is_hidden}
               onCheckedChange={(checked) => 
                 toggleHidden.mutate({ 
@@ -217,7 +213,7 @@ export default function Admin() {
                   variant="ghost" 
                   size="sm"
                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => handleRejectClick(collection.id)}
+                  onClick={() => handleRejectClick(collection.id, 'collection')}
                   disabled={rejectCollection.isPending}
                 >
                   <X className="h-4 w-4 mr-1" />
@@ -244,6 +240,76 @@ export default function Admin() {
                 </a>
               </Button>
             )}
+          </div>
+        </TableCell>
+      </TableRow>
+    );
+  };
+
+  const renderVerificationRow = (request: NonNullable<typeof pendingVerifications>[0]) => {
+    const profile = request.profile;
+    const displayName = profile?.display_name || profile?.email || 'Unknown';
+    
+    return (
+      <TableRow key={request.id}>
+        <TableCell>
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={profile?.avatar_url || undefined} />
+              <AvatarFallback>{displayName.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-medium">{displayName}</p>
+              <p className="text-xs text-muted-foreground">{profile?.email}</p>
+            </div>
+          </div>
+        </TableCell>
+        <TableCell>
+          <a 
+            href={`https://twitter.com/${request.twitter_handle.replace('@', '')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-sm hover:text-primary"
+          >
+            <Twitter className="h-4 w-4" />
+            @{request.twitter_handle.replace('@', '')}
+          </a>
+        </TableCell>
+        <TableCell>
+          <p className="text-sm text-muted-foreground line-clamp-2 max-w-[300px]">
+            {request.bio || 'No bio provided'}
+          </p>
+        </TableCell>
+        <TableCell>
+          <span className="text-xs text-muted-foreground">
+            {new Date(request.created_at).toLocaleDateString()}
+          </span>
+        </TableCell>
+        <TableCell className="text-right">
+          <div className="flex items-center justify-end gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="text-green-600 hover:text-green-700 hover:bg-green-100"
+              onClick={() => approveVerification.mutate({ 
+                requestId: request.id, 
+                userId: request.user_id 
+              })}
+              disabled={approveVerification.isPending}
+            >
+              <Check className="h-4 w-4 mr-1" />
+              Verify
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => handleRejectClick(request.id, 'verification')}
+              disabled={rejectVerification.isPending}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Reject
+            </Button>
           </div>
         </TableCell>
       </TableRow>
@@ -288,37 +354,47 @@ export default function Admin() {
             <h1 className="font-display text-3xl font-bold">Admin Dashboard</h1>
           </div>
           <p className="text-muted-foreground">
-            Manage founder verification, collection visibility, and review scheduled launches
+            Manage collection launches, creator verifications, and platform visibility
           </p>
         </div>
 
-        {/* Tabs for Pending Review / All Collections */}
-        <Tabs defaultValue="pending" className="space-y-6">
+        {/* Tabs for different admin functions */}
+        <Tabs defaultValue="pending-launches" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="pending" className="gap-2">
+            <TabsTrigger value="pending-launches" className="gap-2">
               <Clock className="h-4 w-4" />
-              Pending Review
+              Pending Launches
               {pendingCollections && pendingCollections.length > 0 && (
                 <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 justify-center">
                   {pendingCollections.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="all" className="gap-2">
+            <TabsTrigger value="verification-requests" className="gap-2">
+              <UserCheck className="h-4 w-4" />
+              Verification Requests
+              {pendingVerifications && pendingVerifications.length > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 justify-center">
+                  {pendingVerifications.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="all-collections" className="gap-2">
               <Store className="h-4 w-4" />
               All Collections
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pending">
+          {/* Pending Launches Tab */}
+          <TabsContent value="pending-launches">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-amber-500" />
-                  Pending Approval
+                  Pending Launch Approval
                 </CardTitle>
                 <CardDescription>
-                  Scheduled collections awaiting admin review before going live
+                  Scheduled collections awaiting admin review before going live (24h default wait)
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -336,7 +412,6 @@ export default function Admin() {
                           <TableHead>Collection</TableHead>
                           <TableHead>Founder</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead className="text-center">Verified</TableHead>
                           <TableHead className="text-center">Visible</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -349,14 +424,61 @@ export default function Admin() {
                 ) : (
                   <div className="text-center py-12">
                     <Check className="h-12 w-12 mx-auto text-green-500/30" />
-                    <p className="mt-4 text-muted-foreground">No collections pending review</p>
+                    <p className="mt-4 text-muted-foreground">No collections pending launch approval</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="all">
+          {/* Verification Requests Tab */}
+          <TabsContent value="verification-requests">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BadgeCheck className="h-5 w-5 text-primary" />
+                  Creator Verification Requests
+                </CardTitle>
+                <CardDescription>
+                  Creators requesting to be verified. Verified status applies to all their collections.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {verificationsLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : pendingVerifications && pendingVerifications.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Creator</TableHead>
+                          <TableHead>Twitter</TableHead>
+                          <TableHead>Bio</TableHead>
+                          <TableHead>Requested</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingVerifications.map((request) => renderVerificationRow(request))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <BadgeCheck className="h-12 w-12 mx-auto text-muted-foreground/30" />
+                    <p className="mt-4 text-muted-foreground">No pending verification requests</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* All Collections Tab */}
+          <TabsContent value="all-collections">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -364,7 +486,7 @@ export default function Admin() {
                   All Collections
                 </CardTitle>
                 <CardDescription>
-                  Manage all product pages across the platform
+                  Manage visibility for all product pages across the platform
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -382,7 +504,6 @@ export default function Admin() {
                           <TableHead>Collection</TableHead>
                           <TableHead>Founder</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead className="text-center">Verified</TableHead>
                           <TableHead className="text-center">Visible</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -408,7 +529,9 @@ export default function Admin() {
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Collection</DialogTitle>
+            <DialogTitle>
+              {rejectType === 'collection' ? 'Reject Collection' : 'Reject Verification Request'}
+            </DialogTitle>
             <DialogDescription>
               Please provide a reason for rejection. This will be shown to the creator.
             </DialogDescription>
@@ -425,7 +548,7 @@ export default function Admin() {
             <Button 
               variant="destructive" 
               onClick={handleRejectConfirm}
-              disabled={!rejectReason.trim() || rejectCollection.isPending}
+              disabled={!rejectReason.trim() || rejectCollection.isPending || rejectVerification.isPending}
             >
               Reject
             </Button>

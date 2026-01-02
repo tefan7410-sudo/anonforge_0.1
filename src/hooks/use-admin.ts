@@ -25,6 +25,26 @@ interface AdminCollection {
   };
 }
 
+interface VerificationRequest {
+  id: string;
+  user_id: string;
+  twitter_handle: string;
+  bio: string | null;
+  portfolio_links: string[];
+  status: 'pending' | 'approved' | 'rejected';
+  rejection_reason: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  profile?: {
+    id: string;
+    display_name: string | null;
+    email: string;
+    avatar_url: string | null;
+  };
+}
+
 // Check if current user is an admin
 export function useIsAdmin() {
   return useQuery({
@@ -120,59 +140,32 @@ export function usePendingCollections() {
   });
 }
 
-// Toggle founder verified status
-export function useToggleFounderVerified() {
-  const queryClient = useQueryClient();
+// Get pending verification requests
+export function usePendingVerificationRequests() {
+  return useQuery({
+    queryKey: ['pending-verification-requests'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('creator_verification_requests')
+        .select(`
+          *,
+          profile:profiles!creator_verification_requests_user_id_fkey(id, display_name, email, avatar_url)
+        `)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
 
-  return useMutation({
-    mutationFn: async ({ 
-      productPageId, 
-      verified, 
-      founderTwitter,
-      ownerId 
-    }: { 
-      productPageId: string; 
-      verified: boolean; 
-      founderTwitter?: string | null;
-      ownerId: string;
-    }) => {
-      // Update verification status
-      const { error } = await supabase
-        .from('product_pages')
-        .update({ founder_verified: verified })
-        .eq('id', productPageId);
-
-      if (error) throw error;
-
-      // Handle verified twitter handle claim/release
-      if (founderTwitter) {
-        const handle = founderTwitter.replace('@', '').toLowerCase();
-        if (verified) {
-          // Claim the twitter handle
-          const { data: { user } } = await supabase.auth.getUser();
-          await supabase
-            .from('verified_twitter_handles')
-            .upsert({
-              twitter_handle: handle,
-              user_id: ownerId,
-              verified_by: user?.id,
-            }, { onConflict: 'twitter_handle' });
-        } else {
-          // Release the twitter handle
-          await supabase
-            .from('verified_twitter_handles')
-            .delete()
-            .eq('twitter_handle', handle);
-        }
+      if (error) {
+        // Fallback without join if the FK doesn't exist
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('creator_verification_requests')
+          .select('*')
+          .eq('status', 'pending')
+          .order('created_at', { ascending: true });
+        
+        if (fallbackError) throw fallbackError;
+        return fallbackData as unknown as VerificationRequest[];
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
-      queryClient.invalidateQueries({ queryKey: ['pending-collections'] });
-      toast.success('Verification status updated');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to update: ${error.message}`);
+      return data as unknown as VerificationRequest[];
     },
   });
 }
@@ -251,6 +244,78 @@ export function useRejectCollection() {
       queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
       queryClient.invalidateQueries({ queryKey: ['pending-collections'] });
       toast.success('Collection rejected');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to reject: ${error.message}`);
+    },
+  });
+}
+
+// Approve a creator verification request
+export function useApproveVerification() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ requestId, userId }: { requestId: string; userId: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Update the request status
+      const { error: requestError } = await supabase
+        .from('creator_verification_requests')
+        .update({ 
+          status: 'approved',
+          reviewed_by: user.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq('id', requestId);
+
+      if (requestError) throw requestError;
+
+      // Update the profile to mark as verified creator
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ is_verified_creator: true })
+        .eq('id', userId);
+
+      if (profileError) throw profileError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-verification-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['is-verified-creator'] });
+      toast.success('Creator verified!');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to verify: ${error.message}`);
+    },
+  });
+}
+
+// Reject a creator verification request
+export function useRejectVerification() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ requestId, reason }: { requestId: string; reason: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('creator_verification_requests')
+        .update({ 
+          status: 'rejected',
+          rejection_reason: reason,
+          reviewed_by: user.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-verification-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['my-verification-request'] });
+      toast.success('Verification request rejected');
     },
     onError: (error: Error) => {
       toast.error(`Failed to reject: ${error.message}`);
