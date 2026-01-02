@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle2, Coins, Info } from 'lucide-react';
+import { Loader2, CheckCircle2, Coins, Info, ExternalLink } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface RoyaltySetupCardProps {
   nmkrProject: NmkrProject;
@@ -30,12 +31,23 @@ export function RoyaltySetupCard({ nmkrProject, payoutWallet }: RoyaltySetupCard
   const handleMintRoyalty = async () => {
     if (!canMint) return;
     
-    await mintRoyalty.mutateAsync({
-      nmkrProjectId: nmkrProject.id,
-      nmkrProjectUid: nmkrProject.nmkr_project_uid,
-      royaltyAddress: usePayoutForRoyalty ? (payoutWallet || royaltyAddress) : royaltyAddress,
-      percentage: royaltyPercent,
-    });
+    try {
+      await mintRoyalty.mutateAsync({
+        nmkrProjectId: nmkrProject.id,
+        nmkrProjectUid: nmkrProject.nmkr_project_uid,
+        royaltyAddress: usePayoutForRoyalty ? (payoutWallet || royaltyAddress) : royaltyAddress,
+        percentage: royaltyPercent,
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('402') || errorMessage.toLowerCase().includes('mint credits')) {
+        toast.error(
+          'You need mint credits on NMKR Studio to create a royalty token. Please purchase credits and try again.',
+          { duration: 8000 }
+        );
+      }
+      // Error is already displayed by the mutation, don't re-throw
+    }
   };
 
   if (isRoyaltyMinted) {
@@ -79,10 +91,21 @@ export function RoyaltySetupCard({ nmkrProject, payoutWallet }: RoyaltySetupCard
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
           <div className="flex items-start gap-2">
             <Info className="h-4 w-4 text-primary mt-0.5" />
-            <p className="text-sm text-muted-foreground">
-              Minting a royalty token ensures you receive a percentage of every secondary sale 
-              on Cardano marketplaces like jpg.store. This is highly recommended!
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Minting a royalty token ensures you receive a percentage of every secondary sale 
+                on Cardano marketplaces like jpg.store. This is highly recommended!
+              </p>
+              <a 
+                href="https://www.nmkr.io/studio" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline flex items-center gap-1"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Note: Requires mint credits on NMKR Studio
+              </a>
+            </div>
           </div>
         </div>
 

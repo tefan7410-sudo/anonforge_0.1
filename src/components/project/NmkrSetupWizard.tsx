@@ -88,15 +88,31 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
         twitterHandle: twitterHandle.trim() || undefined,
       });
 
-      // 2. Mint royalty token if configured
+      // 2. Mint royalty token if configured (but don't block project creation if it fails)
       const finalRoyaltyAddress = usePayoutForRoyalty ? payoutWallet.trim() : royaltyAddress.trim();
       if (finalRoyaltyAddress && royaltyPercent >= 1 && royaltyPercent <= 10) {
-        await mintRoyalty.mutateAsync({
-          nmkrProjectId: nmkrProject.id,
-          nmkrProjectUid: nmkrProject.nmkr_project_uid,
-          royaltyAddress: finalRoyaltyAddress,
-          percentage: royaltyPercent,
-        });
+        try {
+          await mintRoyalty.mutateAsync({
+            nmkrProjectId: nmkrProject.id,
+            nmkrProjectUid: nmkrProject.nmkr_project_uid,
+            royaltyAddress: finalRoyaltyAddress,
+            percentage: royaltyPercent,
+          });
+        } catch (royaltyError: unknown) {
+          // Check if it's a 402 (no mint credits) error
+          const errorMessage = royaltyError instanceof Error ? royaltyError.message : String(royaltyError);
+          if (errorMessage.includes('402') || errorMessage.toLowerCase().includes('mint credits')) {
+            // Import toast dynamically to show warning - project still created successfully
+            const { toast } = await import('sonner');
+            toast.warning(
+              'Royalty token could not be created - you need mint credits on NMKR Studio. You can set up royalties later in the Pricing tab.',
+              { duration: 8000 }
+            );
+          } else {
+            // Re-throw other errors
+            throw royaltyError;
+          }
+        }
       }
     } finally {
       setIsCreating(false);
