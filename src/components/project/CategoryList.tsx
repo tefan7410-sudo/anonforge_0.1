@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Collapsible,
   CollapsibleContent,
@@ -33,6 +35,9 @@ import {
   Check,
   X,
   Info,
+  Ban,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 import {
   useCategories,
@@ -43,9 +48,14 @@ import {
   useUpdateLayerName,
   useDeleteLayer,
   useReorderCategories,
+  useLayerExclusions,
+  useLayerEffects,
+  useMarkAsEffectLayer,
   type Category,
   type Layer,
 } from '@/hooks/use-project';
+import { LayerExclusionsModal } from './LayerExclusionsModal';
+import { LayerEffectsModal } from './LayerEffectsModal';
 
 interface CategoryListProps {
   projectId: string;
@@ -65,12 +75,22 @@ function LayerItem({
   const updateWeight = useUpdateLayerWeight();
   const updateName = useUpdateLayerName();
   const deleteLayer = useDeleteLayer();
+  const markAsEffect = useMarkAsEffectLayer();
   const [weight, setWeight] = useState(layer.rarity_weight);
   const [isEditingName, setIsEditingName] = useState(false);
   const [displayName, setDisplayName] = useState(layer.display_name);
+  const [showExclusionsModal, setShowExclusionsModal] = useState(false);
+  const [showEffectsModal, setShowEffectsModal] = useState(false);
+
+  const { data: exclusions } = useLayerExclusions(layer.id);
+  const { data: effects } = useLayerEffects(layer.id);
+
+  const exclusionCount = exclusions?.length ? Math.floor(exclusions.length / 2) : 0; // Bidirectional, so divide by 2
+  const effectCount = effects?.length || 0;
 
   const percentage = totalWeight > 0 ? ((weight / totalWeight) * 100).toFixed(1) : '0';
   const isZeroWeight = weight === 0;
+  const isEffectLayer = layer.is_effect_layer;
 
   const { data: publicUrl } = supabase.storage.from('layers').getPublicUrl(layer.storage_path);
 
@@ -106,124 +126,223 @@ function LayerItem({
     setIsEditingName(false);
   };
 
-  return (
-    <div className={`group flex items-center gap-3 rounded-lg border border-border/50 bg-card p-3 ${isZeroWeight ? 'opacity-50' : ''}`}>
-      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted">
-        <img
-          src={publicUrl.publicUrl}
-          alt={layer.display_name}
-          className="h-full w-full object-contain"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = '';
-            (e.target as HTMLImageElement).classList.add('hidden');
-          }}
-        />
-      </div>
+  const handleToggleEffectLayer = () => {
+    markAsEffect.mutate({
+      id: layer.id,
+      isEffectLayer: !isEffectLayer,
+      projectId,
+    });
+  };
 
-      <div className="min-w-0 flex-1">
-        {isEditingName ? (
-          <div className="flex items-center gap-2">
-            <Input
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="h-7"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSaveName();
-                if (e.key === 'Escape') handleCancelName();
-              }}
-            />
-            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleSaveName}>
-              <Check className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleCancelName}>
-              <X className="h-3 w-3" />
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 group/name">
-            <p className="truncate font-medium">{layer.display_name}</p>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 shrink-0 opacity-0 group-hover/name:opacity-100 transition-opacity"
-              onClick={() => setIsEditingName(true)}
-            >
-              <Edit2 className="h-3 w-3" />
-            </Button>
+  return (
+    <>
+      <div className={`group flex items-center gap-3 rounded-lg border border-border/50 bg-card p-3 ${isZeroWeight || isEffectLayer ? 'opacity-60' : ''} ${isEffectLayer ? 'border-dashed border-primary/30' : ''}`}>
+        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted">
+          <img
+            src={publicUrl.publicUrl}
+            alt={layer.display_name}
+            className="h-full w-full object-contain"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '';
+              (e.target as HTMLImageElement).classList.add('hidden');
+            }}
+          />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          {isEditingName ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="h-7"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveName();
+                  if (e.key === 'Escape') handleCancelName();
+                }}
+              />
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleSaveName}>
+                <Check className="h-3 w-3" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleCancelName}>
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 group/name">
+              <p className="truncate font-medium">{layer.display_name}</p>
+              {isEffectLayer && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/50 text-primary">
+                  Effect
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 shrink-0 opacity-0 group-hover/name:opacity-100 transition-opacity"
+                onClick={() => setIsEditingName(true)}
+              >
+                <Edit2 className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+          <p className="truncate text-xs text-muted-foreground">{layer.filename}</p>
+        </div>
+
+        {/* Exclusions & Effects buttons */}
+        {!isEffectLayer && (
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-7 w-7 ${exclusionCount > 0 ? 'text-destructive' : 'opacity-0 group-hover:opacity-100'}`}
+                  onClick={() => setShowExclusionsModal(true)}
+                >
+                  <Ban className="h-3.5 w-3.5" />
+                  {exclusionCount > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-destructive text-[9px] text-destructive-foreground">
+                      {exclusionCount}
+                    </span>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {exclusionCount > 0 ? `${exclusionCount} exclusion${exclusionCount !== 1 ? 's' : ''}` : 'Set exclusions'}
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-7 w-7 ${effectCount > 0 ? 'text-primary' : 'opacity-0 group-hover:opacity-100'}`}
+                  onClick={() => setShowEffectsModal(true)}
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  {effectCount > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] text-primary-foreground">
+                      {effectCount}
+                    </span>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {effectCount > 0 ? `${effectCount} effect layer${effectCount !== 1 ? 's' : ''}` : 'Link effect layers'}
+              </TooltipContent>
+            </Tooltip>
           </div>
         )}
-        <p className="truncate text-xs text-muted-foreground">{layer.filename}</p>
-      </div>
 
-      <div className="flex w-64 items-center gap-2">
-        <Slider
-          value={[weight]}
-          onValueChange={handleWeightChange}
-          onValueCommit={handleWeightCommit}
-          min={0}
-          max={100}
-          step={1}
-          className="flex-1"
-        />
+        {/* Effect layer toggle */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex flex-col items-center gap-0.5">
-              <Badge variant="outline" className="w-14 justify-center text-xs cursor-help">
-                {weight}/100
-              </Badge>
-              <span className={`text-[10px] ${isZeroWeight ? 'text-destructive' : 'text-muted-foreground'}`}>
-                {isZeroWeight ? "won't appear" : `${percentage}%`}
-              </span>
+            <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100">
+              <Switch
+                id={`effect-${layer.id}`}
+                checked={isEffectLayer}
+                onCheckedChange={handleToggleEffectLayer}
+                className="scale-75"
+              />
+              <Label htmlFor={`effect-${layer.id}`} className="text-[10px] text-muted-foreground cursor-pointer">
+                <Sparkles className="h-3 w-3" />
+              </Label>
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p className="font-medium">Weight: {weight}/100 points</p>
-            <p className="text-xs text-muted-foreground">
-              {isZeroWeight 
-                ? 'This trait will never appear in generation' 
-                : `Drop rate: ${percentage}% (based on total category weight)`}
-            </p>
+            {isEffectLayer ? 'This is an effect layer (not in metadata)' : 'Mark as effect layer'}
           </TooltipContent>
         </Tooltip>
+
+        {/* Rarity slider - only for non-effect layers */}
+        {!isEffectLayer && (
+          <div className="flex w-48 items-center gap-2">
+            <Slider
+              value={[weight]}
+              onValueChange={handleWeightChange}
+              onValueCommit={handleWeightCommit}
+              min={0}
+              max={100}
+              step={1}
+              className="flex-1"
+            />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex flex-col items-center gap-0.5">
+                  <Badge variant="outline" className="w-12 justify-center text-[10px] cursor-help">
+                    {weight}
+                  </Badge>
+                  <span className={`text-[9px] ${isZeroWeight ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {isZeroWeight ? "won't appear" : `${percentage}%`}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="font-medium">Weight: {weight}/100 points</p>
+                <p className="text-xs text-muted-foreground">
+                  {isZeroWeight 
+                    ? 'This trait will never appear in generation' 
+                    : `Drop rate: ${percentage}% (based on total category weight)`}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 opacity-0 group-hover:opacity-100"
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete layer?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete "{layer.display_name}" and cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() =>
+                  deleteLayer.mutate({
+                    id: layer.id,
+                    categoryId,
+                    projectId,
+                    storagePath: layer.storage_path,
+                  })
+                }
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 opacity-0 group-hover:opacity-100"
-          >
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete layer?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete "{layer.display_name}" and cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() =>
-                deleteLayer.mutate({
-                  id: layer.id,
-                  categoryId,
-                  projectId,
-                  storagePath: layer.storage_path,
-                })
-              }
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+      {/* Modals */}
+      <LayerExclusionsModal
+        open={showExclusionsModal}
+        onOpenChange={setShowExclusionsModal}
+        layer={layer}
+        projectId={projectId}
+      />
+      <LayerEffectsModal
+        open={showEffectsModal}
+        onOpenChange={setShowEffectsModal}
+        layer={layer}
+        projectId={projectId}
+      />
+    </>
   );
 }
 

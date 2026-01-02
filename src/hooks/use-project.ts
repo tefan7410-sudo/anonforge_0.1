@@ -35,6 +35,22 @@ export interface Layer {
   rarity_weight: number;
   order_index: number;
   created_at: string;
+  is_effect_layer: boolean;
+}
+
+export interface LayerExclusion {
+  id: string;
+  layer_id: string;
+  excluded_layer_id: string;
+  created_at: string;
+}
+
+export interface LayerEffect {
+  id: string;
+  parent_layer_id: string;
+  effect_layer_id: string;
+  render_order: number;
+  created_at: string;
 }
 
 export function useProject(projectId: string) {
@@ -88,9 +104,9 @@ export function useLayers(categoryId: string) {
   });
 }
 
-export function useAllLayers(projectId: string) {
+export function useAllLayers(projectId: string, includeEffectLayers: boolean = false) {
   return useQuery({
-    queryKey: ['all-layers', projectId],
+    queryKey: ['all-layers', projectId, includeEffectLayers],
     queryFn: async () => {
       const { data: categories } = await supabase
         .from('categories')
@@ -100,16 +116,256 @@ export function useAllLayers(projectId: string) {
       if (!categories || categories.length === 0) return [];
 
       const categoryIds = categories.map((c) => c.id);
-      const { data, error } = await supabase
+      let query = supabase
         .from('layers')
         .select('*')
         .in('category_id', categoryIds)
         .order('order_index');
 
+      if (!includeEffectLayers) {
+        query = query.eq('is_effect_layer', false);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
       return data as Layer[];
     },
     enabled: !!projectId,
+  });
+}
+
+// ==================== LAYER EXCLUSIONS ====================
+
+export function useLayerExclusions(layerId: string) {
+  return useQuery({
+    queryKey: ['layer-exclusions', layerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('layer_exclusions')
+        .select('*')
+        .or(`layer_id.eq.${layerId},excluded_layer_id.eq.${layerId}`);
+
+      if (error) throw error;
+      return data as LayerExclusion[];
+    },
+    enabled: !!layerId,
+  });
+}
+
+export function useAllExclusions(projectId: string) {
+  return useQuery({
+    queryKey: ['all-exclusions', projectId],
+    queryFn: async () => {
+      // Get all layers for this project first
+      const { data: categories } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('project_id', projectId);
+
+      if (!categories || categories.length === 0) return [];
+
+      const categoryIds = categories.map((c) => c.id);
+      const { data: layers } = await supabase
+        .from('layers')
+        .select('id')
+        .in('category_id', categoryIds);
+
+      if (!layers || layers.length === 0) return [];
+
+      const layerIds = layers.map((l) => l.id);
+      const { data, error } = await supabase
+        .from('layer_exclusions')
+        .select('*')
+        .in('layer_id', layerIds);
+
+      if (error) throw error;
+      return data as LayerExclusion[];
+    },
+    enabled: !!projectId,
+  });
+}
+
+export function useCreateExclusion() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ layerId, excludedLayerId }: { layerId: string; excludedLayerId: string; projectId: string }) => {
+      // Create bidirectional exclusion
+      const { error } = await supabase.from('layer_exclusions').insert([
+        { layer_id: layerId, excluded_layer_id: excludedLayerId },
+        { layer_id: excludedLayerId, excluded_layer_id: layerId },
+      ]);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['layer-exclusions'] });
+      queryClient.invalidateQueries({ queryKey: ['all-exclusions', variables.projectId] });
+      toast({ title: 'Exclusion rule added' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to add exclusion', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+export function useDeleteExclusion() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ layerId, excludedLayerId }: { layerId: string; excludedLayerId: string; projectId: string }) => {
+      // Delete both directions
+      const { error } = await supabase
+        .from('layer_exclusions')
+        .delete()
+        .or(`and(layer_id.eq.${layerId},excluded_layer_id.eq.${excludedLayerId}),and(layer_id.eq.${excludedLayerId},excluded_layer_id.eq.${layerId})`);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['layer-exclusions'] });
+      queryClient.invalidateQueries({ queryKey: ['all-exclusions', variables.projectId] });
+      toast({ title: 'Exclusion rule removed' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to remove exclusion', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+// ==================== LAYER EFFECTS ====================
+
+export function useLayerEffects(layerId: string) {
+  return useQuery({
+    queryKey: ['layer-effects', layerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('layer_effects')
+        .select('*, effect_layer:layers!layer_effects_effect_layer_id_fkey(*)')
+        .eq('parent_layer_id', layerId)
+        .order('render_order');
+
+      if (error) throw error;
+      return data as (LayerEffect & { effect_layer: Layer })[];
+    },
+    enabled: !!layerId,
+  });
+}
+
+export function useAllEffects(projectId: string) {
+  return useQuery({
+    queryKey: ['all-effects', projectId],
+    queryFn: async () => {
+      const { data: categories } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('project_id', projectId);
+
+      if (!categories || categories.length === 0) return [];
+
+      const categoryIds = categories.map((c) => c.id);
+      const { data: layers } = await supabase
+        .from('layers')
+        .select('id')
+        .in('category_id', categoryIds);
+
+      if (!layers || layers.length === 0) return [];
+
+      const layerIds = layers.map((l) => l.id);
+      const { data, error } = await supabase
+        .from('layer_effects')
+        .select('*, effect_layer:layers!layer_effects_effect_layer_id_fkey(*)')
+        .in('parent_layer_id', layerIds)
+        .order('render_order');
+
+      if (error) throw error;
+      return data as (LayerEffect & { effect_layer: Layer })[];
+    },
+    enabled: !!projectId,
+  });
+}
+
+export function useCreateEffect() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({
+      parentLayerId,
+      effectLayerId,
+      renderOrder,
+    }: {
+      parentLayerId: string;
+      effectLayerId: string;
+      renderOrder: number;
+      projectId: string;
+    }) => {
+      const { error } = await supabase.from('layer_effects').insert({
+        parent_layer_id: parentLayerId,
+        effect_layer_id: effectLayerId,
+        render_order: renderOrder,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['layer-effects'] });
+      queryClient.invalidateQueries({ queryKey: ['all-effects', variables.projectId] });
+      toast({ title: 'Effect layer linked' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to link effect', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+export function useUpdateEffectOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, renderOrder }: { id: string; renderOrder: number; projectId: string }) => {
+      const { error } = await supabase.from('layer_effects').update({ render_order: renderOrder }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['layer-effects'] });
+      queryClient.invalidateQueries({ queryKey: ['all-effects', variables.projectId] });
+    },
+  });
+}
+
+export function useDeleteEffect() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: string; projectId: string }) => {
+      const { error } = await supabase.from('layer_effects').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['layer-effects'] });
+      queryClient.invalidateQueries({ queryKey: ['all-effects', variables.projectId] });
+      toast({ title: 'Effect layer removed' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to remove effect', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+export function useMarkAsEffectLayer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, isEffectLayer }: { id: string; isEffectLayer: boolean; projectId: string }) => {
+      const { error } = await supabase.from('layers').update({ is_effect_layer: isEffectLayer }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['all-layers', variables.projectId] });
+      queryClient.invalidateQueries({ queryKey: ['layers'] });
+    },
   });
 }
 
