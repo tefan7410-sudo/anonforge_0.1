@@ -4,6 +4,7 @@ import { NmkrApiKeySetup } from './NmkrApiKeySetup';
 import { NmkrSetupWizard } from './NmkrSetupWizard';
 import { NftUploadQueue } from './NftUploadQueue';
 import { SaleConfigForm } from './SaleConfigForm';
+import { RoyaltiesTab } from './RoyaltiesTab';
 import { MintStatusCard } from './MintStatusCard';
 import { NmkrSettingsModal } from './NmkrSettingsModal';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CheckCircle2, Rocket, Upload, Settings, BarChart3, Key, Trash2, AlertTriangle, RefreshCw, SettingsIcon } from 'lucide-react';
+import { CheckCircle2, Rocket, Upload, Settings, Coins, Key, Trash2, AlertTriangle, RefreshCw, SettingsIcon } from 'lucide-react';
 import { useDeleteNmkrCredentials } from '@/hooks/use-nmkr';
 import {
   AlertDialog,
@@ -159,10 +160,10 @@ export function PublishPanel({ projectId, projectName }: PublishPanelProps) {
             <span className="hidden sm:inline">Pricing</span>
             <span className="sm:hidden">Price</span>
           </TabsTrigger>
-          <TabsTrigger value="stats" className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Statistics</span>
-            <span className="sm:hidden">Stats</span>
+          <TabsTrigger value="royalties" className="gap-2">
+            <Coins className="h-4 w-4" />
+            <span className="hidden sm:inline">Royalties</span>
+            <span className="sm:hidden">Royalty</span>
           </TabsTrigger>
         </TabsList>
 
@@ -177,39 +178,8 @@ export function PublishPanel({ projectId, projectName }: PublishPanelProps) {
           <SaleConfigForm nmkrProject={nmkrProject} />
         </TabsContent>
 
-        <TabsContent value="stats" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-display">Collection Statistics</CardTitle>
-              <CardDescription>
-                Real-time data from NMKR Studio
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {counts ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="rounded-lg border border-border p-4">
-                    <div className="text-2xl font-bold text-primary">{counts.total}</div>
-                    <div className="text-sm text-muted-foreground">Total NFTs</div>
-                  </div>
-                  <div className="rounded-lg border border-border p-4">
-                    <div className="text-2xl font-bold text-green-500">{counts.sold}</div>
-                    <div className="text-sm text-muted-foreground">Sold</div>
-                  </div>
-                  <div className="rounded-lg border border-border p-4">
-                    <div className="text-2xl font-bold text-yellow-500">{counts.reserved}</div>
-                    <div className="text-sm text-muted-foreground">Reserved</div>
-                  </div>
-                  <div className="rounded-lg border border-border p-4">
-                    <div className="text-2xl font-bold text-blue-500">{counts.free}</div>
-                    <div className="text-sm text-muted-foreground">Available</div>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No NFTs uploaded yet</p>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="royalties" className="mt-6">
+          <RoyaltiesTab nmkrProject={nmkrProject} />
         </TabsContent>
       </Tabs>
 

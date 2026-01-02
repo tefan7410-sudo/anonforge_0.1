@@ -4,9 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, ExternalLink, Copy, Check, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Copy, Check, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { RoyaltySetupCard } from './RoyaltySetupCard';
 import { RoyaltyWarningModal } from './RoyaltyWarningModal';
 
 interface SaleConfigFormProps {
@@ -103,30 +102,6 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
 
   return (
     <div className="space-y-6">
-      {/* Royalty Warning Banner */}
-      {!isRoyaltyMinted && (
-        <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5 shrink-0" />
-            <div>
-              <h4 className="font-medium text-yellow-700 dark:text-yellow-400">
-                Royalty Token Not Created
-              </h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                You haven't minted a royalty token yet. This is required to receive 
-                royalties from secondary sales on marketplaces like jpg.store.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Royalty Setup Card */}
-      <RoyaltySetupCard 
-        nmkrProject={nmkrProject} 
-        payoutWallet={(settings.payoutWalletAddress as string) || ''}
-      />
-
       {/* Pricing Card */}
       <Card>
         <CardHeader>
@@ -292,26 +267,6 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
                 </div>
               )}
             </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Network Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-display">Network</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2">
-            <div className={`h-2 w-2 rounded-full ${
-              nmkrProject.network === 'mainnet' ? 'bg-green-500' : 'bg-yellow-500'
-            }`} />
-            <span className="capitalize font-medium">{nmkrProject.network}</span>
-          </div>
-          {nmkrProject.network === 'testnet' && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              This is a testnet project. NFTs will not be real and have no value.
-            </p>
           )}
         </CardContent>
       </Card>
