@@ -42,6 +42,7 @@ export const translations: Record<LanguageCode, Record<string, Record<string, st
       royaltiesDesc: 'Set up royalties for secondary sales. Configure percentages and payment addresses directly in your project settings.',
       marketplaceListing: 'Marketplace Listing',
       marketplaceListingDesc: 'Go live and get discovered. Your collection appears in the AnonForge marketplace for collectors to browse and mint.',
+      learnMore: 'Learn about these features',
     },
     benefits: {
       title: 'Why choose AnonForge?',
@@ -97,6 +98,7 @@ export const translations: Record<LanguageCode, Record<string, Record<string, st
       royaltiesDesc: 'Richten Sie Lizenzgebühren für Sekundärverkäufe ein. Konfigurieren Sie Prozentsätze und Zahlungsadressen direkt in Ihren Projekteinstellungen.',
       marketplaceListing: 'Marktplatz-Listung',
       marketplaceListingDesc: 'Gehen Sie live und werden Sie entdeckt. Ihre Sammlung erscheint im AnonForge-Marktplatz für Sammler zum Durchsuchen und Prägen.',
+      learnMore: 'Mehr über diese Funktionen erfahren',
     },
     benefits: {
       title: 'Warum AnonForge wählen?',
@@ -152,6 +154,7 @@ export const translations: Record<LanguageCode, Record<string, Record<string, st
       royaltiesDesc: 'Configura regalías para ventas secundarias. Configura porcentajes y direcciones de pago directamente en la configuración de tu proyecto.',
       marketplaceListing: 'Listado en el Mercado',
       marketplaceListingDesc: 'Lánzate y sé descubierto. Tu colección aparece en el mercado de AnonForge para que los coleccionistas exploren y acuñen.',
+      learnMore: 'Conoce estas funciones',
     },
     benefits: {
       title: '¿Por qué elegir AnonForge?',
@@ -207,6 +210,7 @@ export const translations: Record<LanguageCode, Record<string, Record<string, st
       royaltiesDesc: 'Настройте роялти для вторичных продаж. Настраивайте проценты и адреса оплаты прямо в настройках проекта.',
       marketplaceListing: 'Листинг на маркетплейсе',
       marketplaceListingDesc: 'Запускайтесь и будьте найдены. Ваша коллекция появится на маркетплейсе AnonForge для просмотра и минтинга коллекционерами.',
+      learnMore: 'Узнать об этих функциях',
     },
     benefits: {
       title: 'Почему выбирают AnonForge?',
@@ -262,6 +266,7 @@ export const translations: Record<LanguageCode, Record<string, Record<string, st
       royaltiesDesc: '二次販売のロイヤリティを設定。プロジェクト設定で直接パーセンテージと支払いアドレスを設定します。',
       marketplaceListing: 'マーケットプレイス掲載',
       marketplaceListingDesc: '公開して発見されましょう。あなたのコレクションはAnonForgeマーケットプレイスに表示され、コレクターが閲覧してミントできます。',
+      learnMore: 'これらの機能について学ぶ',
     },
     benefits: {
       title: 'なぜAnonForgeを選ぶのか？',
@@ -317,6 +322,7 @@ export const translations: Record<LanguageCode, Record<string, Record<string, st
       royaltiesDesc: '设置二次销售的版税。直接在项目设置中配置百分比和付款地址。',
       marketplaceListing: '市场上架',
       marketplaceListingDesc: '上线并被发现。您的收藏将出现在AnonForge市场上，供收藏家浏览和铸造。',
+      learnMore: '了解这些功能',
     },
     benefits: {
       title: '为什么选择AnonForge？',
