@@ -331,6 +331,7 @@ export default function Index() {
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <Link to="/terms" className="transition-colors hover:text-foreground">{t('footer.terms')}</Link>
+            <Link to="/documentation" className="transition-colors hover:text-foreground">{t('footer.documentation')}</Link>
             <Link to="/marketplace" className="transition-colors hover:text-foreground">{t('footer.marketplace')}</Link>
           </div>
           <p className="text-sm text-muted-foreground">
