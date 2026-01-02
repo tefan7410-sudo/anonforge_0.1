@@ -122,7 +122,10 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
       )}
 
       {/* Royalty Setup Card */}
-      <RoyaltySetupCard nmkrProject={nmkrProject} />
+      <RoyaltySetupCard 
+        nmkrProject={nmkrProject} 
+        payoutWallet={(settings.payoutWalletAddress as string) || ''}
+      />
 
       {/* Pricing Card */}
       <Card>

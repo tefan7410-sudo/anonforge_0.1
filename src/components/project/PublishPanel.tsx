@@ -5,12 +5,13 @@ import { NmkrSetupWizard } from './NmkrSetupWizard';
 import { NftUploadQueue } from './NftUploadQueue';
 import { SaleConfigForm } from './SaleConfigForm';
 import { MintStatusCard } from './MintStatusCard';
+import { NmkrSettingsModal } from './NmkrSettingsModal';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CheckCircle2, Rocket, Upload, Settings, BarChart3, Key, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { CheckCircle2, Rocket, Upload, Settings, BarChart3, Key, Trash2, AlertTriangle, RefreshCw, SettingsIcon } from 'lucide-react';
 import { useDeleteNmkrCredentials } from '@/hooks/use-nmkr';
 import {
   AlertDialog,
@@ -31,6 +32,7 @@ interface PublishPanelProps {
 
 export function PublishPanel({ projectId, projectName }: PublishPanelProps) {
   const [activeSubTab, setActiveSubTab] = useState('upload');
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const { 
     data: credentials, 
     isLoading: credentialsLoading, 
@@ -119,10 +121,20 @@ export function PublishPanel({ projectId, projectName }: PublishPanelProps) {
                 </CardDescription>
               </div>
             </div>
-            <Badge variant={statusColor as 'default' | 'secondary'} className="capitalize">
-              {nmkrProject.status === 'ready' && <CheckCircle2 className="mr-1 h-3 w-3" />}
-              {nmkrProject.status}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setShowSettingsModal(true)}
+                title="Edit NMKR Settings"
+              >
+                <SettingsIcon className="h-4 w-4" />
+              </Button>
+              <Badge variant={statusColor as 'default' | 'secondary'} className="capitalize">
+                {nmkrProject.status === 'ready' && <CheckCircle2 className="mr-1 h-3 w-3" />}
+                {nmkrProject.status}
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -200,6 +212,13 @@ export function PublishPanel({ projectId, projectName }: PublishPanelProps) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Settings Modal */}
+      <NmkrSettingsModal
+        nmkrProject={nmkrProject}
+        open={showSettingsModal}
+        onOpenChange={setShowSettingsModal}
+      />
     </div>
   );
 }
