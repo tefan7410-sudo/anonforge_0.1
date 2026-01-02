@@ -902,12 +902,12 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
             <div className="flex items-center justify-between">
               <div>
                 <Label htmlFor="resolution-toggle" className="text-sm font-medium">
-                  Full Resolution (5000×5000)
+                  Full Resolution ({GENERATION_CONFIG.MAX_EXPORT_RESOLUTION}×{GENERATION_CONFIG.MAX_EXPORT_RESOLUTION})
                 </Label>
                 <p className="text-xs text-muted-foreground">
                   {isFullResolution 
                     ? "Production quality - larger files" 
-                    : "Preview mode - 512×512 faster"}
+                    : `Preview mode - ${GENERATION_CONFIG.PREVIEW_RESOLUTION}×${GENERATION_CONFIG.PREVIEW_RESOLUTION} faster`}
                 </p>
               </div>
               <Switch
@@ -979,14 +979,14 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
               </AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div className="space-y-3">
-                  <p>You are about to generate at full resolution (5000×5000 pixels).</p>
+                  <p>You are about to generate at full resolution ({GENERATION_CONFIG.MAX_EXPORT_RESOLUTION}×{GENERATION_CONFIG.MAX_EXPORT_RESOLUTION} pixels).</p>
                   <ul className="list-inside list-disc space-y-1 text-sm">
-                    <li>Each image will be approximately 10-20MB</li>
+                    <li>Each image will be approximately 1-3MB (JPG format)</li>
                     <li>Generation will take significantly longer</li>
                     {batchSize > 1 && (
                       <li>Batch of {batchSize} images may take several minutes</li>
                     )}
-                    <li>Estimated total size: ~{(batchSize * 15).toFixed(0)}MB</li>
+                    <li>Estimated total size: ~{(batchSize * 2).toFixed(0)}MB</li>
                   </ul>
                   <p className="text-sm font-medium text-amber-600">
                     This process is resource-intensive and may take a while to complete.
