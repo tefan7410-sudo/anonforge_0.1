@@ -444,3 +444,109 @@ export function useGetNmkrPayLink() {
     },
   });
 }
+
+// Mint royalty token for secondary sales
+export function useMintRoyaltyToken() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      nmkrProjectId,
+      nmkrProjectUid,
+      royaltyAddress,
+      percentage,
+    }: {
+      nmkrProjectId: string;
+      nmkrProjectUid: string;
+      royaltyAddress: string;
+      percentage: number;
+    }) => {
+      const result = await callNmkrProxy('mint-royalty-token', {
+        projectUid: nmkrProjectUid,
+        royaltyAddress,
+        percentage,
+      });
+
+      // Update settings in nmkr_projects to track royalty status
+      const { data: currentProject } = await supabase
+        .from('nmkr_projects')
+        .select('settings')
+        .eq('id', nmkrProjectId)
+        .single();
+
+      const currentSettings = (currentProject?.settings || {}) as Record<string, unknown>;
+      
+      const { error } = await supabase
+        .from('nmkr_projects')
+        .update({
+          settings: {
+            ...currentSettings,
+            royaltyMinted: true,
+            royaltyPercent: percentage,
+            royaltyAddress,
+            royaltyMintedAt: new Date().toISOString(),
+          },
+        })
+        .eq('id', nmkrProjectId);
+
+      if (error) throw error;
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nmkr-project'] });
+      toast.success('Royalty token minted successfully!');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to mint royalty token: ${error.message}`);
+    },
+  });
+}
+
+// Get royalty information for a policy
+export function useGetRoyaltyInfo(policyId: string | undefined) {
+  return useQuery({
+    queryKey: ['nmkr-royalty-info', policyId],
+    queryFn: async () => {
+      if (!policyId) return null;
+      const response = await callNmkrProxy('get-royalty-information', { policyId });
+      return response.data;
+    },
+    enabled: !!policyId,
+  });
+}
+
+// Update royalty warning dismissed setting
+export function useUpdateRoyaltyWarningDismissed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      nmkrProjectId,
+    }: {
+      nmkrProjectId: string;
+    }) => {
+      const { data: currentProject } = await supabase
+        .from('nmkr_projects')
+        .select('settings')
+        .eq('id', nmkrProjectId)
+        .single();
+
+      const currentSettings = (currentProject?.settings || {}) as Record<string, unknown>;
+      
+      const { error } = await supabase
+        .from('nmkr_projects')
+        .update({
+          settings: {
+            ...currentSettings,
+            royaltyWarningDismissed: true,
+          },
+        })
+        .eq('id', nmkrProjectId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nmkr-project'] });
+    },
+  });
+}

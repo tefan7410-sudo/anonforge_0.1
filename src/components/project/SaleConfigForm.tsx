@@ -1,17 +1,23 @@
 import { useState } from 'react';
-import { useUpdateNmkrPrice, useGetNmkrPayLink, useGetPricelist, NmkrProject } from '@/hooks/use-nmkr';
+import { useUpdateNmkrPrice, useGetNmkrPayLink, useGetPricelist, useUpdateRoyaltyWarningDismissed, NmkrProject } from '@/hooks/use-nmkr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, ExternalLink, Copy, Check, RefreshCw } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Copy, Check, RefreshCw, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { RoyaltySetupCard } from './RoyaltySetupCard';
+import { RoyaltyWarningModal } from './RoyaltyWarningModal';
 
 interface SaleConfigFormProps {
   nmkrProject: NmkrProject;
 }
 
 export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
+  const settings = nmkrProject.settings as Record<string, unknown> || {};
+  const isRoyaltyMinted = settings.royaltyMinted === true;
+  const isRoyaltyWarningDismissed = settings.royaltyWarningDismissed === true;
+
   const [priceAda, setPriceAda] = useState(
     nmkrProject.price_in_lovelace 
       ? (nmkrProject.price_in_lovelace / 1_000_000).toString() 
@@ -20,9 +26,11 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
   const [countNft, setCountNft] = useState('1');
   const [payLink, setPayLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showRoyaltyWarning, setShowRoyaltyWarning] = useState(false);
 
   const updatePrice = useUpdateNmkrPrice();
   const getPayLink = useGetNmkrPayLink();
+  const updateRoyaltyWarningDismissed = useUpdateRoyaltyWarningDismissed();
   const { data: pricelist, refetch: refetchPricelist, isLoading: pricelistLoading } = useGetPricelist(nmkrProject.nmkr_project_uid);
 
   const handleUpdatePrice = async () => {
@@ -51,7 +59,17 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
     refetchPricelist();
   };
 
-  const handleGetPayLink = async () => {
+  const handleGetPayLinkClick = () => {
+    // Check if royalty is minted or warning is dismissed
+    if (!isRoyaltyMinted && !isRoyaltyWarningDismissed) {
+      setShowRoyaltyWarning(true);
+      return;
+    }
+    
+    generatePayLink();
+  };
+
+  const generatePayLink = async () => {
     try {
       const result = await getPayLink.mutateAsync({
         projectUid: nmkrProject.nmkr_project_uid,
@@ -60,6 +78,18 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
     } catch {
       // Error handled by hook
     }
+  };
+
+  const handleRoyaltyWarningConfirm = async (dontShowAgain: boolean) => {
+    setShowRoyaltyWarning(false);
+    
+    if (dontShowAgain) {
+      await updateRoyaltyWarningDismissed.mutateAsync({
+        nmkrProjectId: nmkrProject.id,
+      });
+    }
+    
+    generatePayLink();
   };
 
   const copyToClipboard = async () => {
@@ -73,6 +103,27 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
 
   return (
     <div className="space-y-6">
+      {/* Royalty Warning Banner */}
+      {!isRoyaltyMinted && (
+        <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5 shrink-0" />
+            <div>
+              <h4 className="font-medium text-yellow-700 dark:text-yellow-400">
+                Royalty Token Not Created
+              </h4>
+              <p className="text-sm text-muted-foreground mt-1">
+                You haven't minted a royalty token yet. This is required to receive 
+                royalties from secondary sales on marketplaces like jpg.store.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Royalty Setup Card */}
+      <RoyaltySetupCard nmkrProject={nmkrProject} />
+
       {/* Pricing Card */}
       <Card>
         <CardHeader>
@@ -196,7 +247,7 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
           ) : (
             <>
               <Button 
-                onClick={handleGetPayLink}
+                onClick={handleGetPayLinkClick}
                 disabled={getPayLink.isPending}
                 variant="outline"
                 className="w-full"
@@ -261,6 +312,14 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Royalty Warning Modal */}
+      <RoyaltyWarningModal
+        open={showRoyaltyWarning}
+        onOpenChange={setShowRoyaltyWarning}
+        onConfirm={handleRoyaltyWarningConfirm}
+        onCancel={() => setShowRoyaltyWarning(false)}
+      />
     </div>
   );
 }
