@@ -354,6 +354,7 @@ export type Database = {
       }
       product_pages: {
         Row: {
+          admin_approved: boolean | null
           banner_url: string | null
           buy_button_enabled: boolean | null
           buy_button_link: string | null
@@ -372,6 +373,7 @@ export type Database = {
           max_supply: number | null
           portfolio: Json | null
           project_id: string
+          rejection_reason: string | null
           scheduled_launch_at: string | null
           secondary_market_url: string | null
           tagline: string | null
@@ -380,6 +382,7 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          admin_approved?: boolean | null
           banner_url?: string | null
           buy_button_enabled?: boolean | null
           buy_button_link?: string | null
@@ -398,6 +401,7 @@ export type Database = {
           max_supply?: number | null
           portfolio?: Json | null
           project_id: string
+          rejection_reason?: string | null
           scheduled_launch_at?: string | null
           secondary_market_url?: string | null
           tagline?: string | null
@@ -406,6 +410,7 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          admin_approved?: boolean | null
           banner_url?: string | null
           buy_button_enabled?: boolean | null
           buy_button_link?: string | null
@@ -424,6 +429,7 @@ export type Database = {
           max_supply?: number | null
           portfolio?: Json | null
           project_id?: string
+          rejection_reason?: string | null
           scheduled_launch_at?: string | null
           secondary_market_url?: string | null
           tagline?: string | null
@@ -688,6 +694,33 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      verified_twitter_handles: {
+        Row: {
+          created_at: string
+          id: string
+          twitter_handle: string
+          user_id: string
+          verified_at: string
+          verified_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          twitter_handle: string
+          user_id: string
+          verified_at?: string
+          verified_by: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          twitter_handle?: string
+          user_id?: string
+          verified_at?: string
+          verified_by?: string
         }
         Relationships: []
       }

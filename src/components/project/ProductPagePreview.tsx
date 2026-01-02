@@ -27,6 +27,7 @@ interface CreatorCollection {
 interface ProductPagePreviewProps {
   productPage: ProductPage;
   projectName: string;
+  projectId: string;
   paymentLink?: string | null;
   nmkrPolicyId?: string | null;
   founderVerified?: boolean;
@@ -37,6 +38,7 @@ interface ProductPagePreviewProps {
 export function ProductPagePreview({ 
   productPage, 
   projectName, 
+  projectId,
   paymentLink,
   nmkrPolicyId,
   founderVerified = false,
@@ -50,20 +52,36 @@ export function ProductPagePreview({
     }
   };
 
+  const copyCollectionLink = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/collection/${projectId}`);
+    toast.success('Link copied!');
+  };
+
   const isScheduled = productPage.scheduled_launch_at && 
     new Date(productPage.scheduled_launch_at) > new Date();
 
   return (
     <div className="fixed inset-0 z-50 bg-background overflow-auto">
-      {/* Close button */}
-      <Button
-        variant="outline"
-        size="icon"
-        className="fixed top-4 right-4 z-50 bg-background/80 backdrop-blur"
-        onClick={onClose}
-      >
-        <X className="h-4 w-4" />
-      </Button>
+      {/* Header with close and share */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="bg-background/80 backdrop-blur"
+          onClick={copyCollectionLink}
+        >
+          <Copy className="mr-2 h-4 w-4" />
+          Copy Link
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="bg-background/80 backdrop-blur"
+          onClick={onClose}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* Banner */}
       <div className="relative h-64 md:h-80 w-full bg-gradient-to-br from-primary/20 to-primary/5">
