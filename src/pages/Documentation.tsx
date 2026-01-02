@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,11 @@ import { LanguageSelector } from '@/components/LanguageSelector';
 
 export default function Documentation() {
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   
   const sections = [
     {
@@ -109,7 +114,7 @@ export default function Documentation() {
       id: 'layer-management',
       title: 'Layer Management',
       icon: Palette,
-      keywords: ['layer', 'upload', 'png', 'rarity', 'weight', 'exclusion', 'trait', 'category', 'zip', 'image'],
+      keywords: ['layer', 'upload', 'png', 'rarity', 'weight', 'exclusion', 'trait', 'category', 'zip', 'image', 'name', 'naming', 'file', 'filename', 'display_name', 'trait_name', 'convention', 'organize', 'folder', 'structure', 'transparent', 'transparency', 'dimensions', 'size', 'resolution'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -172,7 +177,7 @@ export default function Documentation() {
       id: 'nft-generation',
       title: 'NFT Generation',
       icon: Sparkles,
-      keywords: ['generate', 'batch', 'single', 'unique', 'combination', 'history', 'favorite', 'metadata', 'comment'],
+      keywords: ['generate', 'batch', 'single', 'unique', 'combination', 'history', 'favorite', 'metadata', 'comment', 'random', 'manual', 'select', 'preview', 'resolution', 'download', 'image', 'json', 'token', 'id', 'prefix', 'weight', 'rarity', 'trait', 'attribute'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -552,15 +557,33 @@ export default function Documentation() {
     },
   ];
 
-  // Filter sections based on search query
+  // Helper to extract text content from JSX for searching
+  const extractTextFromJSX = (element: React.ReactNode): string => {
+    if (typeof element === 'string') return element;
+    if (typeof element === 'number') return String(element);
+    if (!element) return '';
+    if (Array.isArray(element)) return element.map(extractTextFromJSX).join(' ');
+    if (typeof element === 'object' && 'props' in element) {
+      const props = element.props as { children?: React.ReactNode };
+      return extractTextFromJSX(props.children);
+    }
+    return '';
+  };
+
+  // Filter sections based on search query - search title, keywords, AND content
   const filteredSections = useMemo(() => {
     if (!searchQuery.trim()) return sections;
     const query = searchQuery.toLowerCase();
-    return sections.filter(
-      (section) =>
-        section.title.toLowerCase().includes(query) ||
-        section.keywords.some((keyword) => keyword.toLowerCase().includes(query))
-    );
+    return sections.filter((section) => {
+      // Match title
+      if (section.title.toLowerCase().includes(query)) return true;
+      // Match keywords
+      if (section.keywords.some((keyword) => keyword.toLowerCase().includes(query))) return true;
+      // Match content text
+      const contentText = extractTextFromJSX(section.content);
+      if (contentText.toLowerCase().includes(query)) return true;
+      return false;
+    });
   }, [searchQuery]);
 
   return (

@@ -42,6 +42,9 @@ import {
   CheckCircle,
   Download,
   History,
+  Settings2,
+  Edit3,
+  Save,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -84,6 +87,11 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const [showFullResWarning, setShowFullResWarning] = useState(false);
   const [generationComplete, setGenerationComplete] = useState(false);
   const [lastBatchZipPath, setLastBatchZipPath] = useState<string | null>(null);
+  
+  // Metadata settings
+  const [generateMetadata, setGenerateMetadata] = useState(true);
+  const [editableMetadata, setEditableMetadata] = useState<Record<string, string>>({});
+  const [isEditingMetadata, setIsEditingMetadata] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -521,12 +529,16 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
           }
         }
 
-        // Create ZIP with all images + metadata
+        // Create ZIP with all images + metadata (if enabled)
         const zip = new JSZip();
-        const metadata = generatedCharacters.map((c) => ({
-          token: c.tokenId,
-          attributes: c.metadata,
-        }));
+        
+        if (generateMetadata) {
+          const metadata = generatedCharacters.map((c) => ({
+            token: c.tokenId,
+            attributes: c.metadata,
+          }));
+          zip.file('metadata.json', JSON.stringify(metadata, null, 2));
+        }
 
         for (const char of generatedCharacters) {
           if (char.imageData) {
@@ -535,7 +547,6 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
             zip.file(`${char.tokenId}.png`, blob);
           }
         }
-        zip.file('metadata.json', JSON.stringify(metadata, null, 2));
 
         // Generate ZIP blob and upload
         const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -567,6 +578,12 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
 
       setGenerated(generatedCharacters);
       setGenerationComplete(true);
+      
+      // Initialize editable metadata from generated characters
+      if (generatedCharacters.length === 1 && generateMetadata) {
+        setEditableMetadata(generatedCharacters[0].metadata);
+        setIsEditingMetadata(false);
+      }
 
       // Cleanup old generations (keep only 25 non-favorites)
       await cleanupGenerations.mutateAsync(projectId);
@@ -789,15 +806,16 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
           </CardContent>
         </Card>
 
-        {/* Output Resolution Toggle */}
+        {/* Global Settings - Resolution & Metadata */}
         <Card className="border-border/50">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <ImageIcon className="h-4 w-4" />
-              Output Resolution
+              <Settings2 className="h-4 w-4" />
+              Global Settings
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-0 space-y-4">
+            {/* Resolution Toggle */}
             <div className="flex items-center justify-between">
               <div>
                 <Label htmlFor="resolution-toggle" className="text-sm font-medium">
@@ -805,14 +823,33 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
                 </Label>
                 <p className="text-xs text-muted-foreground">
                   {isFullResolution 
-                    ? "Production quality - larger files, slower generation" 
-                    : "Preview mode - 512×512 for faster generation"}
+                    ? "Production quality - larger files" 
+                    : "Preview mode - 512×512 faster"}
                 </p>
               </div>
               <Switch
                 id="resolution-toggle"
                 checked={isFullResolution}
                 onCheckedChange={setIsFullResolution}
+              />
+            </div>
+            
+            {/* Metadata Toggle */}
+            <div className="flex items-center justify-between border-t border-border/50 pt-4">
+              <div>
+                <Label htmlFor="metadata-toggle" className="text-sm font-medium">
+                  Generate Metadata
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {generateMetadata 
+                    ? "JSON metadata will be included" 
+                    : "Images only, no metadata"}
+                </p>
+              </div>
+              <Switch
+                id="metadata-toggle"
+                checked={generateMetadata}
+                onCheckedChange={setGenerateMetadata}
               />
             </div>
           </CardContent>
