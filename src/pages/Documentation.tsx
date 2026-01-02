@@ -1,5 +1,7 @@
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Accordion,
   AccordionContent,
@@ -25,16 +27,20 @@ import {
   Link2,
   Check,
   AlertCircle,
+  Search,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSelector } from '@/components/LanguageSelector';
 
 export default function Documentation() {
+  const [searchQuery, setSearchQuery] = useState('');
+  
   const sections = [
     {
       id: 'getting-started',
       title: 'Getting Started',
       icon: Zap,
+      keywords: ['account', 'signup', 'register', 'login', 'project', 'new', 'first', 'begin', 'start', 'create', 'dashboard'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -103,6 +109,7 @@ export default function Documentation() {
       id: 'layer-management',
       title: 'Layer Management',
       icon: Palette,
+      keywords: ['layer', 'upload', 'png', 'rarity', 'weight', 'exclusion', 'trait', 'category', 'zip', 'image'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -165,6 +172,7 @@ export default function Documentation() {
       id: 'nft-generation',
       title: 'NFT Generation',
       icon: Sparkles,
+      keywords: ['generate', 'batch', 'single', 'unique', 'combination', 'history', 'favorite', 'metadata', 'comment'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -232,6 +240,7 @@ export default function Documentation() {
       id: 'nmkr-integration',
       title: 'NMKR Integration',
       icon: CreditCard,
+      keywords: ['nmkr', 'api', 'key', 'mint', 'cardano', 'upload', 'nft', 'blockchain', 'policy'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -309,6 +318,7 @@ export default function Documentation() {
       id: 'product-page',
       title: 'Product Page',
       icon: LayoutGrid,
+      keywords: ['product', 'landing', 'page', 'banner', 'logo', 'tagline', 'social', 'twitter', 'discord', 'website', 'founder', 'portfolio'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -373,6 +383,7 @@ export default function Documentation() {
       id: 'team-collaboration',
       title: 'Team Collaboration',
       icon: Users,
+      keywords: ['team', 'invite', 'member', 'role', 'admin', 'editor', 'viewer', 'permission', 'collaborate'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -430,6 +441,7 @@ export default function Documentation() {
       id: 'royalties',
       title: 'Royalties & Monetization',
       icon: CreditCard,
+      keywords: ['royalty', 'royalties', 'monetization', 'earn', 'secondary', 'sales', 'percentage', 'wallet', 'payment', 'address'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -476,6 +488,7 @@ export default function Documentation() {
       id: 'marketplace',
       title: 'Marketplace Listing',
       icon: Store,
+      keywords: ['marketplace', 'listing', 'live', 'publish', 'discover', 'collectors', 'review', 'approval', 'visibility'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -539,6 +552,17 @@ export default function Documentation() {
     },
   ];
 
+  // Filter sections based on search query
+  const filteredSections = useMemo(() => {
+    if (!searchQuery.trim()) return sections;
+    const query = searchQuery.toLowerCase();
+    return sections.filter(
+      (section) =>
+        section.title.toLowerCase().includes(query) ||
+        section.keywords.some((keyword) => keyword.toLowerCase().includes(query))
+    );
+  }, [searchQuery]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -580,50 +604,74 @@ export default function Documentation() {
             </p>
           </div>
 
-          {/* Quick Navigation */}
-          <div className="mb-8 p-4 rounded-lg border border-border/50 bg-muted/30">
-            <h2 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground">
-              Quick Navigation
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {sections.map((section) => (
-                <a
-                  key={section.id}
-                  href={`#${section.id}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border border-border/50 bg-background hover:border-primary/50 hover:text-primary transition-colors"
-                >
-                  <section.icon className="h-3.5 w-3.5" />
-                  {section.title}
-                </a>
-              ))}
-            </div>
+          {/* Search */}
+          <div className="mb-6 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search documentation..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
           </div>
 
+          {/* Quick Navigation - only show when not searching */}
+          {!searchQuery && (
+            <div className="mb-8 p-4 rounded-lg border border-border/50 bg-muted/30">
+              <h2 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground">
+                Quick Navigation
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {sections.map((section) => (
+                  <a
+                    key={section.id}
+                    href={`#${section.id}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border border-border/50 bg-background hover:border-primary/50 hover:text-primary transition-colors"
+                  >
+                    <section.icon className="h-3.5 w-3.5" />
+                    {section.title}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Sections */}
-          <Accordion type="multiple" defaultValue={['getting-started']} className="space-y-4">
-            {sections.map((section) => (
-              <AccordionItem
-                key={section.id}
-                value={section.id}
-                id={section.id}
-                className="border border-border/50 rounded-lg px-6 bg-card"
-              >
-                <AccordionTrigger className="hover:no-underline py-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                      <section.icon className="h-5 w-5 text-primary" />
+          {filteredSections.length > 0 ? (
+            <Accordion type="multiple" defaultValue={searchQuery ? filteredSections.map(s => s.id) : ['getting-started']} className="space-y-4">
+              {filteredSections.map((section) => (
+                <AccordionItem
+                  key={section.id}
+                  value={section.id}
+                  id={section.id}
+                  className="border border-border/50 rounded-lg px-6 bg-card"
+                >
+                  <AccordionTrigger className="hover:no-underline py-5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                        <section.icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="font-display text-lg font-semibold">
+                        {section.title}
+                      </span>
                     </div>
-                    <span className="font-display text-lg font-semibold">
-                      {section.title}
-                    </span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pb-6 pt-2">
-                  {section.content}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-6 pt-2">
+                    {section.content}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          ) : (
+            <div className="text-center py-12 px-4 rounded-lg border border-border/50 bg-muted/30">
+              <Search className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+              <h3 className="font-semibold text-lg mb-2">No results found</h3>
+              <p className="text-muted-foreground">
+                Try searching for different keywords like "layer", "mint", "team", or "royalty".
+              </p>
+            </div>
+          )}
 
           {/* CTA Section */}
           <div className="mt-12 text-center p-8 rounded-lg border border-border/50 bg-muted/30">

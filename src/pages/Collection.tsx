@@ -57,10 +57,10 @@ export default function Collection() {
         return null; // Not live or hidden
       }
 
-      // Fetch NMKR project for policy ID
+      // Fetch NMKR project for policy ID and price
       const { data: nmkrProject } = await supabase
         .from('nmkr_projects')
-        .select('nmkr_project_uid, nmkr_policy_id')
+        .select('nmkr_project_uid, nmkr_policy_id, price_in_lovelace')
         .eq('project_id', projectId)
         .maybeSingle();
 
@@ -98,9 +98,16 @@ export default function Collection() {
   const secondaryMarketUrl = (productPage as { secondary_market_url?: string }).secondary_market_url;
   const maxSupply = (productPage as { max_supply?: number }).max_supply;
   const scheduledLaunchAt = (productPage as { scheduled_launch_at?: string }).scheduled_launch_at;
+  const priceInLovelace = nmkrProject?.price_in_lovelace;
   
   // Check if collection is upcoming (scheduled but not yet launched)
   const isUpcoming = scheduledLaunchAt && new Date(scheduledLaunchAt) > new Date();
+
+  // Format price from lovelace to ADA
+  const formatPrice = (lovelace: number) => {
+    const ada = lovelace / 1_000_000;
+    return `${ada.toLocaleString()} ₳`;
+  };
 
   const copyPolicyId = () => {
     if (nmkrProject?.nmkr_policy_id) {
@@ -178,6 +185,30 @@ export default function Collection() {
             )}
           </div>
         </div>
+
+        {/* Hero Action Card - Price & Mint Button */}
+        {(priceInLovelace || (productPage.buy_button_enabled && productPage.buy_button_link)) && !isUpcoming && (
+          <div className="mb-8 p-6 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-transparent">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              {priceInLovelace && (
+                <div className="text-center sm:text-left">
+                  <p className="text-sm text-muted-foreground">Mint Price</p>
+                  <p className="text-3xl font-bold text-primary">{formatPrice(priceInLovelace)}</p>
+                </div>
+              )}
+              {productPage.buy_button_enabled && productPage.buy_button_link && (
+                <Button 
+                  size="lg" 
+                  className="w-full sm:w-auto text-lg px-8"
+                  onClick={() => window.open(productPage.buy_button_link!, '_blank', 'noopener,noreferrer')}
+                >
+                  <ShoppingCart className="mr-2 h-5 w-5" />
+                  {productPage.buy_button_text || 'Mint Now'}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Collection Stats */}
         {(maxSupply || nmkrProject?.nmkr_policy_id) && (

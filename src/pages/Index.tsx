@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Layers, ArrowRight, Sparkles, Palette, Store, Zap, Shield, Users, CreditCard, LayoutGrid, Rocket, Menu } from 'lucide-react';
+import { Layers, ArrowRight, Sparkles, Palette, Store, Zap, Shield, Users, CreditCard, LayoutGrid, Rocket, Menu, BookOpen } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { MarketplaceSection } from '@/components/MarketplaceSection';
@@ -252,6 +252,16 @@ export default function Index() {
                   <p className="mt-2 text-sm text-muted-foreground">{t(feature.descKey)}</p>
                 </article>
               ))}
+            </div>
+
+            {/* Learn More Button */}
+            <div className="mt-10 text-center">
+              <Button variant="outline" size="lg" asChild>
+                <Link to="/documentation">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  {t('creators.learnMore')}
+                </Link>
+              </Button>
             </div>
           </div>
         </section>
