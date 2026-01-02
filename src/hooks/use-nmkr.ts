@@ -185,12 +185,26 @@ export function useCreateNmkrProject() {
       description,
       maxNftSupply,
       payoutWalletAddress,
+      tokenNamePrefix,
+      storageProvider,
+      policyExpires,
+      policyLocksDateTime,
+      addressExpireTime,
+      projectUrl,
+      twitterHandle,
     }: {
       projectId: string;
       projectName: string;
       description?: string;
       maxNftSupply: number;
       payoutWalletAddress: string;
+      tokenNamePrefix: string;
+      storageProvider: 'ipfs' | 'iagon';
+      policyExpires: boolean;
+      policyLocksDateTime?: string;
+      addressExpireTime: number;
+      projectUrl?: string;
+      twitterHandle?: string;
     }) => {
       // Create project on NMKR
       const result = await callNmkrProxy('create-project', {
@@ -198,6 +212,13 @@ export function useCreateNmkrProject() {
         description,
         maxNftSupply,
         payoutWalletAddress,
+        tokenNamePrefix,
+        storageProvider,
+        policyExpires,
+        policyLocksDateTime,
+        addressExpireTime,
+        projectUrl,
+        twitterHandle,
       });
       const nmkrResult = result.data;
 
@@ -209,7 +230,13 @@ export function useCreateNmkrProject() {
           nmkr_project_uid: nmkrResult.uid,
           nmkr_policy_id: nmkrResult.policyId || null,
           status: 'draft',
-          settings: { nmkrProjectName: projectName },
+          settings: { 
+            nmkrProjectName: projectName,
+            tokenNamePrefix,
+            storageProvider,
+            policyExpires,
+            policyLocksDateTime,
+          },
         })
         .select()
         .single();
