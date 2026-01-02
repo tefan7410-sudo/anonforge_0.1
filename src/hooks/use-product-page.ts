@@ -28,6 +28,8 @@ export interface ProductPage {
   buy_button_text: string | null;
   buy_button_link: string | null;
   is_live: boolean;
+  secondary_market_url: string | null;
+  max_supply: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +50,8 @@ export interface ProductPageUpdate {
   buy_button_text?: string | null;
   buy_button_link?: string | null;
   is_live?: boolean;
+  secondary_market_url?: string | null;
+  max_supply?: number | null;
 }
 
 // Fetch product page for a project

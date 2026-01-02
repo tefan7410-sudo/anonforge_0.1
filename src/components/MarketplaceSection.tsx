@@ -37,6 +37,7 @@ const useMarketplaceCollections = (limit?: number) => {
           project:projects!inner(id, name, description)
         `)
         .eq('is_live', true)
+        .eq('is_hidden', false)
         .order('created_at', { ascending: false });
 
       if (limit) {
