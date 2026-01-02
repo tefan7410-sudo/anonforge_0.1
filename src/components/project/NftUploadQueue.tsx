@@ -94,6 +94,15 @@ export function NftUploadQueue({ projectId, nmkrProject }: NftUploadQueueProps) 
           reader.readAsDataURL(blob);
         });
 
+        // Extract traits from metadata for on-chain attributes
+        const traits = (gen.metadata as Record<string, unknown>) || {};
+        const metadataForUpload: Record<string, string> = {};
+        for (const [key, value] of Object.entries(traits)) {
+          if (typeof value === 'string') {
+            metadataForUpload[key] = value;
+          }
+        }
+
         await uploadNft.mutateAsync({
           nmkrProjectId: nmkrProject.id,
           nmkrProjectUid: nmkrProject.nmkr_project_uid,
@@ -102,6 +111,7 @@ export function NftUploadQueue({ projectId, nmkrProject }: NftUploadQueueProps) 
           displayName: gen.token_id,
           description: `Generated NFT - ${gen.token_id}`,
           imageBase64: base64,
+          metadata: metadataForUpload,
         });
 
         successCount++;

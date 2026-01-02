@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useUpdateNmkrPrice, useGetNmkrPayLink, NmkrProject } from '@/hooks/use-nmkr';
+import { useUpdateNmkrPrice, useGetNmkrPayLink, useGetPricelist, NmkrProject } from '@/hooks/use-nmkr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, ExternalLink, Copy, Check } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Copy, Check, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SaleConfigFormProps {
@@ -17,16 +17,24 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
       ? (nmkrProject.price_in_lovelace / 1_000_000).toString() 
       : ''
   );
+  const [countNft, setCountNft] = useState('1');
   const [payLink, setPayLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const updatePrice = useUpdateNmkrPrice();
   const getPayLink = useGetNmkrPayLink();
+  const { data: pricelist, refetch: refetchPricelist, isLoading: pricelistLoading } = useGetPricelist(nmkrProject.nmkr_project_uid);
 
   const handleUpdatePrice = async () => {
     const price = parseFloat(priceAda);
+    const count = parseInt(countNft, 10);
+    
     if (isNaN(price) || price <= 0) {
       toast.error('Please enter a valid price');
+      return;
+    }
+    if (isNaN(count) || count < 1) {
+      toast.error('Please enter a valid NFT count (minimum 1)');
       return;
     }
 
@@ -36,7 +44,11 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
       nmkrProjectId: nmkrProject.id,
       nmkrProjectUid: nmkrProject.nmkr_project_uid,
       priceInLovelace,
+      countNft: count,
     });
+    
+    // Refresh pricelist after update
+    refetchPricelist();
   };
 
   const handleGetPayLink = async () => {
@@ -70,10 +82,24 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="price">Price per NFT (ADA)</Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="countNft">NFT Count</Label>
+              <Input
+                id="countNft"
+                type="number"
+                min="1"
+                value={countNft}
+                onChange={(e) => setCountNft(e.target.value)}
+                placeholder="1"
+              />
+              <p className="text-xs text-muted-foreground">
+                Number of NFTs for this price tier
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="price">Price (ADA)</Label>
+              <div className="relative">
                 <Input
                   id="price"
                   type="number"
@@ -88,33 +114,65 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
                   ADA
                 </span>
               </div>
+            </div>
+          </div>
+          
+          <Button 
+            onClick={handleUpdatePrice}
+            disabled={updatePrice.isPending || !priceAda || !countNft}
+            className="w-full"
+          >
+            {updatePrice.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Save Price Tier
+              </>
+            )}
+          </Button>
+
+          {/* Current pricelist from NMKR */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Current Price Tiers</Label>
               <Button 
-                onClick={handleUpdatePrice}
-                disabled={updatePrice.isPending || !priceAda}
+                variant="ghost" 
+                size="sm" 
+                onClick={() => refetchPricelist()}
+                disabled={pricelistLoading}
               >
-                {updatePrice.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save
-                  </>
-                )}
+                <RefreshCw className={`h-3 w-3 ${pricelistLoading ? 'animate-spin' : ''}`} />
               </Button>
             </div>
-            {nmkrProject.price_in_lovelace && (
+            {pricelist && Array.isArray(pricelist) && pricelist.length > 0 ? (
+              <div className="rounded-lg border border-border bg-muted/30 p-3">
+                <div className="space-y-2">
+                  {pricelist.map((tier: { countNft?: number; priceInLovelace?: number; isActive?: boolean }, index: number) => (
+                    <div key={index} className="flex items-center justify-between text-sm">
+                      <span>{tier.countNft || 1} NFT{(tier.countNft || 1) > 1 ? 's' : ''}</span>
+                      <span className="font-medium">
+                        {((tier.priceInLovelace || 0) / 1_000_000).toFixed(2)} ADA
+                        {tier.isActive === false && <span className="ml-2 text-muted-foreground">(inactive)</span>}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : nmkrProject.price_in_lovelace ? (
               <p className="text-xs text-muted-foreground">
-                Current price: {(nmkrProject.price_in_lovelace / 1_000_000).toFixed(2)} ADA
-                ({nmkrProject.price_in_lovelace.toLocaleString()} lovelace)
+                Local price: {(nmkrProject.price_in_lovelace / 1_000_000).toFixed(2)} ADA
               </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">No price tiers set yet</p>
             )}
           </div>
 
           <div className="rounded-lg border border-border bg-muted/30 p-4">
             <h4 className="mb-2 text-sm font-medium">Pricing Tips</h4>
             <ul className="space-y-1 text-xs text-muted-foreground">
-              <li>• Consider the rarity and uniqueness of your collection</li>
-              <li>• Check similar collections for market prices</li>
+              <li>• Set count to 1 for single NFT purchases</li>
+              <li>• Use higher counts with discounted prices for bulk buys</li>
               <li>• NMKR charges fees on each sale (check their pricing)</li>
               <li>• You can update the price at any time</li>
             </ul>

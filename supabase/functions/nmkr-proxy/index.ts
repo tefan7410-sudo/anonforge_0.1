@@ -211,16 +211,21 @@ serve(async (req) => {
         if (!params.projectUid) {
           return jsonResponse({ error: "Missing projectUid" }, 400);
         }
-        // Corrected endpoint
-        nmkrEndpoint = `/ProjectDetails/${params.projectUid}`;
+        nmkrEndpoint = `/GetProjectDetails/${params.projectUid}`;
         break;
 
       case "get-counts":
         if (!params.projectUid) {
           return jsonResponse({ error: "Missing projectUid" }, 400);
         }
-        // Corrected endpoint
-        nmkrEndpoint = `/Counts/${params.projectUid}`;
+        nmkrEndpoint = `/GetCounts/${params.projectUid}`;
+        break;
+
+      case "get-pricelist":
+        if (!params.projectUid) {
+          return jsonResponse({ error: "Missing projectUid" }, 400);
+        }
+        nmkrEndpoint = `/GetPricelist/${params.projectUid}`;
         break;
 
       case "upload-nft":
@@ -229,6 +234,10 @@ serve(async (req) => {
         }
         nmkrEndpoint = `/UploadNft/${params.projectUid}`;
         nmkrMethod = "POST";
+        // Build metadata placeholder from traits
+        const metadataPlaceholder = Array.isArray(params.metadataPlaceholder) 
+          ? params.metadataPlaceholder 
+          : [];
         nmkrBody = JSON.stringify({
           tokenname: params.tokenName,
           displayname: params.displayName,
@@ -237,7 +246,7 @@ serve(async (req) => {
             mimetype: params.previewImage.mimetype || "image/png",
             fileFromBase64: params.previewImage.base64,
           } : undefined,
-          metadataPlaceholder: params.metadata || [],
+          metadataPlaceholder,
         });
         break;
 
@@ -252,15 +261,20 @@ serve(async (req) => {
         break;
 
       case "update-pricelist":
-        if (!params.projectUid || params.priceInLovelace === undefined) {
-          return jsonResponse({ error: "Missing projectUid or priceInLovelace" }, 400);
+        if (!params.projectUid) {
+          return jsonResponse({ error: "Missing projectUid" }, 400);
         }
         nmkrEndpoint = `/UpdatePricelist/${params.projectUid}`;
         nmkrMethod = "PUT";
-        nmkrBody = JSON.stringify([{
-          priceInLovelace: params.priceInLovelace,
-          isActive: true,
-        }]);
+        // Support price tiers array or build from single price
+        const priceTiers = Array.isArray(params.priceTiers) 
+          ? params.priceTiers 
+          : [{ 
+              countNft: params.countNft || 1, 
+              priceInLovelace: params.priceInLovelace, 
+              isActive: true 
+            }];
+        nmkrBody = JSON.stringify(priceTiers);
         break;
 
       case "get-payment-address":
