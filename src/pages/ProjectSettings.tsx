@@ -23,7 +23,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Layers, Save, Trash2, Loader2, Settings, Users, Shield, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Layers, Save, Trash2, Loader2, Settings, Users, Shield, AlertTriangle, HelpCircle } from 'lucide-react';
 import { TeamManagement } from '@/components/project/TeamManagement';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
@@ -161,6 +161,11 @@ export default function ProjectSettings() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" asChild title="Help & Documentation">
+              <Link to="/documentation">
+                <HelpCircle className="h-4 w-4" />
+              </Link>
+            </Button>
             <ThemeToggle />
             <MobileNav />
           </div>

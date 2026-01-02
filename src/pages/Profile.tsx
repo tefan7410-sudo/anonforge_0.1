@@ -21,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Layers, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut } from 'lucide-react';
+import { ArrowLeft, Layers, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, HelpCircle } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 
@@ -153,6 +153,11 @@ export default function Profile() {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
+            <Button variant="ghost" size="icon" asChild title="Help & Documentation">
+              <Link to="/documentation">
+                <HelpCircle className="h-4 w-4" />
+              </Link>
+            </Button>
             <ThemeToggle />
             <Button variant="outline" onClick={handleSignOut} className="hidden md:inline-flex">
               <LogOut className="mr-2 h-4 w-4" />

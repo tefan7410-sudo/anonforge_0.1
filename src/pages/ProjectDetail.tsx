@@ -23,6 +23,7 @@ import {
   Layers,
   Image as ImageIcon,
   Clock,
+  HelpCircle,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { LayerUploadZone } from '@/components/project/LayerUploadZone';
@@ -144,6 +145,11 @@ export default function ProjectDetail() {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <Button variant="ghost" size="icon" asChild title="Help & Documentation">
+              <Link to="/documentation">
+                <HelpCircle className="h-4 w-4" />
+              </Link>
+            </Button>
             <NotificationDropdown />
             <ThemeToggle />
             <Badge variant={project.is_public ? 'secondary' : 'outline'} className="hidden sm:inline-flex">
