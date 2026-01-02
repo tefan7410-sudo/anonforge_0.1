@@ -37,6 +37,7 @@ import {
   FileJson,
   Image as ImageIcon,
   RefreshCw,
+  X,
   Layers,
   AlertTriangle,
   CheckCircle,
@@ -91,6 +92,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   // Metadata settings
   const [generateMetadata, setGenerateMetadata] = useState(true);
   const [editableMetadata, setEditableMetadata] = useState<Record<string, string>>({});
+  const [editableBatchMetadata, setEditableBatchMetadata] = useState<Record<string, string>[]>([]);
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -580,8 +582,12 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
       setGenerationComplete(true);
       
       // Initialize editable metadata from generated characters
-      if (generatedCharacters.length === 1 && generateMetadata) {
-        setEditableMetadata(generatedCharacters[0].metadata);
+      if (generateMetadata) {
+        if (generatedCharacters.length === 1) {
+          setEditableMetadata({ ...generatedCharacters[0].metadata });
+        } else {
+          setEditableBatchMetadata(generatedCharacters.map(c => ({ ...c.metadata })));
+        }
         setIsEditingMetadata(false);
       }
 
@@ -636,12 +642,14 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     link.click();
   };
 
-  // Download metadata JSON
+  // Download metadata JSON (uses edited metadata if available)
   const handleDownloadMetadata = () => {
     if (generated.length === 0) return;
-    const metadata = generated.map((g) => ({
+    const metadata = generated.map((g, i) => ({
       token: g.tokenId,
-      meta: g.metadata,
+      meta: generated.length === 1 
+        ? (Object.keys(editableMetadata).length > 0 ? editableMetadata : g.metadata)
+        : (editableBatchMetadata[i] || g.metadata),
     }));
     const blob = new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -650,6 +658,42 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Save edited metadata back to generated state
+  const handleSaveMetadata = () => {
+    if (generated.length === 1) {
+      setGenerated(prev => [{
+        ...prev[0],
+        metadata: { ...editableMetadata }
+      }]);
+    } else {
+      setGenerated(prev => prev.map((g, i) => ({
+        ...g,
+        metadata: { ...editableBatchMetadata[i] }
+      })));
+    }
+    setIsEditingMetadata(false);
+    toast({ title: 'Metadata saved' });
+  };
+
+  // Cancel editing and reset to original
+  const handleCancelEdit = () => {
+    if (generated.length === 1) {
+      setEditableMetadata({ ...generated[0].metadata });
+    } else {
+      setEditableBatchMetadata(generated.map(g => ({ ...g.metadata })));
+    }
+    setIsEditingMetadata(false);
+  };
+
+  // Handle batch metadata field change
+  const handleBatchMetadataChange = (index: number, key: string, value: string) => {
+    setEditableBatchMetadata(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [key]: value };
+      return updated;
+    });
   };
 
 
@@ -1034,28 +1078,93 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
           </CardContent>
         </Card>
 
-        {/* Metadata preview */}
-        {generated.length > 0 && (
+        {/* Metadata preview/edit */}
+        {generated.length > 0 && generateMetadata && (
           <Card className="border-border/50">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <FileJson className="h-4 w-4" />
-                Metadata {generated.length > 1 && `(${generated.length} items)`}
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FileJson className="h-4 w-4" />
+                  Metadata {generated.length > 1 && `(${generated.length} items)`}
+                </CardTitle>
+                <div className="flex gap-2">
+                  {isEditingMetadata ? (
+                    <>
+                      <Button size="sm" onClick={handleSaveMetadata}>
+                        <Save className="mr-1 h-3 w-3" />
+                        Save
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
+                        <X className="mr-1 h-3 w-3" />
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => setIsEditingMetadata(true)}>
+                      <Edit3 className="mr-1 h-3 w-3" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <ScrollArea className={generated.length > 1 ? 'h-64' : ''}>
-                <pre className="overflow-auto rounded-lg bg-muted p-3 text-xs">
-                  {JSON.stringify(
-                    generated.map((g) => ({
-                      token: g.tokenId,
-                      meta: g.metadata,
-                    })),
-                    null,
-                    2
+              {isEditingMetadata ? (
+                <ScrollArea className={generated.length > 1 ? 'h-72' : 'max-h-64'}>
+                  {generated.length === 1 ? (
+                    // Single generation edit
+                    <div className="space-y-3">
+                      {Object.entries(editableMetadata).map(([key, value]) => (
+                        <div key={key} className="flex items-center gap-3">
+                          <Label className="w-32 shrink-0 text-sm font-medium">{key}</Label>
+                          <Input
+                            value={value}
+                            onChange={(e) => setEditableMetadata(prev => ({
+                              ...prev,
+                              [key]: e.target.value
+                            }))}
+                            className="flex-1"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    // Batch generation edit
+                    <div className="space-y-4">
+                      {editableBatchMetadata.map((meta, index) => (
+                        <div key={index} className="rounded-lg border border-border/50 p-3 space-y-2">
+                          <p className="text-sm font-medium text-primary">{generated[index]?.tokenId}</p>
+                          {Object.entries(meta).map(([key, value]) => (
+                            <div key={key} className="flex items-center gap-2">
+                              <Label className="w-24 shrink-0 text-xs">{key}</Label>
+                              <Input
+                                value={value}
+                                onChange={(e) => handleBatchMetadataChange(index, key, e.target.value)}
+                                className="flex-1 h-8 text-sm"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
                   )}
-                </pre>
-              </ScrollArea>
+                </ScrollArea>
+              ) : (
+                <ScrollArea className={generated.length > 1 ? 'h-64' : ''}>
+                  <pre className="overflow-auto rounded-lg bg-muted p-3 text-xs">
+                    {JSON.stringify(
+                      generated.map((g, i) => ({
+                        token: g.tokenId,
+                        meta: generated.length === 1 
+                          ? (Object.keys(editableMetadata).length > 0 ? editableMetadata : g.metadata)
+                          : (editableBatchMetadata[i] || g.metadata),
+                      })),
+                      null,
+                      2
+                    )}
+                  </pre>
+                </ScrollArea>
+              )}
             </CardContent>
           </Card>
         )}
