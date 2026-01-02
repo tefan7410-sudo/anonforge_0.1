@@ -81,7 +81,7 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
           
           {/* Logo overlay */}
           {collection.logo_url && (
-            <div className="absolute -bottom-4 left-4">
+            <div className="absolute -bottom-4 left-4 z-10">
               <img
                 src={collection.logo_url}
                 alt={`${collection.project.name} logo`}
@@ -103,7 +103,7 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
           )}
         </div>
 
-        <CardContent className="pt-6">
+        <CardContent className="pt-8">
           <h3 className="font-display text-lg font-semibold group-hover:text-primary transition-colors">
             {collection.project.name}
           </h3>
