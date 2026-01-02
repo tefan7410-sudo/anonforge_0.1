@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X } from 'lucide-react';
+import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X, HelpCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
@@ -164,6 +164,11 @@ export default function Dashboard() {
             <span className="font-display text-lg sm:text-xl font-semibold">AnonForge</span>
           </Link>
           <div className="flex items-center gap-1 sm:gap-2">
+            <Button variant="ghost" size="icon" asChild title="Help & Documentation">
+              <Link to="/documentation">
+                <HelpCircle className="h-4 w-4" />
+              </Link>
+            </Button>
             <NotificationDropdown />
             <ThemeToggle />
             <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
