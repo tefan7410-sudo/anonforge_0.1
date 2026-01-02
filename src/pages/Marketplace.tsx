@@ -11,7 +11,6 @@ import { Layers, Store, ExternalLink, ArrowLeft, Clock } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useCollectionStatuses } from '@/hooks/use-collection-status';
 import { CountdownTimer } from '@/components/CountdownTimer';
-import { useCollectionStatuses } from '@/hooks/use-collection-status';
 import {
   Pagination,
   PaginationContent,

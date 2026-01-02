@@ -15,12 +15,14 @@ import {
   BadgeCheck,
   Copy,
   Store,
+  Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useExternalLink } from '@/hooks/use-external-link';
 import { ExternalLinkWarning } from '@/components/ExternalLinkWarning';
 import { MintStatusCard } from '@/components/MintStatusCard';
 import { useCreatorCollections } from '@/hooks/use-creator-collections';
+import { CountdownTimer } from '@/components/CountdownTimer';
 import { toast } from 'sonner';
 
 export default function Collection() {
@@ -94,6 +96,10 @@ export default function Collection() {
   const founderVerified = (productPage as { founder_verified?: boolean }).founder_verified;
   const secondaryMarketUrl = (productPage as { secondary_market_url?: string }).secondary_market_url;
   const maxSupply = (productPage as { max_supply?: number }).max_supply;
+  const scheduledLaunchAt = (productPage as { scheduled_launch_at?: string }).scheduled_launch_at;
+  
+  // Check if collection is upcoming (scheduled but not yet launched)
+  const isUpcoming = scheduledLaunchAt && new Date(scheduledLaunchAt) > new Date();
 
   const copyPolicyId = () => {
     if (nmkrProject?.nmkr_policy_id) {
@@ -236,8 +242,22 @@ export default function Collection() {
           maxSupply={maxSupply}
         />
 
+        {/* Upcoming Collection Countdown */}
+        {isUpcoming && (
+          <div className="mb-8 p-6 rounded-xl border bg-primary/5 border-primary/20">
+            <div className="flex items-center gap-3 mb-2">
+              <Clock className="h-5 w-5 text-primary" />
+              <h3 className="font-display font-semibold">Coming Soon</h3>
+            </div>
+            <CountdownTimer targetDate={new Date(scheduledLaunchAt!)} />
+            <p className="mt-3 text-sm text-muted-foreground">
+              This collection will be available for minting soon. Check back later!
+            </p>
+          </div>
+        )}
+
         {/* Buy Button - Opens directly without warning (NMKR Pay is trusted) */}
-        {productPage.buy_button_enabled && productPage.buy_button_link && (
+        {productPage.buy_button_enabled && productPage.buy_button_link && !isUpcoming && (
           <div className="mb-8">
             <Button 
               size="lg" 
