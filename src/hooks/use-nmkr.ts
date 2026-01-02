@@ -236,6 +236,12 @@ export function useCreateNmkrProject() {
             storageProvider,
             policyExpires,
             policyLocksDateTime,
+            payoutWalletAddress,
+            maxNftSupply,
+            addressExpireTime,
+            projectUrl,
+            twitterHandle,
+            description,
           },
         })
         .select()
@@ -547,6 +553,84 @@ export function useUpdateRoyaltyWarningDismissed() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['nmkr-project'] });
+    },
+  });
+}
+
+// Update NMKR project settings
+export function useUpdateNmkrProjectSettings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      nmkrProjectId,
+      settings: newSettings,
+    }: {
+      nmkrProjectId: string;
+      settings: Record<string, unknown>;
+    }) => {
+      const { data: currentProject } = await supabase
+        .from('nmkr_projects')
+        .select('settings')
+        .eq('id', nmkrProjectId)
+        .single();
+
+      const currentSettings = (currentProject?.settings || {}) as Record<string, unknown>;
+      
+      const { error } = await supabase
+        .from('nmkr_projects')
+        .update({
+          settings: {
+            ...currentSettings,
+            ...newSettings,
+          } as Record<string, string | number | boolean | null>,
+        })
+        .eq('id', nmkrProjectId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nmkr-project'] });
+      toast.success('Settings saved successfully!');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to save settings: ${error.message}`);
+    },
+  });
+}
+
+// Delete/disconnect NMKR project (local record only)
+export function useDeleteNmkrProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      nmkrProjectId,
+    }: {
+      nmkrProjectId: string;
+    }) => {
+      // First delete related uploads
+      const { error: uploadsError } = await supabase
+        .from('nmkr_uploads')
+        .delete()
+        .eq('nmkr_project_id', nmkrProjectId);
+
+      if (uploadsError) throw uploadsError;
+
+      // Then delete the project
+      const { error } = await supabase
+        .from('nmkr_projects')
+        .delete()
+        .eq('id', nmkrProjectId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nmkr-project'] });
+      toast.success('NMKR project disconnected');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to disconnect: ${error.message}`);
     },
   });
 }
