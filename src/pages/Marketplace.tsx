@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useMarketplaceCollections } from '@/components/MarketplaceSection';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Layers, Store, ExternalLink, ArrowLeft } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -13,6 +16,7 @@ interface LiveCollection {
   banner_url: string | null;
   logo_url: string | null;
   tagline: string | null;
+  nmkr_project_uid: string | null;
   project: {
     id: string;
     name: string;
@@ -20,7 +24,49 @@ interface LiveCollection {
   };
 }
 
-function CollectionCard({ collection }: { collection: LiveCollection }) {
+interface NmkrCountsMap {
+  [projectUid: string]: { sold: number; free: number; total: number } | null;
+}
+
+function useMarketplaceData() {
+  return useQuery({
+    queryKey: ['marketplace-data-full'],
+    queryFn: async () => {
+      // Fetch all live, non-hidden collections
+      const { data: collections, error } = await supabase
+        .from('product_pages')
+        .select(`
+          id,
+          project_id,
+          banner_url,
+          logo_url,
+          tagline,
+          project:projects!inner(id, name, description)
+        `)
+        .eq('is_live', true)
+        .eq('is_hidden', false)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Fetch NMKR projects separately
+      const projectIds = (collections || []).map(c => c.project_id);
+      const { data: nmkrProjects } = await supabase
+        .from('nmkr_projects')
+        .select('project_id, nmkr_project_uid')
+        .in('project_id', projectIds);
+      
+      const nmkrMap = new Map((nmkrProjects || []).map(n => [n.project_id, n.nmkr_project_uid]));
+      
+      return (collections || []).map(c => ({
+        ...c,
+        nmkr_project_uid: nmkrMap.get(c.project_id) || null,
+      })) as LiveCollection[];
+    },
+  });
+}
+
+function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection; isSoldOut?: boolean }) {
   return (
     <Link to={`/collection/${collection.project_id}`}>
       <Card className="group cursor-pointer overflow-hidden border-border/50 transition-all hover:border-primary/30 hover:shadow-lg">
@@ -49,13 +95,17 @@ function CollectionCard({ collection }: { collection: LiveCollection }) {
             </div>
           )}
           
-          {/* Live badge */}
-          <Badge 
-            className="absolute right-3 top-3 bg-green-500/90 text-white hover:bg-green-500"
-          >
-            <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-white" />
-            LIVE
-          </Badge>
+          {/* Status badge */}
+          {isSoldOut ? (
+            <Badge className="absolute right-3 top-3 bg-orange-500/90 text-white hover:bg-orange-500">
+              SOLD OUT
+            </Badge>
+          ) : (
+            <Badge className="absolute right-3 top-3 bg-green-500/90 text-white hover:bg-green-500">
+              <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-white" />
+              LIVE
+            </Badge>
+          )}
         </div>
 
         <CardContent className="pt-8">
@@ -89,7 +139,12 @@ function CollectionCardSkeleton() {
 }
 
 export default function Marketplace() {
-  const { data: collections, isLoading } = useMarketplaceCollections();
+  const { data: collections, isLoading } = useMarketplaceData();
+  const [filter, setFilter] = useState<'all' | 'live' | 'sold-out'>('all');
+
+  // For now, we'll show all as "live" since we don't have batch NMKR counts
+  // In a production app, you'd fetch counts for each collection
+  const filteredCollections = collections;
 
   return (
     <div className="min-h-screen bg-background">
@@ -126,7 +181,7 @@ export default function Marketplace() {
         </div>
 
         {/* Header */}
-        <div className="mb-12 text-center">
+        <div className="mb-8 text-center">
           <div className="mb-4 inline-flex items-center gap-2">
             <Store className="h-8 w-8 text-primary" aria-hidden="true" />
           </div>
@@ -138,6 +193,17 @@ export default function Marketplace() {
           </p>
         </div>
 
+        {/* Filter Tabs */}
+        <div className="mb-8 flex justify-center">
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="live">Live</TabsTrigger>
+              <TabsTrigger value="sold-out">Sold Out</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
         {/* Collections Grid */}
         {isLoading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -145,9 +211,9 @@ export default function Marketplace() {
               <CollectionCardSkeleton key={i} />
             ))}
           </div>
-        ) : collections && collections.length > 0 ? (
+        ) : filteredCollections && filteredCollections.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {collections.map((collection) => (
+            {filteredCollections.map((collection) => (
               <CollectionCard key={collection.id} collection={collection} />
             ))}
           </div>
