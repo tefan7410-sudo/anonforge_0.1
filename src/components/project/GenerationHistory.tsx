@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,11 @@ import {
   getGenerationFileUrl,
   type Generation,
 } from '@/hooks/use-generations';
+import {
+  useGenerationCommentCounts,
+  useUserMentionsInGenerations,
+} from '@/hooks/use-generation-comments';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
   Heart,
@@ -20,6 +25,8 @@ import {
   Image as ImageIcon,
   Clock,
   Loader2,
+  MessageSquare,
+  AtSign,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -40,6 +47,7 @@ interface GenerationHistoryProps {
 }
 
 export function GenerationHistory({ projectId }: GenerationHistoryProps) {
+  const { user } = useAuth();
   const { data: generations, isLoading } = useGenerations(projectId);
   const toggleFavorite = useToggleFavorite();
   const deleteGeneration = useDeleteGeneration();
@@ -48,6 +56,16 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedGeneration, setSelectedGeneration] = useState<Generation | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+
+  // Get generation IDs for comment queries
+  const generationIds = useMemo(() => 
+    generations?.filter(g => g.generation_type === 'single').map(g => g.id) || [],
+    [generations]
+  );
+
+  // Fetch comment counts and user mentions
+  const { data: commentCounts } = useGenerationCommentCounts(generationIds);
+  const { data: userMentions } = useUserMentionsInGenerations(generationIds, user?.id);
 
   const handleToggleFavorite = async (generation: Generation) => {
     try {
@@ -192,6 +210,8 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
               <GenerationCard
                 key={generation.id}
                 generation={generation}
+                commentCount={commentCounts?.get(generation.id) || 0}
+                hasMention={userMentions?.has(generation.id) || false}
                 onToggleFavorite={() => handleToggleFavorite(generation)}
                 onDownload={() => handleDownload(generation)}
                 onDelete={() => handleDelete(generation)}
@@ -241,6 +261,8 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
 
 interface GenerationCardProps {
   generation: Generation;
+  commentCount: number;
+  hasMention: boolean;
   onToggleFavorite: () => void;
   onDownload: () => void;
   onDelete: () => void;
@@ -250,6 +272,8 @@ interface GenerationCardProps {
 
 function GenerationCard({
   generation,
+  commentCount,
+  hasMention,
   onToggleFavorite,
   onDownload,
   onDelete,
@@ -260,6 +284,21 @@ function GenerationCard({
 
   return (
     <Card className="group relative overflow-hidden border-border/50">
+      {/* Comment/Mention Indicators */}
+      <div className="absolute right-2 top-2 z-10 flex gap-1">
+        {hasMention && (
+          <Badge variant="default" className="bg-primary text-primary-foreground">
+            <AtSign className="mr-1 h-3 w-3" />
+            Mentioned
+          </Badge>
+        )}
+        {commentCount > 0 && !hasMention && (
+          <Badge variant="secondary" className="gap-1">
+            <MessageSquare className="h-3 w-3" />
+            {commentCount}
+          </Badge>
+        )}
+      </div>
       {generation.is_favorite && (
         <div className="absolute left-2 top-2 z-10">
           <Badge variant="default" className="bg-rose-500 text-white">

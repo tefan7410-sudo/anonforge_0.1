@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProject, useCategories, useAllLayers } from '@/hooks/use-project';
+import { useGenerations } from '@/hooks/use-generations';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +23,6 @@ import {
   Layers,
   Image as ImageIcon,
   Clock,
-  FileText,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { LayerUploadZone } from '@/components/project/LayerUploadZone';
@@ -35,17 +35,39 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { GenerationDetailModal } from '@/components/project/GenerationDetailModal';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('layers');
+  const [deepLinkGenerationId, setDeepLinkGenerationId] = useState<string | null>(null);
+  const [deepLinkModalOpen, setDeepLinkModalOpen] = useState(false);
 
   const { data: project, isLoading: projectLoading } = useProject(id!);
   const { data: categories } = useCategories(id!);
   const { data: allLayers } = useAllLayers(id!);
+  const { data: generations } = useGenerations(id!);
+
+  // Handle deep-link to generation from notification
+  useEffect(() => {
+    const generationId = searchParams.get('generation');
+    if (generationId && generations) {
+      const generation = generations.find(g => g.id === generationId);
+      if (generation) {
+        setDeepLinkGenerationId(generationId);
+        setDeepLinkModalOpen(true);
+        setActiveTab('history');
+        // Clear the query param
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, generations, setSearchParams]);
+
+  const deepLinkGeneration = generations?.find(g => g.id === deepLinkGenerationId) || null;
 
   if (projectLoading) {
     return (
@@ -230,6 +252,14 @@ export default function ProjectDetail() {
             </ErrorBoundary>
           </TabsContent>
         </Tabs>
+
+        {/* Deep-link Generation Modal */}
+        <GenerationDetailModal
+          generation={deepLinkGeneration}
+          projectId={id!}
+          open={deepLinkModalOpen}
+          onOpenChange={setDeepLinkModalOpen}
+        />
       </main>
     </div>
   );

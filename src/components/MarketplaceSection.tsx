@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Store, ArrowRight, ExternalLink, Sparkles } from 'lucide-react';
+import { Store, ArrowRight, ExternalLink } from 'lucide-react';
+import { useScrollAnimation } from '@/hooks/use-scroll-animation';
+import { cn } from '@/lib/utils';
 
 interface LiveCollection {
   id: string;
@@ -49,8 +51,15 @@ const useMarketplaceCollections = (limit?: number) => {
   });
 };
 
-function CollectionCard({ collection }: { collection: LiveCollection }) {
+function CollectionCard({ collection, index }: { collection: LiveCollection; index: number }) {
+  const { ref, isVisible } = useScrollAnimation<HTMLDivElement>();
+  
   return (
+    <div
+      ref={ref}
+      className={cn("opacity-0", isVisible && "animate-slide-up")}
+      style={{ animationDelay: `${index * 100}ms` }}
+    >
     <Link to={`/collection/${collection.project_id}`}>
       <Card className="group cursor-pointer overflow-hidden border-border/50 transition-all hover:border-primary/30 hover:shadow-lg">
         {/* Banner */}
@@ -101,6 +110,7 @@ function CollectionCard({ collection }: { collection: LiveCollection }) {
         </CardContent>
       </Card>
     </Link>
+    </div>
   );
 }
 
@@ -119,13 +129,20 @@ function CollectionCardSkeleton() {
 
 export function MarketplaceSection() {
   const { data: collections, isLoading } = useMarketplaceCollections(6);
+  const headerAnimation = useScrollAnimation<HTMLDivElement>();
 
   const collectionCount = collections?.length || 0;
 
   return (
     <section className="border-t border-border/50 bg-card/50" aria-labelledby="marketplace-heading">
       <div className="container mx-auto px-6 py-20">
-        <div className="mb-12 flex flex-col items-center justify-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
+        <div 
+          ref={headerAnimation.ref}
+          className={cn(
+            "mb-12 flex flex-col items-center justify-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left opacity-0",
+            headerAnimation.isVisible && "animate-slide-up"
+          )}
+        >
           <div>
             <div className="mb-3 inline-flex items-center gap-2">
               <Store className="h-5 w-5 text-primary" aria-hidden="true" />
@@ -159,8 +176,8 @@ export function MarketplaceSection() {
           </div>
         ) : collections && collections.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {collections.map((collection) => (
-              <CollectionCard key={collection.id} collection={collection} />
+            {collections.map((collection, index) => (
+              <CollectionCard key={collection.id} collection={collection} index={index} />
             ))}
           </div>
         ) : (

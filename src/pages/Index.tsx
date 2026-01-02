@@ -3,8 +3,41 @@ import { Button } from '@/components/ui/button';
 import { Layers, ArrowRight, Sparkles, Palette, Store, Zap, Shield, Users, CreditCard, LayoutGrid, Rocket } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MarketplaceSection } from '@/components/MarketplaceSection';
+import { useScrollAnimation } from '@/hooks/use-scroll-animation';
+import { cn } from '@/lib/utils';
+
+function AnimatedSection({ 
+  children, 
+  className,
+  delay = 0 
+}: { 
+  children: React.ReactNode; 
+  className?: string;
+  delay?: number;
+}) {
+  const { ref, isVisible } = useScrollAnimation<HTMLDivElement>();
+  
+  return (
+    <div 
+      ref={ref}
+      className={cn(
+        'opacity-0',
+        isVisible && 'animate-slide-up',
+        className
+      )}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function Index() {
+  const heroAnimation = useScrollAnimation<HTMLDivElement>();
+  const creatorsAnimation = useScrollAnimation<HTMLDivElement>();
+  const benefitsAnimation = useScrollAnimation<HTMLDivElement>();
+  const ctaAnimation = useScrollAnimation<HTMLDivElement>();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -38,7 +71,13 @@ export default function Index() {
         {/* Hero Section - Dual Audience */}
         <section className="relative overflow-hidden" aria-labelledby="hero-heading">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-          <div className="container relative mx-auto px-6 py-20 sm:py-28">
+          <div 
+            ref={heroAnimation.ref}
+            className={cn(
+              "container relative mx-auto px-6 py-20 sm:py-28 opacity-0",
+              heroAnimation.isVisible && "animate-slide-up"
+            )}
+          >
             <div className="mx-auto max-w-4xl text-center">
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
                 <Sparkles className="h-4 w-4" />
@@ -77,8 +116,14 @@ export default function Index() {
 
         {/* For Creators Section */}
         <section id="for-creators" className="border-t border-border/50 bg-muted/30" aria-labelledby="creators-heading">
-          <div className="container mx-auto px-6 py-20">
-            <div className="mb-12 text-center">
+          <div 
+            ref={creatorsAnimation.ref}
+            className="container mx-auto px-6 py-20"
+          >
+            <div className={cn(
+              "mb-12 text-center opacity-0",
+              creatorsAnimation.isVisible && "animate-slide-up"
+            )}>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-1.5 text-sm font-medium">
                 <Rocket className="h-4 w-4 text-primary" />
                 For Creators
@@ -92,114 +137,79 @@ export default function Index() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <article className="group rounded-xl border border-border/50 bg-card p-6 transition-all hover:border-primary/30 hover:shadow-lg">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-                  <Palette className="h-6 w-6 text-primary" aria-hidden="true" />
-                </div>
-                <h3 className="font-display text-lg font-semibold">Layer-Based Generation</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Upload layers, set rarity weights, and generate thousands of unique 
-                  combinations with metadata ready for minting.
-                </p>
-              </article>
-
-              <article className="group rounded-xl border border-border/50 bg-card p-6 transition-all hover:border-primary/30 hover:shadow-lg">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-                  <LayoutGrid className="h-6 w-6 text-primary" aria-hidden="true" />
-                </div>
-                <h3 className="font-display text-lg font-semibold">Product Page Builder</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Create a stunning landing page for your drop with custom branding, 
-                  banners, and social links — no coding required.
-                </p>
-              </article>
-
-              <article className="group rounded-xl border border-border/50 bg-card p-6 transition-all hover:border-primary/30 hover:shadow-lg">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-                  <CreditCard className="h-6 w-6 text-primary" aria-hidden="true" />
-                </div>
-                <h3 className="font-display text-lg font-semibold">NMKR Minting</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Launch on Cardano with integrated NMKR minting. Upload NFTs, set prices, 
-                  and accept payments with built-in buy buttons.
-                </p>
-              </article>
-
-              <article className="group rounded-xl border border-border/50 bg-card p-6 transition-all hover:border-primary/30 hover:shadow-lg">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-                  <Users className="h-6 w-6 text-primary" aria-hidden="true" />
-                </div>
-                <h3 className="font-display text-lg font-semibold">Team Collaboration</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Invite team members with role-based permissions. Work together on 
-                  layers, review generations, and manage your project.
-                </p>
-              </article>
-
-              <article className="group rounded-xl border border-border/50 bg-card p-6 transition-all hover:border-primary/30 hover:shadow-lg">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-                  <Sparkles className="h-6 w-6 text-primary" aria-hidden="true" />
-                </div>
-                <h3 className="font-display text-lg font-semibold">Royalty Management</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Set up royalties for secondary sales. Configure percentages and 
-                  payment addresses directly in your project settings.
-                </p>
-              </article>
-
-              <article className="group rounded-xl border border-border/50 bg-card p-6 transition-all hover:border-primary/30 hover:shadow-lg">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-                  <Store className="h-6 w-6 text-primary" aria-hidden="true" />
-                </div>
-                <h3 className="font-display text-lg font-semibold">Marketplace Listing</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Go live and get discovered. Your collection appears in the AnonForge 
-                  marketplace for collectors to browse and mint.
-                </p>
-              </article>
+              {[
+                { icon: Palette, title: "Layer-Based Generation", desc: "Upload layers, set rarity weights, and generate thousands of unique combinations with metadata ready for minting." },
+                { icon: LayoutGrid, title: "Product Page Builder", desc: "Create a stunning landing page for your drop with custom branding, banners, and social links — no coding required." },
+                { icon: CreditCard, title: "NMKR Minting", desc: "Launch on Cardano with integrated NMKR minting. Upload NFTs, set prices, and accept payments with built-in buy buttons." },
+                { icon: Users, title: "Team Collaboration", desc: "Invite team members with role-based permissions. Work together on layers, review generations, and manage your project." },
+                { icon: Sparkles, title: "Royalty Management", desc: "Set up royalties for secondary sales. Configure percentages and payment addresses directly in your project settings." },
+                { icon: Store, title: "Marketplace Listing", desc: "Go live and get discovered. Your collection appears in the AnonForge marketplace for collectors to browse and mint." },
+              ].map((feature, index) => (
+                <article 
+                  key={feature.title}
+                  className={cn(
+                    "group rounded-xl border border-border/50 bg-card p-6 transition-all hover:border-primary/30 hover:shadow-lg opacity-0",
+                    creatorsAnimation.isVisible && "animate-slide-up"
+                  )}
+                  style={{ animationDelay: `${(index + 1) * 100}ms` }}
+                >
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
+                    <feature.icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                  </div>
+                  <h3 className="font-display text-lg font-semibold">{feature.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">{feature.desc}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
 
         {/* Why AnonForge Section */}
         <section className="container mx-auto px-6 py-20" aria-labelledby="benefits-heading">
-          <h2 id="benefits-heading" className="mb-12 text-center font-display text-3xl font-bold">
-            Why choose AnonForge?
-          </h2>
-          <div className="grid gap-8 md:grid-cols-3">
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <Zap className="h-7 w-7 text-primary" aria-hidden="true" />
-              </div>
-              <h3 className="font-display text-lg font-semibold">Lightning Fast</h3>
-              <p className="mt-2 text-muted-foreground">
-                Generate thousands of unique images in seconds. Launch your collection in minutes, not weeks.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <Shield className="h-7 w-7 text-primary" aria-hidden="true" />
-              </div>
-              <h3 className="font-display text-lg font-semibold">Secure & Private</h3>
-              <p className="mt-2 text-muted-foreground">
-                Your assets are protected with enterprise-grade security. Your API keys stay encrypted.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <Users className="h-7 w-7 text-primary" aria-hidden="true" />
-              </div>
-              <h3 className="font-display text-lg font-semibold">Built for Teams</h3>
-              <p className="mt-2 text-muted-foreground">
-                Invite collaborators, assign roles, and work together on your NFT project seamlessly.
-              </p>
+          <div ref={benefitsAnimation.ref}>
+            <h2 
+              id="benefits-heading" 
+              className={cn(
+                "mb-12 text-center font-display text-3xl font-bold opacity-0",
+                benefitsAnimation.isVisible && "animate-slide-up"
+              )}
+            >
+              Why choose AnonForge?
+            </h2>
+            <div className="grid gap-8 md:grid-cols-3">
+              {[
+                { icon: Zap, title: "Lightning Fast", desc: "Generate thousands of unique images in seconds. Launch your collection in minutes, not weeks." },
+                { icon: Shield, title: "Secure & Private", desc: "Your assets are protected with enterprise-grade security. Your API keys stay encrypted." },
+                { icon: Users, title: "Built for Teams", desc: "Invite collaborators, assign roles, and work together on your NFT project seamlessly." },
+              ].map((benefit, index) => (
+                <div 
+                  key={benefit.title}
+                  className={cn(
+                    "text-center opacity-0",
+                    benefitsAnimation.isVisible && "animate-slide-up"
+                  )}
+                  style={{ animationDelay: `${(index + 1) * 150}ms` }}
+                >
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                    <benefit.icon className="h-7 w-7 text-primary" aria-hidden="true" />
+                  </div>
+                  <h3 className="font-display text-lg font-semibold">{benefit.title}</h3>
+                  <p className="mt-2 text-muted-foreground">{benefit.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
         {/* CTA Section */}
         <section className="border-t border-border/50 bg-muted/30" aria-labelledby="cta-heading">
-          <div className="container mx-auto px-6 py-20 text-center">
+          <div 
+            ref={ctaAnimation.ref}
+            className={cn(
+              "container mx-auto px-6 py-20 text-center opacity-0",
+              ctaAnimation.isVisible && "animate-slide-up"
+            )}
+          >
             <h2 id="cta-heading" className="font-display text-3xl font-bold sm:text-4xl">
               Ready to get started?
             </h2>

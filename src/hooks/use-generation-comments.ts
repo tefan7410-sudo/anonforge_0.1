@@ -46,6 +46,58 @@ export function useGenerationComments(generationId: string | null) {
   });
 }
 
+// Hook to get comment counts for multiple generations
+export function useGenerationCommentCounts(generationIds: string[]) {
+  return useQuery({
+    queryKey: ['generation-comment-counts', generationIds],
+    queryFn: async () => {
+      if (!generationIds.length) return new Map<string, number>();
+
+      const { data, error } = await supabase
+        .from('generation_comments')
+        .select('generation_id')
+        .in('generation_id', generationIds);
+
+      if (error) throw error;
+
+      const counts = new Map<string, number>();
+      for (const comment of data || []) {
+        counts.set(comment.generation_id, (counts.get(comment.generation_id) || 0) + 1);
+      }
+      return counts;
+    },
+    enabled: generationIds.length > 0,
+  });
+}
+
+// Hook to check if current user has mentions in specific generations
+export function useUserMentionsInGenerations(generationIds: string[], userId: string | undefined) {
+  return useQuery({
+    queryKey: ['user-mentions', generationIds, userId],
+    queryFn: async () => {
+      if (!generationIds.length || !userId) return new Set<string>();
+
+      const { data, error } = await supabase
+        .from('generation_comments')
+        .select('generation_id, content')
+        .in('generation_id', generationIds);
+
+      if (error) throw error;
+
+      const mentionedGenerations = new Set<string>();
+      const mentionPattern = new RegExp(`@\\[[^\\]]+\\]\\(${userId}\\)`, 'g');
+      
+      for (const comment of data || []) {
+        if (mentionPattern.test(comment.content)) {
+          mentionedGenerations.add(comment.generation_id);
+        }
+      }
+      return mentionedGenerations;
+    },
+    enabled: generationIds.length > 0 && !!userId,
+  });
+}
+
 export function useAddComment() {
   const queryClient = useQueryClient();
 
@@ -76,6 +128,9 @@ export function useAddComment() {
       queryClient.invalidateQueries({
         queryKey: ['generation-comments', variables.generationId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['generation-comment-counts'],
+      });
     },
   });
 }
@@ -100,6 +155,9 @@ export function useDeleteComment() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ['generation-comments', variables.generationId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['generation-comment-counts'],
       });
     },
   });
