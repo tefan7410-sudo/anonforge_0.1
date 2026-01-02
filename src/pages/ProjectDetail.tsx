@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext';
 import { useProject, useCategories, useAllLayers } from '@/hooks/use-project';
 import { useGenerations } from '@/hooks/use-generations';
+import { useCanEditProject } from '@/hooks/use-project-role';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +53,7 @@ export default function ProjectDetail() {
   const { data: categories } = useCategories(id!);
   const { data: allLayers } = useAllLayers(id!);
   const { data: generations } = useGenerations(id!);
+  const { canEdit } = useCanEditProject(id!);
 
   // Handle deep-link to generation from notification
   useEffect(() => {
@@ -206,7 +208,7 @@ export default function ProjectDetail() {
               </TabsList>
             </div>
 
-            {activeTab === 'layers' && (
+            {activeTab === 'layers' && canEdit && (
               <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>

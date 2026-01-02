@@ -70,23 +70,43 @@ function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection;
   return (
     <Link to={`/collection/${collection.project_id}`}>
       <Card className="group cursor-pointer overflow-hidden border-border/50 transition-all hover:border-primary/30 hover:shadow-lg">
-        {/* Banner */}
-        <div className="relative h-40 overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5">
-          {collection.banner_url ? (
-            <img
-              src={collection.banner_url}
-              alt={`${collection.project.name} banner`}
-              className="h-full w-full object-cover transition-transform group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <Store className="h-12 w-12 text-muted-foreground/30" />
-            </div>
-          )}
+        {/* Banner and Logo wrapper */}
+        <div className="relative">
+          {/* Banner */}
+          <div className="relative h-40 overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5">
+            {collection.banner_url ? (
+              <img
+                src={collection.banner_url}
+                alt={`${collection.project.name} banner`}
+                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <Store className="h-12 w-12 text-muted-foreground/30" />
+              </div>
+            )}
+            
+            {/* Status badge */}
+            {isUpcoming ? (
+              <Badge className="absolute right-3 top-3 bg-amber-500/90 text-white hover:bg-amber-500">
+                <Clock className="mr-1 h-3 w-3" />
+                UPCOMING
+              </Badge>
+            ) : isSoldOut ? (
+              <Badge className="absolute right-3 top-3 bg-orange-500/90 text-white hover:bg-orange-500">
+                SOLD OUT
+              </Badge>
+            ) : (
+              <Badge className="absolute right-3 top-3 bg-green-500/90 text-white hover:bg-green-500">
+                <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-white" />
+                LIVE
+              </Badge>
+            )}
+          </div>
           
-          {/* Logo overlay */}
+          {/* Logo overlay - OUTSIDE overflow-hidden */}
           {collection.logo_url && (
-            <div className="absolute -bottom-6 left-4">
+            <div className="absolute left-4 bottom-0 translate-y-1/2 z-20">
               <img
                 src={collection.logo_url}
                 alt={`${collection.project.name} logo`}
@@ -94,26 +114,9 @@ function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection;
               />
             </div>
           )}
-          
-          {/* Status badge */}
-          {isUpcoming ? (
-            <Badge className="absolute right-3 top-3 bg-amber-500/90 text-white hover:bg-amber-500">
-              <Clock className="mr-1 h-3 w-3" />
-              UPCOMING
-            </Badge>
-          ) : isSoldOut ? (
-            <Badge className="absolute right-3 top-3 bg-orange-500/90 text-white hover:bg-orange-500">
-              SOLD OUT
-            </Badge>
-          ) : (
-            <Badge className="absolute right-3 top-3 bg-green-500/90 text-white hover:bg-green-500">
-              <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-white" />
-              LIVE
-            </Badge>
-          )}
         </div>
 
-        <CardContent className="pt-8">
+        <CardContent className={`pt-6 ${collection.logo_url ? 'pt-10' : ''}`}>
           <h3 className="font-display text-xl font-semibold group-hover:text-primary transition-colors">
             {collection.project.name}
           </h3>
@@ -220,6 +223,7 @@ export default function Marketplace() {
               <Layers className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" aria-hidden="true" />
             </div>
             <span className="font-display text-lg sm:text-xl font-semibold">AnonForge</span>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground border-muted-foreground/30">BETA</Badge>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
