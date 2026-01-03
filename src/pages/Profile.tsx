@@ -250,14 +250,49 @@ export default function Profile() {
 
               {/* Display Name */}
               <div className="space-y-2">
-                <Label htmlFor="displayName">Display Name</Label>
+                <Label htmlFor="displayName" className="flex items-center gap-2">
+                  Display Name
+                  {isVerifiedCreator && (
+                    <Badge variant="outline" className="text-xs gap-1">
+                      <Shield className="h-3 w-3" />
+                      Locked
+                    </Badge>
+                  )}
+                </Label>
                 <Input
                   id="displayName"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="Your name"
+                  disabled={isVerifiedCreator}
+                  className={isVerifiedCreator ? "bg-muted cursor-not-allowed" : ""}
                 />
+                {isVerifiedCreator && (
+                  <p className="text-xs text-muted-foreground">
+                    Verified creators cannot change their display name to maintain trust with collectors.
+                  </p>
+                )}
               </div>
+
+              {/* Twitter Handle (for verified creators) */}
+              {isVerifiedCreator && profile?.twitter_handle && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Twitter className="h-4 w-4" />
+                    Twitter Handle
+                    <Badge variant="default" className="text-xs gap-1 bg-primary">
+                      <BadgeCheck className="h-3 w-3" />
+                      Verified
+                    </Badge>
+                  </Label>
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
+                    <span className="text-sm">@{profile.twitter_handle}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Linked from your creator verification.
+                  </p>
+                </div>
+              )}
 
               {/* Email (read-only) */}
               <div className="space-y-2">
@@ -271,17 +306,19 @@ export default function Profile() {
                 </p>
               </div>
 
-              {/* Save Button */}
-              <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={updateProfile.isPending}>
-                  {updateProfile.isPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="mr-2 h-4 w-4" />
-                  )}
-                  Save Changes
-                </Button>
-              </div>
+              {/* Save Button - only show if user can make changes */}
+              {!isVerifiedCreator && (
+                <div className="flex justify-end">
+                  <Button onClick={handleSave} disabled={updateProfile.isPending}>
+                    {updateProfile.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    Save Changes
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
