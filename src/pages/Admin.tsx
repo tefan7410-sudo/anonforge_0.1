@@ -57,6 +57,7 @@ import {
   Minus,
   Loader2,
   BarChart3,
+  ArrowUpDown,
 } from 'lucide-react';
 import { CostsAnalyticsTab } from '@/components/admin/CostsAnalyticsTab';
 import { toast } from 'sonner';
@@ -93,8 +94,19 @@ export default function Admin() {
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [transactionUserId, setTransactionUserId] = useState<string | null>(null);
   const [creditSearchQuery, setCreditSearchQuery] = useState('');
+  const [creditSortField, setCreditSortField] = useState<'total' | 'purchased' | 'free' | null>(null);
+  const [creditSortOrder, setCreditSortOrder] = useState<'asc' | 'desc'>('desc');
   
   const { data: userTransactions, isLoading: transactionsLoading } = useUserCreditTransactions(transactionUserId);
+
+  const toggleCreditSort = (field: 'total' | 'purchased' | 'free') => {
+    if (creditSortField === field) {
+      setCreditSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setCreditSortField(field);
+      setCreditSortOrder('desc');
+    }
+  };
 
   const copyCollectionLink = (projectId: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/collection/${projectId}`);
@@ -137,13 +149,37 @@ export default function Admin() {
     setTransactionDialogOpen(true);
   };
 
-  // Filter credits by search
+  // Filter and sort credits
   const filteredCredits = userCredits?.filter(credit => {
     if (!creditSearchQuery) return true;
     const query = creditSearchQuery.toLowerCase();
     const email = (credit.profile as any)?.email?.toLowerCase() || '';
     const name = (credit.profile as any)?.display_name?.toLowerCase() || '';
     return email.includes(query) || name.includes(query);
+  });
+
+  const sortedCredits = [...(filteredCredits || [])].sort((a, b) => {
+    if (!creditSortField) return 0;
+    
+    let aVal: number, bVal: number;
+    switch (creditSortField) {
+      case 'total':
+        aVal = a.free_credits + a.purchased_credits;
+        bVal = b.free_credits + b.purchased_credits;
+        break;
+      case 'purchased':
+        aVal = a.purchased_credits;
+        bVal = b.purchased_credits;
+        break;
+      case 'free':
+        aVal = a.free_credits;
+        bVal = b.free_credits;
+        break;
+      default:
+        return 0;
+    }
+    
+    return creditSortOrder === 'asc' ? aVal - bVal : bVal - aVal;
   });
 
   const handleRejectClick = (id: string, type: 'collection' | 'verification') => {
@@ -633,21 +669,45 @@ export default function Admin() {
                       <Skeleton key={i} className="h-16 w-full" />
                     ))}
                   </div>
-                ) : filteredCredits && filteredCredits.length > 0 ? (
+                ) : sortedCredits && sortedCredits.length > 0 ? (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>User</TableHead>
-                          <TableHead className="text-right">Free Credits</TableHead>
-                          <TableHead className="text-right">Purchased</TableHead>
-                          <TableHead className="text-right">Total</TableHead>
+                          <TableHead 
+                            className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                            onClick={() => toggleCreditSort('free')}
+                          >
+                            <div className="flex items-center justify-end gap-1">
+                              Free Credits
+                              <ArrowUpDown className={`h-3 w-3 ${creditSortField === 'free' ? 'text-primary' : 'text-muted-foreground'}`} />
+                            </div>
+                          </TableHead>
+                          <TableHead 
+                            className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                            onClick={() => toggleCreditSort('purchased')}
+                          >
+                            <div className="flex items-center justify-end gap-1">
+                              Purchased
+                              <ArrowUpDown className={`h-3 w-3 ${creditSortField === 'purchased' ? 'text-primary' : 'text-muted-foreground'}`} />
+                            </div>
+                          </TableHead>
+                          <TableHead 
+                            className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                            onClick={() => toggleCreditSort('total')}
+                          >
+                            <div className="flex items-center justify-end gap-1">
+                              Total
+                              <ArrowUpDown className={`h-3 w-3 ${creditSortField === 'total' ? 'text-primary' : 'text-muted-foreground'}`} />
+                            </div>
+                          </TableHead>
                           <TableHead>Next Reset</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredCredits.map((credit) => {
+                        {sortedCredits.map((credit) => {
                           const profile = credit.profile as any;
                           const displayName = profile?.display_name || profile?.email || 'Unknown';
                           const totalCredits = credit.free_credits + credit.purchased_credits;
