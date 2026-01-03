@@ -56,7 +56,9 @@ import {
   Plus,
   Minus,
   Loader2,
+  BarChart3,
 } from 'lucide-react';
+import { CostsAnalyticsTab } from '@/components/admin/CostsAnalyticsTab';
 import { toast } from 'sonner';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -460,6 +462,10 @@ export default function Admin() {
               <Coins className="h-4 w-4" />
               User Credits
             </TabsTrigger>
+            <TabsTrigger value="costs-analytics" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Costs & Analytics
+            </TabsTrigger>
           </TabsList>
 
           {/* Pending Launches Tab */}
@@ -708,6 +714,11 @@ export default function Admin() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Costs & Analytics Tab */}
+          <TabsContent value="costs-analytics">
+            <CostsAnalyticsTab />
           </TabsContent>
         </Tabs>
       </main>
