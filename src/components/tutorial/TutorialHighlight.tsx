@@ -17,6 +17,31 @@ export const TutorialHighlight: React.FC = () => {
   const [tooltipPosition, setTooltipPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
 
+  // Lock body scroll when tutorial is active
+  useEffect(() => {
+    if (!isActive) return;
+    
+    const originalOverflow = document.body.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+    
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    
+    const preventScroll = (e: TouchEvent) => {
+      const tooltip = document.querySelector('[data-tutorial-tooltip]');
+      if (tooltip?.contains(e.target as Node)) return;
+      e.preventDefault();
+    };
+    
+    document.addEventListener('touchmove', preventScroll, { passive: false });
+    
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouchAction;
+      document.removeEventListener('touchmove', preventScroll);
+    };
+  }, [isActive]);
+
   useEffect(() => {
     if (!isActive || !currentStepData?.targetSelector) {
       setTargetRect(null);
@@ -56,20 +81,15 @@ export const TutorialHighlight: React.FC = () => {
       }
     };
 
-    // Initial find
     findTarget();
 
-    // Re-find on resize/scroll
     const handleReposition = () => findTarget();
     window.addEventListener('resize', handleReposition);
-    window.addEventListener('scroll', handleReposition);
 
-    // Re-find periodically in case elements load late
     const interval = setInterval(findTarget, 500);
 
     return () => {
       window.removeEventListener('resize', handleReposition);
-      window.removeEventListener('scroll', handleReposition);
       clearInterval(interval);
     };
   }, [isActive, currentStepData]);
@@ -128,8 +148,9 @@ export const TutorialHighlight: React.FC = () => {
       {/* Tooltip */}
       <div
         ref={tooltipRef}
+        data-tutorial-tooltip
         className={cn(
-          "absolute pointer-events-auto bg-card border border-border rounded-xl shadow-2xl p-5 w-[340px]",
+          "absolute pointer-events-auto bg-card border border-border rounded-xl shadow-2xl p-5 w-[340px] max-w-[calc(100vw-2rem)]",
           isFinalStep && "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
         )}
         style={!isFinalStep ? { top: tooltipPosition.top, left: tooltipPosition.left } : undefined}
