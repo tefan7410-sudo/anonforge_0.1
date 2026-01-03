@@ -6,8 +6,8 @@ export interface OperationalCost {
   id: string;
   name: string;
   category: string;
-  amount_ada: number;
-  billing_period: "monthly" | "yearly" | "one-time";
+  amount_usd: number;
+  billing_period: string;
   start_date: string;
   end_date: string | null;
   notes: string | null;
@@ -130,24 +130,34 @@ export function useCompletedCreditPurchases() {
   return useQuery({
     queryKey: ["completed-credit-purchases"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get purchases
+      const { data: purchases, error: purchasesError } = await supabase
         .from("credit_purchases")
-        .select(`
-          *,
-          profiles:user_id (
-            email,
-            display_name
-          )
-        `)
+        .select("*")
         .eq("status", "completed")
         .order("completed_at", { ascending: false });
 
-      if (error) throw error;
-      
-      return data.map((purchase: any) => ({
-        ...purchase,
-        user_email: purchase.profiles?.email,
-        user_display_name: purchase.profiles?.display_name,
+      if (purchasesError) throw purchasesError;
+      if (!purchases.length) return [] as CreditPurchase[];
+
+      // Get unique user IDs
+      const userIds = [...new Set(purchases.map((p) => p.user_id))];
+
+      // Fetch profiles for those users
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, email, display_name")
+        .in("id", userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Map profiles to purchases
+      const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
+
+      return purchases.map((p) => ({
+        ...p,
+        user_email: profileMap.get(p.user_id)?.email,
+        user_display_name: profileMap.get(p.user_id)?.display_name,
       })) as CreditPurchase[];
     },
   });
@@ -156,9 +166,9 @@ export function useCompletedCreditPurchases() {
 export function calculateMonthlyEquivalent(cost: OperationalCost): number {
   switch (cost.billing_period) {
     case "monthly":
-      return cost.amount_ada;
+      return cost.amount_usd;
     case "yearly":
-      return cost.amount_ada / 12;
+      return cost.amount_usd / 12;
     case "one-time":
       return 0; // One-time costs are not recurring
     default:

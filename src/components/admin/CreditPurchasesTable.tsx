@@ -12,9 +12,16 @@ import type { CreditPurchase } from "@/hooks/use-admin-costs";
 
 interface CreditPurchasesTableProps {
   purchases: CreditPurchase[];
+  adaPrice: number | undefined;
 }
 
-export function CreditPurchasesTable({ purchases }: CreditPurchasesTableProps) {
+export function CreditPurchasesTable({ purchases, adaPrice }: CreditPurchasesTableProps) {
+  const formatUsd = (ada: number) => {
+    if (!adaPrice) return "-";
+    const usd = ada * adaPrice;
+    return `$${usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -35,7 +42,8 @@ export function CreditPurchasesTable({ purchases }: CreditPurchasesTableProps) {
                   <TableHead>Date</TableHead>
                   <TableHead>User</TableHead>
                   <TableHead className="text-right">Credits</TableHead>
-                  <TableHead className="text-right">Amount (₳)</TableHead>
+                  <TableHead className="text-right">ADA</TableHead>
+                  <TableHead className="text-right">USD</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -52,8 +60,11 @@ export function CreditPurchasesTable({ purchases }: CreditPurchasesTableProps) {
                     <TableCell className="text-right text-sm">
                       {purchase.credits_amount}
                     </TableCell>
-                    <TableCell className="text-right font-medium">
+                    <TableCell className="text-right text-sm text-muted-foreground">
                       {purchase.price_ada} ₳
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatUsd(purchase.price_ada)}
                     </TableCell>
                   </TableRow>
                 ))}

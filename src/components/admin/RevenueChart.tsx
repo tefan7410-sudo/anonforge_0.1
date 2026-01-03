@@ -9,11 +9,12 @@ import { calculateTotalMonthlyOperatingCosts } from "@/hooks/use-admin-costs";
 interface RevenueChartProps {
   purchases: CreditPurchase[];
   costs: OperationalCost[];
+  adaPrice: number | undefined;
 }
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
 
-export function RevenueChart({ purchases, costs }: RevenueChartProps) {
+export function RevenueChart({ purchases, costs, adaPrice }: RevenueChartProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
 
   const chartData = useMemo(() => {
@@ -32,7 +33,7 @@ export function RevenueChart({ purchases, costs }: RevenueChartProps) {
         break;
       case "all":
         const oldestPurchase = purchases.reduce((oldest, p) => {
-          const date = p.completed_at ? new Date(p.completed_at) : new Date(p.created_at);
+          const date = p.completed_at ? new Date(p.completed_at) : now;
           return date < oldest ? date : oldest;
         }, now);
         startDate = oldestPurchase;
@@ -40,14 +41,15 @@ export function RevenueChart({ purchases, costs }: RevenueChartProps) {
     }
 
     const days = eachDayOfInterval({ start: startOfDay(startDate), end: startOfDay(now) });
-    const dailyCost = calculateTotalMonthlyOperatingCosts(costs) / 30;
+    // Daily cost in USD (monthly costs / 30)
+    const dailyCostUsd = calculateTotalMonthlyOperatingCosts(costs) / 30;
 
     return days.map((day) => {
       const dayStart = startOfDay(day);
       const dayEnd = new Date(dayStart);
       dayEnd.setDate(dayEnd.getDate() + 1);
 
-      const dayRevenue = purchases
+      const dayRevenueAda = purchases
         .filter((p) => {
           if (!p.completed_at) return false;
           const date = new Date(p.completed_at);
@@ -55,18 +57,21 @@ export function RevenueChart({ purchases, costs }: RevenueChartProps) {
         })
         .reduce((sum, p) => sum + p.price_ada, 0);
 
+      // Convert ADA revenue to USD
+      const dayRevenueUsd = adaPrice ? dayRevenueAda * adaPrice : 0;
+
       return {
         date: format(day, "MMM dd"),
-        revenue: dayRevenue,
-        costs: Math.round(dailyCost * 100) / 100,
+        revenue: Math.round(dayRevenueUsd * 100) / 100,
+        costs: Math.round(dailyCostUsd * 100) / 100,
       };
     });
-  }, [purchases, costs, timeRange]);
+  }, [purchases, costs, timeRange, adaPrice]);
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Revenue vs Costs</CardTitle>
+        <CardTitle>Revenue vs Costs (USD)</CardTitle>
         <div className="flex gap-1">
           {(["7d", "30d", "90d", "all"] as TimeRange[]).map((range) => (
             <Button
@@ -93,7 +98,7 @@ export function RevenueChart({ purchases, costs }: RevenueChartProps) {
               <YAxis 
                 className="text-xs"
                 tick={{ fill: "hsl(var(--muted-foreground))" }}
-                tickFormatter={(value) => `${value} ₳`}
+                tickFormatter={(value) => `$${value}`}
               />
               <Tooltip
                 contentStyle={{
@@ -110,7 +115,7 @@ export function RevenueChart({ purchases, costs }: RevenueChartProps) {
                 stroke="hsl(var(--primary))"
                 strokeWidth={2}
                 dot={false}
-                name="Revenue (₳)"
+                name="Revenue ($)"
               />
               <Line
                 type="monotone"
@@ -118,7 +123,7 @@ export function RevenueChart({ purchases, costs }: RevenueChartProps) {
                 stroke="hsl(var(--destructive))"
                 strokeWidth={2}
                 dot={false}
-                name="Daily Cost (₳)"
+                name="Daily Cost ($)"
               />
             </LineChart>
           </ResponsiveContainer>
