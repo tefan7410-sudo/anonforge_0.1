@@ -64,7 +64,6 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [startTutorialProgress, navigate]);
 
   const nextStep = useCallback(async () => {
-    const currentStepData = TUTORIAL_STEPS.find(s => s.id === currentStep);
     const nextStepNumber = currentStep + 1;
     
     if (nextStepNumber > getTotalSteps()) {
@@ -76,12 +75,11 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const nextStepData = TUTORIAL_STEPS.find(s => s.id === nextStepNumber);
     await updateStep(nextStepNumber);
 
-    // Use nextRoute from current step if available, otherwise use next step's route
-    const targetRoute = currentStepData?.nextRoute || nextStepData?.route;
+    // Always navigate to next step's route if it differs from current path
     const currentPath = location.pathname + location.search;
     
-    if (targetRoute && targetRoute !== currentPath) {
-      navigate(targetRoute);
+    if (nextStepData?.route && nextStepData.route !== currentPath) {
+      navigate(nextStepData.route);
     }
   }, [currentStep, updateStep, navigate, location.pathname, location.search]);
 
