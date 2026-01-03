@@ -264,10 +264,10 @@ export function useAllMarketingRequests() {
   });
 }
 
-// Fetch pending marketing requests (admin)
-export function usePendingMarketingRequests() {
+// Fetch actionable marketing requests (admin) - pending, approved, paid
+export function useActionableMarketingRequests() {
   return useQuery({
-    queryKey: ['pending-marketing-requests'],
+    queryKey: ['actionable-marketing-requests'],
     queryFn: async () => {
       const { data: requests, error } = await supabase
         .from('marketing_requests')
@@ -275,7 +275,7 @@ export function usePendingMarketingRequests() {
           *,
           project:projects!inner(id, name)
         `)
-        .eq('status', 'pending')
+        .in('status', ['pending', 'approved', 'paid'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -295,6 +295,11 @@ export function usePendingMarketingRequests() {
       })) as MarketingRequestWithProject[];
     },
   });
+}
+
+// Keep old hook name for compatibility (deprecated)
+export function usePendingMarketingRequests() {
+  return useActionableMarketingRequests();
 }
 
 // Create a new marketing request
@@ -550,12 +555,41 @@ export function useEndMarketingEarly() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['actionable-marketing-requests'] });
       queryClient.invalidateQueries({ queryKey: ['active-marketing'] });
       queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
       toast.success('Marketing ended');
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to end marketing');
+    },
+  });
+}
+
+// Admin: Cancel scheduled (paid) marketing before start date
+export function useCancelScheduledMarketing() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ requestId }: { requestId: string }) => {
+      const { error } = await supabase
+        .from('marketing_requests')
+        .update({
+          status: 'cancelled',
+          admin_notes: 'Cancelled by admin before campaign start',
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['actionable-marketing-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
+      toast.success('Marketing campaign cancelled');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to cancel campaign');
     },
   });
 }

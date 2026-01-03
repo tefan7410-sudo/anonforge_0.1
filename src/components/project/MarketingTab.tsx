@@ -238,20 +238,20 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-amber-500" />
-                Marketing Status
-              </CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Marketing Status
+            </CardTitle>
               <StatusBadge status={marketingRequest.status} />
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {marketingRequest.status === 'pending' && (
-              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+              <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
                 <div className="flex items-start gap-3">
-                  <Clock className="h-5 w-5 text-amber-500 mt-0.5" />
+                  <Clock className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <p className="font-medium text-amber-600 dark:text-amber-400">
+                    <p className="font-medium text-primary">
                       Request Pending Review
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -451,7 +451,7 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-500" />
+            <Sparkles className="h-5 w-5 text-primary" />
             <CardTitle>AnonForge Spotlight</CardTitle>
           </div>
           <CardDescription>
@@ -462,21 +462,21 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
           {/* Benefits */}
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="flex items-start gap-2 rounded-lg border border-border/50 p-3">
-              <Sparkles className="h-4 w-4 text-amber-500 mt-0.5" />
+              <Sparkles className="h-4 w-4 text-primary mt-0.5" />
               <div>
                 <p className="text-sm font-medium">Featured Badge</p>
                 <p className="text-xs text-muted-foreground">Stand out in marketplace</p>
               </div>
             </div>
             <div className="flex items-start gap-2 rounded-lg border border-border/50 p-3">
-              <ImageIcon className="h-4 w-4 text-amber-500 mt-0.5" />
+              <ImageIcon className="h-4 w-4 text-primary mt-0.5" />
               <div>
                 <p className="text-sm font-medium">Hero Placement</p>
                 <p className="text-xs text-muted-foreground">Landing page spotlight</p>
               </div>
             </div>
             <div className="flex items-start gap-2 rounded-lg border border-border/50 p-3">
-              <Globe className="h-4 w-4 text-amber-500 mt-0.5" />
+              <Globe className="h-4 w-4 text-primary mt-0.5" />
               <div>
                 <p className="text-sm font-medium">Marquee Banner</p>
                 <p className="text-xs text-muted-foreground">Scrolling promotion</p>

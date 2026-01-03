@@ -16,11 +16,12 @@ import {
   useAdminAdjustCredits,
 } from '@/hooks/use-admin';
 import {
-  usePendingMarketingRequests,
+  useActionableMarketingRequests,
   useAllMarketingRequests,
   useApproveMarketingRequest,
   useRejectMarketingRequest,
   useEndMarketingEarly,
+  useCancelScheduledMarketing,
 } from '@/hooks/use-marketing';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -83,7 +84,7 @@ export default function Admin() {
   const { data: pendingCollections, isLoading: pendingLoading } = usePendingCollections();
   const { data: pendingVerifications, isLoading: verificationsLoading } = usePendingVerificationRequests();
   const { data: userCredits, isLoading: creditsLoading } = useAllUserCredits();
-  const { data: pendingMarketing, isLoading: marketingLoading } = usePendingMarketingRequests();
+  const { data: actionableMarketing, isLoading: marketingLoading } = useActionableMarketingRequests();
   const { data: allMarketing } = useAllMarketingRequests();
   const toggleHidden = useToggleCollectionHidden();
   const approveCollection = useApproveCollection();
@@ -94,6 +95,7 @@ export default function Admin() {
   const approveMarketing = useApproveMarketingRequest();
   const rejectMarketing = useRejectMarketingRequest();
   const endMarketing = useEndMarketingEarly();
+  const cancelMarketing = useCancelScheduledMarketing();
 
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -523,9 +525,9 @@ export default function Admin() {
             <TabsTrigger value="marketing" className="gap-2">
               <Megaphone className="h-4 w-4" />
               Marketing
-              {pendingMarketing && pendingMarketing.length > 0 && (
+              {actionableMarketing && actionableMarketing.length > 0 && (
                 <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 justify-center">
-                  {pendingMarketing.length}
+                  {actionableMarketing.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -873,15 +875,15 @@ export default function Admin() {
                 </Card>
               )}
 
-              {/* Pending Marketing Requests */}
+              {/* Marketing Requests (Actionable) */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Megaphone className="h-5 w-5 text-primary" />
-                    Pending Marketing Requests
+                    Marketing Requests
                   </CardTitle>
                   <CardDescription>
-                    Review and approve marketing requests from creators
+                    Pending, approved, and scheduled marketing campaigns
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -891,21 +893,21 @@ export default function Admin() {
                         <Skeleton key={i} className="h-16 w-full" />
                       ))}
                     </div>
-                  ) : pendingMarketing && pendingMarketing.length > 0 ? (
+                  ) : actionableMarketing && actionableMarketing.length > 0 ? (
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
                             <TableHead>Collection</TableHead>
-                            <TableHead>Duration</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Dates</TableHead>
                             <TableHead>Price</TableHead>
                             <TableHead>Hero Image</TableHead>
-                            <TableHead>Submitted</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {pendingMarketing.map((request) => (
+                          {actionableMarketing.map((request) => (
                             <TableRow key={request.id}>
                               <TableCell>
                                 <div className="flex items-center gap-3">
@@ -931,7 +933,33 @@ export default function Admin() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Badge variant="outline">{request.duration_days} day(s)</Badge>
+                                <Badge 
+                                  variant={
+                                    request.status === 'pending' ? 'outline' :
+                                    request.status === 'approved' ? 'default' :
+                                    'secondary'
+                                  }
+                                  className={
+                                    request.status === 'pending' ? 'text-amber-600 border-amber-500/50' :
+                                    request.status === 'approved' ? 'bg-primary' :
+                                    request.status === 'paid' ? 'bg-green-600' : ''
+                                  }
+                                >
+                                  {request.status === 'pending' && 'Pending Review'}
+                                  {request.status === 'approved' && 'Awaiting Payment'}
+                                  {request.status === 'paid' && 'Scheduled'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm">
+                                  {request.start_date && request.end_date ? (
+                                    <>
+                                      {format(new Date(request.start_date), 'MMM d')} - {format(new Date(request.end_date), 'MMM d')}
+                                    </>
+                                  ) : (
+                                    `${request.duration_days} day(s)`
+                                  )}
+                                </span>
                               </TableCell>
                               <TableCell>
                                 <span className="font-medium">{request.price_ada} ADA</span>
@@ -951,33 +979,55 @@ export default function Admin() {
                                   <span className="text-muted-foreground text-sm">None</span>
                                 )}
                               </TableCell>
-                              <TableCell>
-                                <span className="text-xs text-muted-foreground">
-                                  {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-                                </span>
-                              </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-green-600 hover:text-green-700 hover:bg-green-100"
-                                    onClick={() => approveMarketing.mutate({ requestId: request.id })}
-                                    disabled={approveMarketing.isPending || !!allMarketing?.find(m => m.status === 'active')}
-                                  >
-                                    <Check className="h-4 w-4 mr-1" />
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onClick={() => handleRejectClick(request.id, 'marketing')}
-                                    disabled={rejectMarketing.isPending}
-                                  >
-                                    <X className="h-4 w-4 mr-1" />
-                                    Reject
-                                  </Button>
+                                  {request.status === 'pending' && (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-green-600 hover:text-green-700 hover:bg-green-100"
+                                        onClick={() => approveMarketing.mutate({ requestId: request.id })}
+                                        disabled={approveMarketing.isPending || !!allMarketing?.find(m => m.status === 'active')}
+                                      >
+                                        <Check className="h-4 w-4 mr-1" />
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onClick={() => handleRejectClick(request.id, 'marketing')}
+                                        disabled={rejectMarketing.isPending}
+                                      >
+                                        <X className="h-4 w-4 mr-1" />
+                                        Reject
+                                      </Button>
+                                    </>
+                                  )}
+                                  {request.status === 'approved' && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-muted-foreground"
+                                      disabled
+                                    >
+                                      <Clock className="h-4 w-4 mr-1" />
+                                      Awaiting Payment
+                                    </Button>
+                                  )}
+                                  {request.status === 'paid' && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:bg-destructive/10"
+                                      onClick={() => cancelMarketing.mutate({ requestId: request.id })}
+                                      disabled={cancelMarketing.isPending}
+                                    >
+                                      <X className="h-4 w-4 mr-1" />
+                                      Cancel
+                                    </Button>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -988,7 +1038,7 @@ export default function Admin() {
                   ) : (
                     <div className="text-center py-12">
                       <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/30" />
-                      <p className="mt-4 text-muted-foreground">No pending marketing requests</p>
+                      <p className="mt-4 text-muted-foreground">No actionable marketing requests</p>
                     </div>
                   )}
                 </CardContent>
@@ -1003,24 +1053,46 @@ export default function Admin() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {allMarketing && allMarketing.filter(m => m.status === 'completed').length > 0 ? (
+                  {allMarketing && allMarketing.filter(m => ['completed', 'approved', 'paid', 'active'].includes(m.status)).length > 0 ? (
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
                             <TableHead>Collection</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead>Duration</TableHead>
                             <TableHead>Revenue</TableHead>
                             <TableHead>Period</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {allMarketing
-                            .filter(m => m.status === 'completed')
+                            .filter(m => ['completed', 'approved', 'paid', 'active'].includes(m.status))
                             .map((request) => (
                               <TableRow key={request.id}>
                                 <TableCell>
                                   <p className="font-medium">{request.project.name}</p>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge 
+                                    variant={
+                                      request.status === 'active' ? 'default' :
+                                      request.status === 'paid' ? 'secondary' :
+                                      request.status === 'approved' ? 'outline' :
+                                      'secondary'
+                                    }
+                                    className={
+                                      request.status === 'active' ? 'bg-amber-500' :
+                                      request.status === 'paid' ? 'bg-green-600' :
+                                      request.status === 'approved' ? 'text-primary border-primary/50' : ''
+                                    }
+                                  >
+                                    {request.status === 'active' && 'Active'}
+                                    {request.status === 'paid' && 'Scheduled'}
+                                    {request.status === 'approved' && 'Awaiting Payment'}
+                                    {request.status === 'completed' && 'Completed'}
+                                  </Badge>
                                 </TableCell>
                                 <TableCell>{request.duration_days} day(s)</TableCell>
                                 <TableCell className="text-green-600 font-medium">
@@ -1028,6 +1100,35 @@ export default function Admin() {
                                 </TableCell>
                                 <TableCell className="text-sm text-muted-foreground">
                                   {request.start_date && format(new Date(request.start_date), 'MMM d')} - {request.end_date && format(new Date(request.end_date), 'MMM d, yyyy')}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {request.status === 'active' && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:bg-destructive/10"
+                                      onClick={() => endMarketing.mutate({ 
+                                        requestId: request.id, 
+                                        projectId: request.project_id 
+                                      })}
+                                      disabled={endMarketing.isPending}
+                                    >
+                                      <StopCircle className="h-4 w-4 mr-1" />
+                                      End Early
+                                    </Button>
+                                  )}
+                                  {request.status === 'paid' && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:bg-destructive/10"
+                                      onClick={() => cancelMarketing.mutate({ requestId: request.id })}
+                                      disabled={cancelMarketing.isPending}
+                                    >
+                                      <X className="h-4 w-4 mr-1" />
+                                      Cancel
+                                    </Button>
+                                  )}
                                 </TableCell>
                               </TableRow>
                             ))}

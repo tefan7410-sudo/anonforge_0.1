@@ -27,6 +27,19 @@ export interface CreditPurchase {
   user_display_name?: string;
 }
 
+export interface MarketingPayment {
+  id: string;
+  user_id: string;
+  marketing_request_id: string;
+  price_ada: number;
+  status: string;
+  completed_at: string | null;
+  created_at: string;
+  user_email?: string;
+  user_display_name?: string;
+  project_name?: string;
+}
+
 export const COST_CATEGORIES = [
   { value: "infrastructure", label: "Infrastructure" },
   { value: "api", label: "API Services" },
@@ -169,6 +182,52 @@ export function useCompletedCreditPurchases() {
   });
 }
 
+export function useCompletedMarketingPayments() {
+  return useQuery({
+    queryKey: ["completed-marketing-payments"],
+    queryFn: async () => {
+      // Get completed marketing payments
+      const { data: payments, error: paymentsError } = await supabase
+        .from("pending_marketing_payments")
+        .select("*, marketing_requests!inner(project_id, projects!inner(name))")
+        .eq("status", "completed")
+        .order("completed_at", { ascending: false });
+
+      if (paymentsError) throw paymentsError;
+      if (!payments || !payments.length) return [] as MarketingPayment[];
+
+      // Get unique user IDs
+      const userIds = [...new Set(payments.map((p) => p.user_id))];
+
+      // Fetch profiles for those users
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, email, display_name")
+        .in("id", userIds);
+
+      if (profilesError) throw profilesError;
+
+      const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
+
+      return payments.map((p) => {
+        const marketingRequest = p.marketing_requests as any;
+        return {
+          id: p.id,
+          user_id: p.user_id,
+          marketing_request_id: p.marketing_request_id,
+          price_ada: Number(p.price_ada),
+          status: p.status,
+          completed_at: p.completed_at,
+          created_at: p.created_at,
+          user_email: profileMap.get(p.user_id)?.email,
+          user_display_name: profileMap.get(p.user_id)?.display_name,
+          project_name: marketingRequest?.projects?.name,
+        };
+      }) as MarketingPayment[];
+    },
+  });
+}
+
 export function calculateMonthlyEquivalent(cost: OperationalCost): number {
   switch (cost.billing_period) {
     case "monthly":
@@ -194,6 +253,8 @@ export function calculateTotalMonthlyOperatingCosts(costs: OperationalCost[]): n
     .reduce((total, cost) => total + calculateMonthlyEquivalent(cost), 0);
 }
 
-export function calculateTotalRevenue(purchases: CreditPurchase[]): number {
-  return purchases.reduce((total, purchase) => total + purchase.price_ada, 0);
+export function calculateTotalRevenue(purchases: CreditPurchase[], marketingPayments: MarketingPayment[] = []): number {
+  const creditRevenue = purchases.reduce((total, purchase) => total + purchase.price_ada, 0);
+  const marketingRevenue = marketingPayments.reduce((total, payment) => total + payment.price_ada, 0);
+  return creditRevenue + marketingRevenue;
 }

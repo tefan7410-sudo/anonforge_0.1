@@ -20,7 +20,7 @@ export function FeaturedMarquee() {
       <Sparkles className="h-3.5 w-3.5 text-amber-200" />
       <span className="font-medium">Featured:</span>
       <span>{projectName}</span>
-      <span className="text-amber-200/80">—</span>
+      <span className="text-amber-200/80">|</span>
       <span className="text-amber-100/90">{tagline}</span>
       <span className="text-amber-200">→</span>
     </>
