@@ -45,6 +45,22 @@ interface VerificationRequest {
   };
 }
 
+interface AdminUserCredit {
+  id: string;
+  user_id: string;
+  free_credits: number;
+  purchased_credits: number;
+  next_reset_at: string;
+  created_at: string;
+  updated_at: string;
+  profile?: {
+    id: string;
+    display_name: string | null;
+    email: string;
+    avatar_url: string | null;
+  };
+}
+
 // Check if current user is an admin
 export function useIsAdmin() {
   return useQuery({
@@ -347,4 +363,122 @@ export async function checkTwitterHandleAvailable(handle: string, currentUserId:
     available: data.user_id === currentUserId,
     claimedBy: data.user_id 
   };
+}
+
+// Get all user credits for admin dashboard
+export function useAllUserCredits() {
+  return useQuery({
+    queryKey: ['admin-user-credits'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_credits')
+        .select(`
+          *,
+          profile:profiles!user_credits_user_id_fkey(id, display_name, email, avatar_url)
+        `)
+        .order('updated_at', { ascending: false });
+
+      if (error) {
+        // Fallback without join
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('user_credits')
+          .select('*')
+          .order('updated_at', { ascending: false });
+        
+        if (fallbackError) throw fallbackError;
+        return fallbackData as unknown as AdminUserCredit[];
+      }
+      return data as unknown as AdminUserCredit[];
+    },
+  });
+}
+
+// Get credit transactions for a specific user
+export function useUserCreditTransactions(userId: string | null) {
+  return useQuery({
+    queryKey: ['admin-user-transactions', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      
+      const { data, error } = await supabase
+        .from('credit_transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId,
+  });
+}
+
+// Admin adjust credits (add or remove)
+export function useAdminAdjustCredits() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      userId, 
+      amount, 
+      type, 
+      reason 
+    }: { 
+      userId: string; 
+      amount: number; 
+      type: 'add' | 'remove'; 
+      reason: string;
+    }) => {
+      const actualAmount = type === 'add' ? amount : -amount;
+      
+      // First get current credits
+      const { data: currentCredits, error: fetchError } = await supabase
+        .from('user_credits')
+        .select('free_credits, purchased_credits')
+        .eq('user_id', userId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      // Calculate new values - admin adjustments go to purchased_credits
+      let newPurchasedCredits = currentCredits.purchased_credits + actualAmount;
+      
+      // Don't allow negative credits
+      if (newPurchasedCredits < 0) {
+        throw new Error('Cannot remove more credits than available');
+      }
+      
+      // Update the credits
+      const { error: updateError } = await supabase
+        .from('user_credits')
+        .update({ 
+          purchased_credits: newPurchasedCredits,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+      
+      if (updateError) throw updateError;
+      
+      // Log the transaction
+      const { error: txError } = await supabase
+        .from('credit_transactions')
+        .insert({
+          user_id: userId,
+          amount: actualAmount,
+          transaction_type: type === 'add' ? 'admin_add' : 'admin_remove',
+          description: reason,
+        });
+      
+      if (txError) throw txError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-user-credits'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-user-transactions'] });
+      toast.success('Credits adjusted successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to adjust credits: ${error.message}`);
+    },
+  });
 }

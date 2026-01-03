@@ -11,6 +11,9 @@ import {
   useRejectCollection,
   useApproveVerification,
   useRejectVerification,
+  useAllUserCredits,
+  useUserCreditTransactions,
+  useAdminAdjustCredits,
 } from '@/hooks/use-admin';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +23,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   Dialog,
@@ -46,8 +51,16 @@ import {
   AlertTriangle,
   UserCheck,
   Twitter,
+  Coins,
+  History,
+  Plus,
+  Minus,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { FloatingHelpButton } from '@/components/FloatingHelpButton';
+import { formatDistanceToNow, format } from 'date-fns';
+import { formatCredits } from '@/lib/credit-constants';
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
@@ -55,21 +68,81 @@ export default function Admin() {
   const { data: collections, isLoading: collectionsLoading } = useAdminCollections();
   const { data: pendingCollections, isLoading: pendingLoading } = usePendingCollections();
   const { data: pendingVerifications, isLoading: verificationsLoading } = usePendingVerificationRequests();
+  const { data: userCredits, isLoading: creditsLoading } = useAllUserCredits();
   const toggleHidden = useToggleCollectionHidden();
   const approveCollection = useApproveCollection();
   const rejectCollection = useRejectCollection();
   const approveVerification = useApproveVerification();
   const rejectVerification = useRejectVerification();
+  const adjustCredits = useAdminAdjustCredits();
 
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectType, setRejectType] = useState<'collection' | 'verification'>('collection');
+  
+  // Credit management state
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserEmail, setSelectedUserEmail] = useState<string>('');
+  const [creditAmount, setCreditAmount] = useState<string>('');
+  const [creditAdjustType, setCreditAdjustType] = useState<'add' | 'remove'>('add');
+  const [creditReason, setCreditReason] = useState('');
+  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
+  const [transactionUserId, setTransactionUserId] = useState<string | null>(null);
+  const [creditSearchQuery, setCreditSearchQuery] = useState('');
+  
+  const { data: userTransactions, isLoading: transactionsLoading } = useUserCreditTransactions(transactionUserId);
 
   const copyCollectionLink = (projectId: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/collection/${projectId}`);
     toast.success('Link copied!');
   };
+
+  const handleEditCredits = (userId: string, email: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserEmail(email);
+    setCreditAmount('');
+    setCreditAdjustType('add');
+    setCreditReason('');
+    setCreditDialogOpen(true);
+  };
+
+  const handleCreditAdjustConfirm = async () => {
+    if (!selectedUserId || !creditAmount || !creditReason.trim()) return;
+    
+    const amount = parseFloat(creditAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid positive amount');
+      return;
+    }
+    
+    await adjustCredits.mutateAsync({
+      userId: selectedUserId,
+      amount,
+      type: creditAdjustType,
+      reason: creditReason,
+    });
+    
+    setCreditDialogOpen(false);
+    setSelectedUserId(null);
+    setCreditAmount('');
+    setCreditReason('');
+  };
+
+  const handleViewTransactions = (userId: string) => {
+    setTransactionUserId(userId);
+    setTransactionDialogOpen(true);
+  };
+
+  // Filter credits by search
+  const filteredCredits = userCredits?.filter(credit => {
+    if (!creditSearchQuery) return true;
+    const query = creditSearchQuery.toLowerCase();
+    const email = (credit.profile as any)?.email?.toLowerCase() || '';
+    const name = (credit.profile as any)?.display_name?.toLowerCase() || '';
+    return email.includes(query) || name.includes(query);
+  });
 
   const handleRejectClick = (id: string, type: 'collection' | 'verification') => {
     setRejectingId(id);
@@ -383,6 +456,10 @@ export default function Admin() {
               <Store className="h-4 w-4" />
               All Collections
             </TabsTrigger>
+            <TabsTrigger value="user-credits" className="gap-2">
+              <Coins className="h-4 w-4" />
+              User Credits
+            </TabsTrigger>
           </TabsList>
 
           {/* Pending Launches Tab */}
@@ -522,6 +599,116 @@ export default function Admin() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* User Credits Tab */}
+          <TabsContent value="user-credits">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Coins className="h-5 w-5" />
+                  User Credits
+                </CardTitle>
+                <CardDescription>
+                  Monitor and manage user credit balances
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4">
+                  <Input
+                    placeholder="Search by email or name..."
+                    value={creditSearchQuery}
+                    onChange={(e) => setCreditSearchQuery(e.target.value)}
+                    className="max-w-sm"
+                  />
+                </div>
+                {creditsLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : filteredCredits && filteredCredits.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>User</TableHead>
+                          <TableHead className="text-right">Free Credits</TableHead>
+                          <TableHead className="text-right">Purchased</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
+                          <TableHead>Next Reset</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredCredits.map((credit) => {
+                          const profile = credit.profile as any;
+                          const displayName = profile?.display_name || profile?.email || 'Unknown';
+                          const totalCredits = credit.free_credits + credit.purchased_credits;
+                          
+                          return (
+                            <TableRow key={credit.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarImage src={profile?.avatar_url || undefined} />
+                                    <AvatarFallback className="text-xs">{displayName.charAt(0).toUpperCase()}</AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-medium text-sm">{displayName}</p>
+                                    <p className="text-xs text-muted-foreground">{profile?.email}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right font-medium">
+                                {formatCredits(credit.free_credits)}
+                              </TableCell>
+                              <TableCell className="text-right font-medium text-green-600">
+                                {formatCredits(credit.purchased_credits)}
+                              </TableCell>
+                              <TableCell className="text-right font-bold">
+                                {formatCredits(totalCredits)}
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(credit.next_reset_at), 'MMM d, yyyy')}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleViewTransactions(credit.user_id)}
+                                  >
+                                    <History className="h-4 w-4 mr-1" />
+                                    History
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditCredits(credit.user_id, profile?.email || 'Unknown')}
+                                  >
+                                    <Coins className="h-4 w-4 mr-1" />
+                                    Edit
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Coins className="h-12 w-12 mx-auto text-muted-foreground/30" />
+                    <p className="mt-4 text-muted-foreground">No users found</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -555,6 +742,147 @@ export default function Admin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Credits Dialog */}
+      <Dialog open={creditDialogOpen} onOpenChange={setCreditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5" />
+              Adjust Credits
+            </DialogTitle>
+            <DialogDescription>
+              Adjust credits for {selectedUserEmail}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <RadioGroup value={creditAdjustType} onValueChange={(v) => setCreditAdjustType(v as 'add' | 'remove')}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="add" id="add" />
+                <Label htmlFor="add" className="flex items-center gap-1 cursor-pointer">
+                  <Plus className="h-4 w-4 text-green-600" />
+                  Add Credits
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="remove" id="remove" />
+                <Label htmlFor="remove" className="flex items-center gap-1 cursor-pointer">
+                  <Minus className="h-4 w-4 text-red-600" />
+                  Remove Credits
+                </Label>
+              </div>
+            </RadioGroup>
+            
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount</Label>
+              <Input
+                id="amount"
+                type="number"
+                min="0"
+                step="0.1"
+                placeholder="Enter amount..."
+                value={creditAmount}
+                onChange={(e) => setCreditAmount(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason <span className="text-destructive">*</span></Label>
+              <Input
+                id="reason"
+                placeholder="Enter reason for adjustment..."
+                value={creditReason}
+                onChange={(e) => setCreditReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreditAdjustConfirm}
+              disabled={!creditAmount || !creditReason.trim() || adjustCredits.isPending}
+            >
+              {adjustCredits.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : creditAdjustType === 'add' ? (
+                <Plus className="mr-2 h-4 w-4" />
+              ) : (
+                <Minus className="mr-2 h-4 w-4" />
+              )}
+              {creditAdjustType === 'add' ? 'Add' : 'Remove'} Credits
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transaction History Dialog */}
+      <Dialog open={transactionDialogOpen} onOpenChange={setTransactionDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Transaction History
+            </DialogTitle>
+            <DialogDescription>
+              Recent credit transactions for this user
+            </DialogDescription>
+          </DialogHeader>
+          {transactionsLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : userTransactions && userTransactions.length > 0 ? (
+            <div className="max-h-96 overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {userTransactions.map((tx) => (
+                    <TableRow key={tx.id}>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(tx.created_at), { addSuffix: true })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {tx.transaction_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {tx.description || '-'}
+                      </TableCell>
+                      <TableCell className={`text-right font-medium ${tx.amount > 0 ? 'text-green-600' : 'text-orange-500'}`}>
+                        {tx.amount > 0 ? '+' : ''}{formatCredits(tx.amount)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>No transactions found</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTransactionDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <FloatingHelpButton />
     </div>
   );
 }

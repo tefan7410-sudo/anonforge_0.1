@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, ArrowRight, Check, Loader2, Layers, Lock, Globe } from 'lucide-react';
 import { z } from 'zod';
+import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 
 // Input validation schemas
 const projectNameSchema = z.string()
@@ -350,6 +351,8 @@ export default function NewProject() {
           )}
         </div>
       </main>
+
+      <FloatingHelpButton />
     </div>
   );
 }
