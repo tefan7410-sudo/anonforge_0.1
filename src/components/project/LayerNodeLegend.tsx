@@ -1,4 +1,4 @@
-import { Ban, Sparkles, ArrowLeftRight } from 'lucide-react';
+import { Ban, Sparkles, ArrowLeftRight, MousePointer2, Trash2 } from 'lucide-react';
 
 export function LayerNodeLegend() {
   return (
@@ -24,6 +24,18 @@ export function LayerNodeLegend() {
         </div>
         <ArrowLeftRight className="h-3 w-3 text-warning" />
         <span>Switch Order</span>
+      </div>
+      
+      <div className="mt-2 pt-2 border-t border-border">
+        <span className="text-xs font-medium text-muted-foreground mb-1 block">Actions</span>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <MousePointer2 className="h-3 w-3" />
+          <span>Drag handles to connect</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Trash2 className="h-3 w-3" />
+          <span>Select edge + Delete key</span>
+        </div>
       </div>
     </div>
   );

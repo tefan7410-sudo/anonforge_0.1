@@ -46,12 +46,14 @@ function LayerNodeComponent({ data, selected }: NodeProps<LayerNodeType>) {
           <Handle
             type="target"
             position={Position.Left}
-            className="!h-3 !w-3 !border-2 !border-background !bg-muted-foreground"
+            className="!h-4 !w-4 !-left-2 !border-2 !border-background !bg-primary hover:!bg-primary/80 hover:!scale-125 transition-transform cursor-crosshair"
+            title="Drop connection here"
           />
           <Handle
             type="source"
             position={Position.Right}
-            className="!h-3 !w-3 !border-2 !border-background !bg-muted-foreground"
+            className="!h-4 !w-4 !-right-2 !border-2 !border-background !bg-primary hover:!bg-primary/80 hover:!scale-125 transition-transform cursor-crosshair"
+            title="Drag to create connection"
           />
         </>
       )}
