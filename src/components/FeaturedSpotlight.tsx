@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useActiveMarketing } from '@/hooks/use-marketing';
+import { useActiveMarketing, useFeaturedPreview } from '@/hooks/use-marketing';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,13 @@ interface FeaturedSpotlightProps {
 }
 
 export function FeaturedSpotlight({ className }: FeaturedSpotlightProps) {
-  const { data: activeMarketing, isLoading } = useActiveMarketing();
+  const { data: activeMarketing, isLoading: loadingActive } = useActiveMarketing();
+  const { data: featuredPreview, isLoading: loadingPreview } = useFeaturedPreview();
 
-  if (isLoading) {
+  // Use active marketing or fallback to demo preview
+  const featuredData = activeMarketing || featuredPreview;
+
+  if (loadingActive || loadingPreview) {
     return (
       <div className={cn("mb-8", className)}>
         <Skeleton className="h-64 w-full rounded-xl" />
@@ -22,9 +26,9 @@ export function FeaturedSpotlight({ className }: FeaturedSpotlightProps) {
     );
   }
 
-  if (!activeMarketing) return null;
+  if (!featuredData) return null;
 
-  const productPage = activeMarketing.product_page;
+  const productPage = featuredData.product_page;
 
   return (
     <div className={cn("mb-8", className)}>
@@ -33,13 +37,13 @@ export function FeaturedSpotlight({ className }: FeaturedSpotlightProps) {
         <h3 className="font-display text-lg font-semibold">Featured Collection</h3>
       </div>
       
-      <Link to={`/collection/${activeMarketing.project_id}`}>
+      <Link to={`/collection/${featuredData.project_id}`}>
         <Card className="group relative overflow-hidden border-2 border-amber-500/50 bg-gradient-to-br from-amber-500/10 via-transparent to-transparent transition-all hover:border-amber-500 hover:shadow-lg hover:shadow-amber-500/10">
           {/* Background Image */}
-          {activeMarketing.hero_image_url && (
+          {featuredData.hero_image_url && (
             <div className="absolute inset-0 opacity-20">
               <img
-                src={activeMarketing.hero_image_url}
+                src={featuredData.hero_image_url}
                 alt=""
                 className="h-full w-full object-cover"
               />
@@ -53,7 +57,7 @@ export function FeaturedSpotlight({ className }: FeaturedSpotlightProps) {
               {productPage?.logo_url ? (
                 <img
                   src={productPage.logo_url}
-                  alt={activeMarketing.project.name}
+                  alt={featuredData.project.name}
                   className="h-20 w-20 rounded-xl border-2 border-amber-500/30 object-cover shadow-lg"
                 />
               ) : (
@@ -70,7 +74,7 @@ export function FeaturedSpotlight({ className }: FeaturedSpotlightProps) {
                 FEATURED
               </Badge>
               <h4 className="font-display text-xl font-bold group-hover:text-amber-500 transition-colors">
-                {activeMarketing.project.name}
+                {featuredData.project.name}
               </h4>
               <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
                 {productPage?.tagline || 'Explore this featured collection'}

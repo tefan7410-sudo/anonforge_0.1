@@ -7,7 +7,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { MarketplaceSection } from '@/components/MarketplaceSection';
 import { FeaturedMarquee } from '@/components/FeaturedMarquee';
-import { useActiveMarketing } from '@/hooks/use-marketing';
+import { useActiveMarketing, useFeaturedPreview } from '@/hooks/use-marketing';
 import { useScrollAnimation } from '@/hooks/use-scroll-animation';
 import { useTranslations } from '@/hooks/use-translations';
 import { cn } from '@/lib/utils';
@@ -50,22 +50,27 @@ export default function Index() {
   const { t } = useTranslations();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: activeMarketing } = useActiveMarketing();
+  const { data: featuredPreview } = useFeaturedPreview();
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
   const heroAnimation = useScrollAnimation<HTMLDivElement>();
   const creatorsAnimation = useScrollAnimation<HTMLDivElement>();
   const benefitsAnimation = useScrollAnimation<HTMLDivElement>();
   const ctaAnimation = useScrollAnimation<HTMLDivElement>();
 
+  // Use active marketing or fallback to demo preview
+  const featuredData = activeMarketing || featuredPreview;
+  const heroImageUrl = featuredData?.hero_image_url;
+
   // Hero background slideshow effect
   useEffect(() => {
-    if (!activeMarketing?.hero_image_url) return;
+    if (!heroImageUrl) return;
     
     const interval = setInterval(() => {
       setCurrentBgIndex((prev) => (prev === 0 ? 1 : 0));
     }, 6000);
 
     return () => clearInterval(interval);
-  }, [activeMarketing?.hero_image_url]);
+  }, [heroImageUrl]);
 
   const scrollToSection = (e: React.MouseEvent, sectionId: string) => {
     e.preventDefault();
@@ -206,12 +211,12 @@ export default function Index() {
           <div 
             className={cn(
               "absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent transition-opacity duration-1000",
-              activeMarketing?.hero_image_url && currentBgIndex === 1 ? "opacity-0" : "opacity-100"
+              heroImageUrl && currentBgIndex === 1 ? "opacity-0" : "opacity-100"
             )} 
           />
           
           {/* Featured hero image background */}
-          {activeMarketing?.hero_image_url && (
+          {heroImageUrl && (
             <div 
               className={cn(
                 "absolute inset-0 transition-opacity duration-1000",
@@ -219,7 +224,7 @@ export default function Index() {
               )}
             >
               <img 
-                src={activeMarketing.hero_image_url} 
+                src={heroImageUrl} 
                 alt="" 
                 className="h-full w-full object-cover"
               />
