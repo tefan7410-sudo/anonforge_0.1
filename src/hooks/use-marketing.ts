@@ -6,7 +6,7 @@ export interface MarketingRequest {
   id: string;
   project_id: string;
   user_id: string;
-  status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed';
+  status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed' | 'expired';
   duration_days: number;
   price_ada: number;
   message: string | null;
@@ -15,6 +15,7 @@ export interface MarketingRequest {
   start_date: string | null;
   end_date: string | null;
   payment_status: 'pending' | 'completed';
+  approved_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -293,7 +294,7 @@ export function useUploadMarketingImage() {
   });
 }
 
-// Admin: Approve marketing request
+// Admin: Approve marketing request (sets to 'approved', user must pay within 24h)
 export function useApproveMarketingRequest() {
   const queryClient = useQueryClient();
 
@@ -302,27 +303,82 @@ export function useApproveMarketingRequest() {
       // Get the request first
       const { data: request, error: fetchError } = await supabase
         .from('marketing_requests')
-        .select('duration_days, project_id, start_date, end_date')
+        .select('user_id, project_id')
         .eq('id', requestId)
         .single();
 
       if (fetchError) throw fetchError;
 
-      // Use the dates set by the user, or default to now if not set
-      const startDate = request.start_date || new Date().toISOString();
-      const endDate = request.end_date || (() => {
-        const d = new Date();
-        d.setDate(d.getDate() + request.duration_days);
-        return d.toISOString();
-      })();
+      // Update the request to approved (NOT active - user must pay first)
+      const { error: updateError } = await supabase
+        .from('marketing_requests')
+        .update({
+          status: 'approved',
+          approved_at: new Date().toISOString(),
+        })
+        .eq('id', requestId);
+
+      if (updateError) throw updateError;
+
+      // Create notification for user to pay
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: request.user_id,
+          type: 'marketing_approved',
+          title: 'Marketing Approved!',
+          message: 'Your marketing request has been approved. Complete payment within 24 hours to activate your spotlight.',
+          link: `/project/${request.project_id}?tab=marketing`,
+        });
+
+      if (notifError) console.error('Failed to create notification:', notifError);
+
+      return request;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-marketing-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['marketing-request'] });
+      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
+      toast.success('Marketing request approved! User notified to complete payment.');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to approve request');
+    },
+  });
+}
+
+// Pay for approved marketing (activates the marketing)
+export function usePayForMarketing() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ requestId }: { requestId: string }) => {
+      // Get the request first
+      const { data: request, error: fetchError } = await supabase
+        .from('marketing_requests')
+        .select('project_id, start_date, end_date, approved_at')
+        .eq('id', requestId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Check if within 24h window
+      if (request.approved_at) {
+        const approvedAt = new Date(request.approved_at);
+        const now = new Date();
+        const hoursSinceApproval = (now.getTime() - approvedAt.getTime()) / (1000 * 60 * 60);
+        if (hoursSinceApproval > 24) {
+          throw new Error('Payment window has expired (24 hours)');
+        }
+      }
 
       // Update the request to active
       const { error: updateError } = await supabase
         .from('marketing_requests')
         .update({
           status: 'active',
-          start_date: startDate,
-          end_date: endDate,
+          payment_status: 'completed',
         })
         .eq('id', requestId);
 
@@ -333,7 +389,7 @@ export function useApproveMarketingRequest() {
         .from('product_pages')
         .update({
           is_featured: true,
-          featured_until: endDate,
+          featured_until: request.end_date,
         })
         .eq('project_id', request.project_id);
 
@@ -342,14 +398,14 @@ export function useApproveMarketingRequest() {
       return request;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pending-marketing-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['marketing-request'] });
       queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
       queryClient.invalidateQueries({ queryKey: ['active-marketing'] });
       queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
-      toast.success('Marketing request approved!');
+      toast.success('Payment confirmed! Your marketing is now active.');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to approve request');
+      toast.error(error.message || 'Failed to activate marketing');
     },
   });
 }

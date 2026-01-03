@@ -7,8 +7,12 @@ import {
   useCreateMarketingRequest,
   useUploadMarketingImage,
   useMarketingBookings,
+  usePayForMarketing,
   calculateMarketingPrice,
 } from '@/hooks/use-marketing';
+import { useCreatePaymentIntent, usePaymentStatus } from '@/hooks/use-payment-intent';
+import { CountdownTimer } from '@/components/CountdownTimer';
+import { PaymentModal } from '@/components/credits/PaymentModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +35,11 @@ import {
   Loader2,
   AlertCircle,
   CalendarIcon,
+  Wallet,
+  Copy,
+  ExternalLink,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { formatDistanceToNow, format, differenceInDays, eachDayOfInterval, isWithinInterval, addDays, isBefore, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -63,11 +71,28 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
   const { data: bookings = [] } = useMarketingBookings();
   const createRequest = useCreateMarketingRequest();
   const uploadImage = useUploadMarketingImage();
+  const payForMarketing = usePayForMarketing();
 
   const [selectedRange, setSelectedRange] = useState<DateRange | undefined>();
   const [message, setMessage] = useState('');
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState(false);
+
+  // Payment deadline for approved requests (24h from approval)
+  const paymentDeadline = useMemo(() => {
+    if (marketingRequest?.status === 'approved' && marketingRequest.approved_at) {
+      const deadline = new Date(marketingRequest.approved_at);
+      deadline.setHours(deadline.getHours() + 24);
+      return deadline;
+    }
+    return null;
+  }, [marketingRequest]);
+
+  const isPaymentExpired = paymentDeadline ? new Date() > paymentDeadline : false;
+
+  // Hardcoded ADA address for marketing payments (same as credits)
+  const MARKETING_PAYMENT_ADDRESS = 'addr1qy8ac7qqy0vtulyl7wntmsxc6wex80gvcyjy33qffrhm7sh927ydan5xvkg49szlqedxr7jl62ulnzyxs5p7pnl730zsqc5m4p';
 
   // Calculate duration and price from selected range
   const durationDays = useMemo(() => {
@@ -210,14 +235,96 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
               </div>
             )}
 
-            {marketingRequest.status === 'approved' && (
-              <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+            {marketingRequest.status === 'approved' && !isPaymentExpired && paymentDeadline && (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+                  <div className="flex items-start gap-3">
+                    <Check className="h-5 w-5 text-primary mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-medium">Request Approved!</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Complete payment within 24 hours to activate your spotlight.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Card */}
+                <div className="rounded-lg border-2 border-primary/50 bg-card p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="h-5 w-5 text-primary" />
+                      <span className="font-semibold">Complete Payment</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4 text-amber-500" />
+                      <CountdownTimer 
+                        targetDate={paymentDeadline} 
+                        compact 
+                        className="text-amber-600 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg bg-muted p-4">
+                    <p className="text-sm text-muted-foreground mb-1">Amount Due</p>
+                    <p className="text-3xl font-bold">{marketingRequest.price_ada} ADA</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Send payment to this address:</Label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 rounded bg-muted p-3 text-xs font-mono break-all">
+                        {MARKETING_PAYMENT_ADDRESS}
+                      </code>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText(MARKETING_PAYMENT_ADDRESS);
+                          setCopiedAddress(true);
+                          toast.success('Address copied!');
+                          setTimeout(() => setCopiedAddress(false), 2000);
+                        }}
+                      >
+                        {copiedAddress ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 p-3">
+                    <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      Send <strong>exactly {marketingRequest.price_ada} ADA</strong>. After sending, click "I've Paid" below. 
+                      Your marketing will activate once we verify the payment.
+                    </p>
+                  </div>
+
+                  <Button 
+                    className="w-full" 
+                    size="lg"
+                    onClick={() => payForMarketing.mutate({ requestId: marketingRequest.id })}
+                    disabled={payForMarketing.isPending}
+                  >
+                    {payForMarketing.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="mr-2 h-4 w-4" />
+                    )}
+                    I've Paid - Activate My Spotlight
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {marketingRequest.status === 'approved' && isPaymentExpired && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
                 <div className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary mt-0.5" />
+                  <Clock className="h-5 w-5 text-destructive mt-0.5" />
                   <div>
-                    <p className="font-medium">Request Approved!</p>
+                    <p className="font-medium text-destructive">Payment Window Expired</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Your marketing will go live soon. Complete payment to activate.
+                      The 24-hour payment window has passed. Please submit a new marketing request.
                     </p>
                   </div>
                 </div>
