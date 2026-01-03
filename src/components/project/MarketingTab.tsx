@@ -143,7 +143,7 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
       const end = new Date(booking.end_date);
       const days = eachDayOfInterval({ start, end });
 
-      if (booking.status === 'active' || booking.status === 'approved') {
+      if (booking.status === 'active' || booking.status === 'approved' || booking.status === 'paid') {
         booked.push(...days);
       } else if (booking.status === 'pending') {
         pending.push(...days);
@@ -621,7 +621,7 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
                     <span className="text-muted-foreground">Booked (unavailable)</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded border border-dashed border-amber-500 bg-amber-500/20" />
+                    <div className="h-3 w-3 rounded border border-dashed border-muted-foreground bg-muted" />
                     <span className="text-muted-foreground">Pending request</span>
                   </div>
                 </div>
