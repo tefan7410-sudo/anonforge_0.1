@@ -354,6 +354,42 @@ export type Database = {
           },
         ]
       }
+      layer_switches: {
+        Row: {
+          created_at: string
+          id: string
+          layer_a_id: string
+          layer_b_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          layer_a_id: string
+          layer_b_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          layer_a_id?: string
+          layer_b_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "layer_switches_layer_a_id_fkey"
+            columns: ["layer_a_id"]
+            isOneToOne: false
+            referencedRelation: "layers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "layer_switches_layer_b_id_fkey"
+            columns: ["layer_b_id"]
+            isOneToOne: false
+            referencedRelation: "layers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       layers: {
         Row: {
           category_id: string

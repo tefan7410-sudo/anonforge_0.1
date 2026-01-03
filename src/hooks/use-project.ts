@@ -53,6 +53,13 @@ export interface LayerEffect {
   created_at: string;
 }
 
+export interface LayerSwitch {
+  id: string;
+  layer_a_id: string;
+  layer_b_id: string;
+  created_at: string;
+}
+
 export function useProject(projectId: string) {
   return useQuery({
     queryKey: ['project', projectId],
@@ -605,6 +612,110 @@ export function useUpdateLayerName() {
     },
     onError: (error: Error) => {
       toast({ title: 'Failed to rename trait', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+// ==================== LAYER SWITCHES ====================
+
+export function useLayerSwitches(layerId: string) {
+  return useQuery({
+    queryKey: ['layer-switches', layerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('layer_switches')
+        .select('*')
+        .or(`layer_a_id.eq.${layerId},layer_b_id.eq.${layerId}`);
+
+      if (error) throw error;
+      return data as LayerSwitch[];
+    },
+    enabled: !!layerId,
+  });
+}
+
+export function useAllSwitches(projectId: string) {
+  return useQuery({
+    queryKey: ['all-switches', projectId],
+    queryFn: async () => {
+      // Get all layers for this project first
+      const { data: categories } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('project_id', projectId);
+
+      if (!categories || categories.length === 0) return [];
+
+      const categoryIds = categories.map((c) => c.id);
+      const { data: layers } = await supabase
+        .from('layers')
+        .select('id')
+        .in('category_id', categoryIds);
+
+      if (!layers || layers.length === 0) return [];
+
+      const layerIds = layers.map((l) => l.id);
+      const { data, error } = await supabase
+        .from('layer_switches')
+        .select('*')
+        .in('layer_a_id', layerIds);
+
+      if (error) throw error;
+      return data as LayerSwitch[];
+    },
+    enabled: !!projectId,
+  });
+}
+
+export function useCreateSwitch() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ layerAId, layerBId }: { layerAId: string; layerBId: string; projectId: string }) => {
+      // Normalize order to prevent duplicates (always store smaller UUID first)
+      const [first, second] = layerAId < layerBId ? [layerAId, layerBId] : [layerBId, layerAId];
+      
+      const { error } = await supabase.from('layer_switches').insert({
+        layer_a_id: first,
+        layer_b_id: second,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['layer-switches'] });
+      queryClient.invalidateQueries({ queryKey: ['all-switches', variables.projectId] });
+      toast({ title: 'Layer switch rule added' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to add switch rule', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+export function useDeleteSwitch() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ layerAId, layerBId }: { layerAId: string; layerBId: string; projectId: string }) => {
+      // Normalize order to match how it was stored
+      const [first, second] = layerAId < layerBId ? [layerAId, layerBId] : [layerBId, layerAId];
+      
+      const { error } = await supabase
+        .from('layer_switches')
+        .delete()
+        .eq('layer_a_id', first)
+        .eq('layer_b_id', second);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['layer-switches'] });
+      queryClient.invalidateQueries({ queryKey: ['all-switches', variables.projectId] });
+      toast({ title: 'Layer switch rule removed' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to remove switch rule', description: error.message, variant: 'destructive' });
     },
   });
 }
