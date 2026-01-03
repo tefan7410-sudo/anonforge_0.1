@@ -13,6 +13,8 @@ const CREDIT_TIERS = {
 };
 
 Deno.serve(async (req) => {
+  console.log('create-payment-intent function invoked, method:', req.method);
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -21,7 +23,13 @@ Deno.serve(async (req) => {
   try {
     // Verify authorization
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    if (authHeader) {
+      console.log('Auth header prefix:', authHeader.substring(0, 30) + '...');
+    }
+    
     if (!authHeader) {
+      console.error('Missing authorization header');
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
