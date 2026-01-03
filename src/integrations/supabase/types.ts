@@ -576,7 +576,7 @@ export type Database = {
       }
       operational_costs: {
         Row: {
-          amount_ada: number
+          amount_usd: number
           billing_period: string
           category: string
           created_at: string
@@ -588,7 +588,7 @@ export type Database = {
           start_date: string
         }
         Insert: {
-          amount_ada: number
+          amount_usd: number
           billing_period: string
           category: string
           created_at?: string
@@ -600,7 +600,7 @@ export type Database = {
           start_date: string
         }
         Update: {
-          amount_ada?: number
+          amount_usd?: number
           billing_period?: string
           category?: string
           created_at?: string

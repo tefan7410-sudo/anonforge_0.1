@@ -55,7 +55,7 @@ interface OperationalCostsTableProps {
 interface CostFormData {
   name: string;
   category: string;
-  amount_ada: string;
+  amount_usd: string;
   billing_period: "monthly" | "yearly" | "one-time";
   start_date: string;
   end_date: string;
@@ -65,7 +65,7 @@ interface CostFormData {
 const defaultFormData: CostFormData = {
   name: "",
   category: "infrastructure",
-  amount_ada: "",
+  amount_usd: "",
   billing_period: "monthly",
   start_date: new Date().toISOString().split("T")[0],
   end_date: "",
@@ -91,8 +91,8 @@ export function OperationalCostsTable({ costs }: OperationalCostsTableProps) {
     setFormData({
       name: cost.name,
       category: cost.category,
-      amount_ada: cost.amount_ada.toString(),
-      billing_period: cost.billing_period,
+      amount_usd: cost.amount_usd.toString(),
+      billing_period: cost.billing_period as CostFormData["billing_period"],
       start_date: cost.start_date,
       end_date: cost.end_date || "",
       notes: cost.notes || "",
@@ -104,7 +104,7 @@ export function OperationalCostsTable({ costs }: OperationalCostsTableProps) {
     const costData = {
       name: formData.name,
       category: formData.category,
-      amount_ada: parseFloat(formData.amount_ada),
+      amount_usd: parseFloat(formData.amount_usd),
       billing_period: formData.billing_period,
       start_date: formData.start_date,
       end_date: formData.end_date || null,
@@ -181,14 +181,14 @@ export function OperationalCostsTable({ costs }: OperationalCostsTableProps) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="amount_ada">Amount (₳)</Label>
+        <Label htmlFor="amount_usd">Amount (USD)</Label>
         <Input
-          id="amount_ada"
+          id="amount_usd"
           type="number"
           step="0.01"
-          value={formData.amount_ada}
-          onChange={(e) => setFormData({ ...formData, amount_ada: e.target.value })}
-          placeholder="25"
+          value={formData.amount_usd}
+          onChange={(e) => setFormData({ ...formData, amount_usd: e.target.value })}
+          placeholder="25.00"
         />
       </div>
 
@@ -268,9 +268,9 @@ export function OperationalCostsTable({ costs }: OperationalCostsTableProps) {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead className="text-right">Amount (₳)</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
                     <TableHead>Period</TableHead>
-                    <TableHead className="text-right">Monthly Equiv.</TableHead>
+                    <TableHead className="text-right">Monthly</TableHead>
                     <TableHead className="w-[80px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -279,10 +279,10 @@ export function OperationalCostsTable({ costs }: OperationalCostsTableProps) {
                     <TableRow key={cost.id}>
                       <TableCell className="font-medium">{cost.name}</TableCell>
                       <TableCell className="text-sm capitalize">{cost.category}</TableCell>
-                      <TableCell className="text-right">{cost.amount_ada} ₳</TableCell>
+                      <TableCell className="text-right">${cost.amount_usd.toFixed(2)}</TableCell>
                       <TableCell className="text-sm capitalize">{cost.billing_period}</TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {calculateMonthlyEquivalent(cost).toFixed(2)} ₳
+                        ${calculateMonthlyEquivalent(cost).toFixed(2)}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
