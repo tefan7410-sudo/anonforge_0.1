@@ -275,6 +275,7 @@ export default function ProjectDetail() {
                   <List className={`h-4 w-4 ${!useNodeView ? 'text-primary' : 'text-muted-foreground'}`} />
                   <Switch
                     id="view-mode"
+                    data-tutorial="view-toggle"
                     checked={useNodeView}
                     onCheckedChange={(checked) => {
                       setUseNodeView(checked);
