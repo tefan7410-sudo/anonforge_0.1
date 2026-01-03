@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Generation {
@@ -15,6 +16,7 @@ export interface Generation {
 }
 
 const MAX_PREVIEW_GENERATIONS = 25;
+const RETENTION_DAYS = 15;
 
 export function useGenerations(projectId: string) {
   return useQuery({
@@ -257,4 +259,51 @@ export function useClearAllGenerations() {
       queryClient.invalidateQueries({ queryKey: ['generations', projectId] });
     },
   });
+}
+
+// Auto-cleanup old generations (non-favorites older than 15 days)
+export function useAutoCleanupOldGenerations(projectId: string) {
+  const queryClient = useQueryClient();
+  const hasRunRef = useRef(false);
+
+  useEffect(() => {
+    if (!projectId || hasRunRef.current) return;
+    hasRunRef.current = true;
+
+    const cleanup = async () => {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - RETENTION_DAYS);
+
+      // Get old non-favorite generations
+      const { data: oldGenerations, error } = await supabase
+        .from('generations')
+        .select('*')
+        .eq('project_id', projectId)
+        .eq('is_favorite', false)
+        .lt('created_at', cutoffDate.toISOString());
+
+      if (error || !oldGenerations || oldGenerations.length === 0) return;
+
+      // Delete from storage
+      const filesToDelete = oldGenerations
+        .filter((g) => g.image_path)
+        .map((g) => g.image_path as string);
+
+      if (filesToDelete.length > 0) {
+        await supabase.storage.from('generations').remove(filesToDelete);
+      }
+
+      // Delete from database
+      const idsToDelete = oldGenerations.map((g) => g.id);
+      await supabase
+        .from('generations')
+        .delete()
+        .in('id', idsToDelete);
+
+      // Refresh the list
+      queryClient.invalidateQueries({ queryKey: ['generations', projectId] });
+    };
+
+    cleanup();
+  }, [projectId, queryClient]);
 }

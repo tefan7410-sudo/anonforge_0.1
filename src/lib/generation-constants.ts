@@ -7,7 +7,7 @@ export const GENERATION_CONFIG = {
   
   // Export settings
   EXPORT_FORMAT: 'image/jpeg' as const,
-  EXPORT_QUALITY: 0.92, // High quality JPG (0.0 - 1.0)
+  EXPORT_QUALITY: 1.0, // Maximum quality JPG (no compression artifacts)
   EXPORT_EXTENSION: 'jpg' as const,
   
   // Performance settings

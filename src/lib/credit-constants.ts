@@ -1,7 +1,7 @@
-// Credit cost per generation type
+// Credit cost per generation type (discounted prices)
 export const CREDIT_COSTS = {
-  FULL_RESOLUTION: 0.1,    // 0.1 credits per full resolution export (3000x3000)
-  PREVIEW: 0.005,          // 0.005 credits per preview (384x384) - 20x cheaper
+  FULL_RESOLUTION: 0.05,   // 0.05 credits per full resolution export (3000x3000)
+  PREVIEW: 0.002,          // 0.002 credits per preview (384x384)
 } as const;
 
 // Credit purchase tiers
@@ -21,8 +21,8 @@ export const CREDIT_TIERS: CreditTier[] = [
     credits: 1000, 
     priceAda: 25, 
     label: 'Starter',
-    fullResExports: 10000,
-    previewExports: 200000,
+    fullResExports: 20000,
+    previewExports: 500000,
   },
   { 
     id: 'popular',
@@ -30,8 +30,8 @@ export const CREDIT_TIERS: CreditTier[] = [
     priceAda: 50, 
     label: 'Popular', 
     badge: 'Most Popular',
-    fullResExports: 25000,
-    previewExports: 500000,
+    fullResExports: 50000,
+    previewExports: 1250000,
   },
   { 
     id: 'pro',
@@ -39,8 +39,8 @@ export const CREDIT_TIERS: CreditTier[] = [
     priceAda: 80, 
     label: 'Pro', 
     badge: 'Best Value',
-    fullResExports: 50000,
-    previewExports: 1000000,
+    fullResExports: 100000,
+    previewExports: 2500000,
   },
 ];
 
