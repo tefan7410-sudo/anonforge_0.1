@@ -34,6 +34,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
+import { PageTransition } from '@/components/PageTransition';
 
 export default function Credits() {
   const navigate = useNavigate();
@@ -93,6 +94,7 @@ export default function Credits() {
   };
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50">
@@ -354,5 +356,6 @@ export default function Credits() {
 
       <FloatingHelpButton />
     </div>
+    </PageTransition>
   );
 }

@@ -9,6 +9,7 @@ import { MarketplaceSection } from '@/components/MarketplaceSection';
 import { useScrollAnimation } from '@/hooks/use-scroll-animation';
 import { useTranslations } from '@/hooks/use-translations';
 import { cn } from '@/lib/utils';
+import { PageTransition } from '@/components/PageTransition';
 import {
   Sheet,
   SheetContent,
@@ -51,6 +52,15 @@ export default function Index() {
   const benefitsAnimation = useScrollAnimation<HTMLDivElement>();
   const ctaAnimation = useScrollAnimation<HTMLDivElement>();
 
+  const scrollToSection = (e: React.MouseEvent, sectionId: string) => {
+    e.preventDefault();
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setMobileMenuOpen(false);
+  };
+
   const creatorFeatures = [
     { icon: Palette, titleKey: 'creators.layerGeneration', descKey: 'creators.layerGenerationDesc' },
     { icon: LayoutGrid, titleKey: 'creators.productPage', descKey: 'creators.productPageDesc' },
@@ -67,6 +77,7 @@ export default function Index() {
   ];
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
@@ -84,7 +95,11 @@ export default function Index() {
             <Button variant="ghost" asChild>
               <Link to="/marketplace">{t('nav.marketplace')}</Link>
             </Button>
-            <a href="#for-creators" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <a 
+              href="#for-creators" 
+              onClick={(e) => scrollToSection(e, 'for-creators')}
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
               {t('nav.forCreators')}
             </a>
             <LanguageSelector />
@@ -138,13 +153,10 @@ export default function Index() {
                   <Button
                     variant="ghost"
                     className="justify-start"
-                    asChild
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={(e) => scrollToSection(e, 'for-creators')}
                   >
-                    <a href="#for-creators">
-                      <Palette className="mr-3 h-4 w-4" />
-                      {t('nav.forCreators')}
-                    </a>
+                    <Palette className="mr-3 h-4 w-4" />
+                    {t('nav.forCreators')}
                   </Button>
                   <div className="my-2 border-t border-border" />
                   <Button
@@ -354,5 +366,6 @@ export default function Index() {
         </div>
       </footer>
     </div>
+    </PageTransition>
   );
 }
