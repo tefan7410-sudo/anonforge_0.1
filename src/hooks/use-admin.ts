@@ -2,6 +2,44 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// Helper function to log admin actions
+async function logAdminAction({
+  actionType,
+  targetTable,
+  targetId,
+  targetUserId,
+  oldValues,
+  newValues,
+  metadata,
+}: {
+  actionType: string;
+  targetTable: string;
+  targetId?: string;
+  targetUserId?: string;
+  oldValues?: Record<string, unknown>;
+  newValues?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Type assertion needed since types.ts hasn't been regenerated yet
+    await (supabase.from('admin_audit_logs') as ReturnType<typeof supabase.from>).insert({
+      admin_user_id: user.id,
+      action_type: actionType,
+      target_table: targetTable,
+      target_id: targetId,
+      target_user_id: targetUserId,
+      old_values: oldValues,
+      new_values: newValues,
+      metadata,
+    });
+  } catch (error) {
+    console.error('Failed to log admin action:', error);
+  }
+}
+
 interface AdminCollection {
   id: string;
   project_id: string;
@@ -192,12 +230,29 @@ export function useToggleCollectionHidden() {
 
   return useMutation({
     mutationFn: async ({ productPageId, hidden }: { productPageId: string; hidden: boolean }) => {
+      // Get current state for audit log
+      const { data: current } = await supabase
+        .from('product_pages')
+        .select('is_hidden, project_id')
+        .eq('id', productPageId)
+        .single();
+
       const { error } = await supabase
         .from('product_pages')
         .update({ is_hidden: hidden })
         .eq('id', productPageId);
 
       if (error) throw error;
+
+      // Log admin action
+      await logAdminAction({
+        actionType: hidden ? 'hide_collection' : 'unhide_collection',
+        targetTable: 'product_pages',
+        targetId: productPageId,
+        oldValues: { is_hidden: current?.is_hidden },
+        newValues: { is_hidden: hidden },
+        metadata: { project_id: current?.project_id },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
@@ -217,6 +272,13 @@ export function useApproveCollection() {
 
   return useMutation({
     mutationFn: async ({ productPageId }: { productPageId: string }) => {
+      // Get current state for audit log
+      const { data: current } = await supabase
+        .from('product_pages')
+        .select('admin_approved, project_id')
+        .eq('id', productPageId)
+        .single();
+
       const { error } = await supabase
         .from('product_pages')
         .update({ 
@@ -226,6 +288,16 @@ export function useApproveCollection() {
         .eq('id', productPageId);
 
       if (error) throw error;
+
+      // Log admin action
+      await logAdminAction({
+        actionType: 'approve_collection',
+        targetTable: 'product_pages',
+        targetId: productPageId,
+        oldValues: { admin_approved: current?.admin_approved },
+        newValues: { admin_approved: true },
+        metadata: { project_id: current?.project_id },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
@@ -244,6 +316,13 @@ export function useRejectCollection() {
 
   return useMutation({
     mutationFn: async ({ productPageId, reason }: { productPageId: string; reason: string }) => {
+      // Get current state for audit log
+      const { data: current } = await supabase
+        .from('product_pages')
+        .select('is_live, admin_approved, scheduled_launch_at, project_id')
+        .eq('id', productPageId)
+        .single();
+
       const { error } = await supabase
         .from('product_pages')
         .update({ 
@@ -255,6 +334,25 @@ export function useRejectCollection() {
         .eq('id', productPageId);
 
       if (error) throw error;
+
+      // Log admin action
+      await logAdminAction({
+        actionType: 'reject_collection',
+        targetTable: 'product_pages',
+        targetId: productPageId,
+        oldValues: { 
+          is_live: current?.is_live, 
+          admin_approved: current?.admin_approved,
+          scheduled_launch_at: current?.scheduled_launch_at 
+        },
+        newValues: { 
+          is_live: false, 
+          admin_approved: false, 
+          scheduled_launch_at: null,
+          rejection_reason: reason 
+        },
+        metadata: { project_id: current?.project_id },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
@@ -295,6 +393,15 @@ export function useApproveVerification() {
         .eq('id', userId);
 
       if (profileError) throw profileError;
+
+      // Log admin action
+      await logAdminAction({
+        actionType: 'approve_verification',
+        targetTable: 'creator_verification_requests',
+        targetId: requestId,
+        targetUserId: userId,
+        newValues: { status: 'approved', is_verified_creator: true },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-verification-requests'] });
@@ -316,6 +423,13 @@ export function useRejectVerification() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Get user_id for audit log
+      const { data: request } = await supabase
+        .from('creator_verification_requests')
+        .select('user_id')
+        .eq('id', requestId)
+        .single();
+
       const { error } = await supabase
         .from('creator_verification_requests')
         .update({ 
@@ -327,6 +441,15 @@ export function useRejectVerification() {
         .eq('id', requestId);
 
       if (error) throw error;
+
+      // Log admin action
+      await logAdminAction({
+        actionType: 'reject_verification',
+        targetTable: 'creator_verification_requests',
+        targetId: requestId,
+        targetUserId: request?.user_id,
+        newValues: { status: 'rejected', rejection_reason: reason },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-verification-requests'] });
@@ -442,7 +565,7 @@ export function useAdminAdjustCredits() {
       if (fetchError) throw fetchError;
       
       // Calculate new values - admin adjustments go to purchased_credits
-      let newPurchasedCredits = currentCredits.purchased_credits + actualAmount;
+      const newPurchasedCredits = currentCredits.purchased_credits + actualAmount;
       
       // Don't allow negative credits
       if (newPurchasedCredits < 0) {
@@ -471,6 +594,22 @@ export function useAdminAdjustCredits() {
         });
       
       if (txError) throw txError;
+
+      // Log admin action
+      await logAdminAction({
+        actionType: type === 'add' ? 'add_credits' : 'remove_credits',
+        targetTable: 'user_credits',
+        targetUserId: userId,
+        oldValues: { 
+          free_credits: currentCredits.free_credits,
+          purchased_credits: currentCredits.purchased_credits 
+        },
+        newValues: { 
+          free_credits: currentCredits.free_credits,
+          purchased_credits: newPurchasedCredits 
+        },
+        metadata: { amount: actualAmount, reason },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-user-credits'] });
