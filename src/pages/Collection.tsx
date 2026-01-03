@@ -25,6 +25,7 @@ import { MintStatusCard } from '@/components/MintStatusCard';
 import { useCreatorCollections } from '@/hooks/use-creator-collections';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { PageTransition } from '@/components/PageTransition';
+import { SEOHead } from '@/components/SEOHead';
 import { toast } from 'sonner';
 
 export default function Collection() {
@@ -132,8 +133,23 @@ export default function Collection() {
     toast.success('Link copied!');
   };
 
+  // Generate SEO data
+  const priceAda = priceInLovelace ? priceInLovelace / 1_000_000 : undefined;
+
   return (
     <PageTransition>
+    <SEOHead
+      title={project.name}
+      description={productPage.tagline || project.description || `Mint ${project.name} NFTs on Cardano`}
+      image={productPage.banner_url || productPage.logo_url || undefined}
+      url={`/collection/${projectId}`}
+      type="product"
+      price={priceAda}
+      currency="ADA"
+      availability={isUpcoming ? 'preorder' : 'in stock'}
+      author={productPage.founder_name || undefined}
+      keywords={['NFT', 'Cardano', project.name, 'mint', 'collection']}
+    />
     <div className="min-h-screen bg-background">
       {/* Sticky Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
