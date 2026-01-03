@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCategories, useAllLayers, useAllExclusions, useAllEffects, type Project, type Layer, type Category } from '@/hooks/use-project';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
 import {
@@ -46,11 +48,14 @@ import {
   Settings2,
   Edit3,
   Save,
+  Coins,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { GENERATION_CONFIG, calculateBase64Size, formatFileSize } from '@/lib/generation-constants';
+import { useCreditBalance, useDeductCredits, useHasEnoughCredits } from '@/hooks/use-credits';
+import { CREDIT_COSTS, calculateCreditsNeeded, formatCredits } from '@/lib/credit-constants';
 
 interface GenerationPanelProps {
   projectId: string;
@@ -97,6 +102,13 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const [editableMetadata, setEditableMetadata] = useState<Record<string, string>>({});
   const [editableBatchMetadata, setEditableBatchMetadata] = useState<Record<string, string>[]>([]);
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
+  const [showInsufficientCreditsDialog, setShowInsufficientCreditsDialog] = useState(false);
+
+  // Credit system
+  const { totalCredits, isLowCredits, isLoading: creditsLoading } = useCreditBalance();
+  const deductCredits = useDeductCredits();
+  const creditsNeeded = calculateCreditsNeeded(batchSize, isFullResolution);
+  const hasEnoughCredits = totalCredits >= creditsNeeded;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
@@ -489,6 +501,12 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     setGenerationComplete(false);
     setLastBatchZipPath(null);
 
+    // Check credits first
+    if (!hasEnoughCredits) {
+      setShowInsufficientCreditsDialog(true);
+      return;
+    }
+
     // Check if we have enough remaining combinations
     if (batchSize > remainingCombinations) {
       toast({
@@ -650,10 +668,23 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
       // Cleanup old generations (keep only 25 non-favorites)
       await cleanupGenerations.mutateAsync(projectId);
 
+      // Deduct credits after successful generation
+      try {
+        await deductCredits.mutateAsync({
+          amount: creditsNeeded,
+          generationType: isFullResolution ? 'full_resolution' : 'preview',
+          description: `Generated ${batchSize} ${isFullResolution ? 'full resolution' : 'preview'} image${batchSize > 1 ? 's' : ''}`,
+        });
+      } catch (creditError) {
+        console.error('Failed to deduct credits:', creditError);
+        // Don't fail the generation if credit deduction fails
+      }
+
       toast({
         title: batchSize > 1
           ? `${batchSize} ${isFullResolution ? 'full resolution' : ''} characters generated`
           : 'Preview generated and saved to history',
+        description: `${formatCredits(creditsNeeded)} credits used`,
       });
     } catch (error) {
       console.error('Generation error:', error);
@@ -1020,10 +1051,75 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* Insufficient Credits Dialog */}
+        <AlertDialog open={showInsufficientCreditsDialog} onOpenChange={setShowInsufficientCreditsDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Coins className="h-5 w-5 text-orange-500" />
+                Insufficient Credits
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3">
+                  <p>You don't have enough credits for this generation.</p>
+                  <div className="rounded-lg bg-muted p-3 space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>Credits needed:</span>
+                      <span className="font-medium">{formatCredits(creditsNeeded)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Your balance:</span>
+                      <span className="font-medium">{formatCredits(totalCredits)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-orange-500">
+                      <span>Shortfall:</span>
+                      <span className="font-medium">{formatCredits(creditsNeeded - totalCredits)}</span>
+                    </div>
+                  </div>
+                  <p className="text-sm">
+                    You can purchase more credits or try a smaller batch size or preview mode.
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction asChild>
+                <Link to="/credits">Buy Credits</Link>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Credits info */}
+        <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Coins className={`h-4 w-4 ${isLowCredits ? 'text-orange-500' : 'text-primary'}`} />
+            <span className="text-sm">
+              Balance: <span className={`font-medium ${isLowCredits ? 'text-orange-500' : ''}`}>{formatCredits(totalCredits)}</span>
+            </span>
+            {isLowCredits && (
+              <Badge variant="outline" className="border-orange-500 text-orange-500 text-xs">
+                Low
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">
+              Cost: <span className={`font-medium ${!hasEnoughCredits ? 'text-orange-500' : 'text-foreground'}`}>{formatCredits(creditsNeeded)}</span>
+            </span>
+            <Link to="/credits">
+              <Button variant="ghost" size="sm" className="h-7 text-xs">
+                Buy More
+              </Button>
+            </Link>
+          </div>
+        </div>
+
         {/* Generate button */}
         <Button
           onClick={handleGenerateClick}
-          disabled={generating || saving}
+          disabled={generating || saving || !hasEnoughCredits}
           className="w-full"
           size="lg"
         >
@@ -1033,6 +1129,11 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
               {generationProgress.total > 1
                 ? `Generating ${generationProgress.current}/${generationProgress.total}...`
                 : 'Generating...'}
+            </>
+          ) : !hasEnoughCredits ? (
+            <>
+              <Coins className="mr-2 h-4 w-4" />
+              Insufficient Credits
             </>
           ) : (
             <>

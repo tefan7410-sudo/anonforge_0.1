@@ -10,10 +10,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Menu, LayoutDashboard, User, LogOut, Layers, Bell, Store, Settings, Home, HelpCircle } from 'lucide-react';
+import { Menu, LayoutDashboard, User, LogOut, Layers, Bell, Store, Settings, Home, HelpCircle, Coins } from 'lucide-react';
 import { useState } from 'react';
 import { useUnreadCount } from '@/hooks/use-notifications';
 import { useProfile } from '@/hooks/use-profile';
+import { useCreditBalance } from '@/hooks/use-credits';
+import { formatCredits } from '@/lib/credit-constants';
 
 export function MobileNav() {
   const { user, signOut } = useAuth();
@@ -22,6 +24,7 @@ export function MobileNav() {
   const [open, setOpen] = useState(false);
   const { data: unreadCount } = useUnreadCount(user?.id);
   const { data: profile } = useProfile(user?.id);
+  const { totalCredits, isLowCredits } = useCreditBalance();
 
   // Check if we're on a project page to show settings link
   const projectMatch = location.pathname.match(/^\/project\/([^/]+)$/);
@@ -128,6 +131,23 @@ export function MobileNav() {
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </Badge>
               )}
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            className="justify-start"
+            asChild
+            onClick={() => setOpen(false)}
+          >
+            <Link to="/credits">
+              <Coins className={`mr-3 h-4 w-4 ${isLowCredits ? 'text-orange-500' : ''}`} />
+              Credits
+              <Badge 
+                variant="outline" 
+                className={`ml-auto ${isLowCredits ? 'border-orange-500 text-orange-500' : ''}`}
+              >
+                {formatCredits(totalCredits)}
+              </Badge>
             </Link>
           </Button>
           <Button

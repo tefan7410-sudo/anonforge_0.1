@@ -9,11 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X, HelpCircle } from 'lucide-react';
+import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X, HelpCircle, Coins } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
+import { useCreditBalance } from '@/hooks/use-credits';
+import { formatCredits } from '@/lib/credit-constants';
 
 interface Project {
   id: string;
@@ -46,6 +48,7 @@ export default function Dashboard() {
   
   const acceptInvitation = useAcceptInvitation();
   const declineInvitation = useDeclineInvitation();
+  const { totalCredits, isLowCredits } = useCreditBalance();
 
   useEffect(() => {
     if (user) {
@@ -165,6 +168,18 @@ export default function Dashboard() {
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground border-muted-foreground/30">BETA</Badge>
           </Link>
           <div className="flex items-center gap-1 sm:gap-2">
+            <Link 
+              to="/credits" 
+              className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                isLowCredits 
+                  ? 'border-orange-500/50 text-orange-500 hover:bg-orange-500/10' 
+                  : 'border-border/50 hover:bg-muted'
+              }`}
+              title="View credits"
+            >
+              <Coins className="h-4 w-4" />
+              <span className="font-medium">{formatCredits(totalCredits)}</span>
+            </Link>
             <Button variant="ghost" size="icon" asChild title="Help & Documentation">
               <Link to="/documentation">
                 <HelpCircle className="h-4 w-4" />
