@@ -33,12 +33,12 @@ export function FeaturedSpotlight({ className }: FeaturedSpotlightProps) {
   return (
     <div className={cn("mb-8", className)}>
       <div className="mb-4 flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-amber-500" />
+        <Sparkles className="h-5 w-5 text-primary" />
         <h3 className="font-display text-lg font-semibold">Featured Collection</h3>
       </div>
       
       <Link to={`/collection/${featuredData.project_id}`}>
-        <Card className="group relative overflow-hidden border-2 border-amber-500/50 bg-gradient-to-br from-amber-500/10 via-transparent to-transparent transition-all hover:border-amber-500 hover:shadow-lg hover:shadow-amber-500/10">
+        <Card className="group relative overflow-hidden border-2 border-primary/50 bg-gradient-to-br from-primary/10 via-transparent to-transparent transition-all hover:border-primary hover:shadow-lg hover:shadow-primary/10">
           {/* Background Image */}
           {featuredData.hero_image_url && (
             <div className="absolute inset-0 opacity-20">
@@ -58,22 +58,22 @@ export function FeaturedSpotlight({ className }: FeaturedSpotlightProps) {
                 <img
                   src={productPage.logo_url}
                   alt={featuredData.project.name}
-                  className="h-20 w-20 rounded-xl border-2 border-amber-500/30 object-cover shadow-lg"
+                  className="h-20 w-20 rounded-xl border-2 border-primary/30 object-cover shadow-lg"
                 />
               ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-xl border-2 border-amber-500/30 bg-amber-500/10">
-                  <Store className="h-8 w-8 text-amber-500" />
+                <div className="flex h-20 w-20 items-center justify-center rounded-xl border-2 border-primary/30 bg-primary/10">
+                  <Store className="h-8 w-8 text-primary" />
                 </div>
               )}
             </div>
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <Badge className="mb-2 gap-1 bg-amber-500 text-white hover:bg-amber-600">
+              <Badge className="mb-2 gap-1 bg-primary text-primary-foreground hover:bg-primary/90">
                 <Sparkles className="h-3 w-3" />
                 FEATURED
               </Badge>
-              <h4 className="font-display text-xl font-bold group-hover:text-amber-500 transition-colors">
+              <h4 className="font-display text-xl font-bold group-hover:text-primary transition-colors">
                 {featuredData.project.name}
               </h4>
               <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
@@ -84,7 +84,7 @@ export function FeaturedSpotlight({ className }: FeaturedSpotlightProps) {
             {/* CTA */}
             <Button 
               variant="outline" 
-              className="shrink-0 border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-500"
+              className="shrink-0 border-primary/50 text-primary hover:bg-primary/10"
             >
               View Collection
               <ArrowRight className="ml-2 h-4 w-4" />
