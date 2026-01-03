@@ -1,10 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDropzone } from 'react-dropzone';
+import { DateRange } from 'react-day-picker';
 import {
   useProjectMarketingRequest,
   useCreateMarketingRequest,
   useUploadMarketingImage,
+  useMarketingBookings,
   calculateMarketingPrice,
 } from '@/hooks/use-marketing';
 import { Button } from '@/components/ui/button';
@@ -13,13 +15,8 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Sparkles,
   Clock,
@@ -33,21 +30,14 @@ import {
   Lock,
   Loader2,
   AlertCircle,
+  CalendarIcon,
 } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow, format, differenceInDays, eachDayOfInterval, isWithinInterval, addDays, isBefore, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface MarketingTabProps {
   projectId: string;
 }
-
-const DURATION_OPTIONS = [
-  { value: 1, label: '1 day' },
-  { value: 2, label: '2 days' },
-  { value: 3, label: '3 days' },
-  { value: 4, label: '4 days' },
-  { value: 5, label: '5 days' },
-];
 
 const COMING_SOON_OPTIONS = [
   {
@@ -70,15 +60,65 @@ const COMING_SOON_OPTIONS = [
 export function MarketingTab({ projectId }: MarketingTabProps) {
   const { user } = useAuth();
   const { data: marketingRequest, isLoading } = useProjectMarketingRequest(projectId);
+  const { data: bookings = [] } = useMarketingBookings();
   const createRequest = useCreateMarketingRequest();
   const uploadImage = useUploadMarketingImage();
 
-  const [durationDays, setDurationDays] = useState(1);
+  const [selectedRange, setSelectedRange] = useState<DateRange | undefined>();
   const [message, setMessage] = useState('');
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  // Calculate duration and price from selected range
+  const durationDays = useMemo(() => {
+    if (!selectedRange?.from || !selectedRange?.to) return 0;
+    return differenceInDays(selectedRange.to, selectedRange.from) + 1;
+  }, [selectedRange]);
+
   const totalPrice = calculateMarketingPrice(durationDays);
+
+  // Categorize booked dates
+  const { bookedDates, pendingDates } = useMemo(() => {
+    const booked: Date[] = [];
+    const pending: Date[] = [];
+
+    bookings.forEach((booking) => {
+      if (!booking.start_date || !booking.end_date) return;
+      
+      const start = new Date(booking.start_date);
+      const end = new Date(booking.end_date);
+      const days = eachDayOfInterval({ start, end });
+
+      if (booking.status === 'active' || booking.status === 'approved') {
+        booked.push(...days);
+      } else if (booking.status === 'pending') {
+        pending.push(...days);
+      }
+    });
+
+    return { bookedDates: booked, pendingDates: pending };
+  }, [bookings]);
+
+  // Check if selected range overlaps with booked dates
+  const hasOverlapWithBooked = useMemo(() => {
+    if (!selectedRange?.from || !selectedRange?.to) return false;
+    const selectedDays = eachDayOfInterval({ start: selectedRange.from, end: selectedRange.to });
+    return selectedDays.some(day => 
+      bookedDates.some(bookedDay => 
+        startOfDay(day).getTime() === startOfDay(bookedDay).getTime()
+      )
+    );
+  }, [selectedRange, bookedDates]);
+
+  const hasOverlapWithPending = useMemo(() => {
+    if (!selectedRange?.from || !selectedRange?.to) return false;
+    const selectedDays = eachDayOfInterval({ start: selectedRange.from, end: selectedRange.to });
+    return selectedDays.some(day => 
+      pendingDates.some(pendingDay => 
+        startOfDay(day).getTime() === startOfDay(pendingDay).getTime()
+      )
+    );
+  }, [selectedRange, pendingDates]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -101,16 +141,25 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
   });
 
   const handleSubmit = async () => {
-    if (!user || !heroImageUrl) return;
+    if (!user || !selectedRange?.from || !selectedRange?.to) return;
+    if (durationDays > 5 || hasOverlapWithBooked) return;
 
     await createRequest.mutateAsync({
       projectId,
       userId: user.id,
       durationDays,
+      startDate: selectedRange.from.toISOString(),
+      endDate: selectedRange.to.toISOString(),
       message: message || undefined,
-      heroImageUrl,
+      heroImageUrl: heroImageUrl || undefined,
     });
   };
+
+  // Disable dates that are booked or in the past
+  const disabledDays = [
+    { before: startOfDay(new Date()) },
+    ...bookedDates.map(date => startOfDay(date)),
+  ];
 
   if (isLoading) {
     return (
@@ -148,7 +197,12 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
                     <p className="text-sm text-muted-foreground mt-1">
                       Your marketing request is being reviewed by our team. You'll be notified once approved.
                     </p>
-                    <p className="text-xs text-muted-foreground mt-2">
+                    {marketingRequest.start_date && marketingRequest.end_date && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Requested dates: {format(new Date(marketingRequest.start_date), 'MMM d')} - {format(new Date(marketingRequest.end_date), 'MMM d, yyyy')}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
                       Submitted {formatDistanceToNow(new Date(marketingRequest.created_at), { addSuffix: true })}
                     </p>
                   </div>
@@ -278,29 +332,106 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
             </div>
           </div>
 
-          {/* Duration Selector */}
+          {/* Calendar Date Selector */}
           <div className="space-y-2">
-            <Label>Duration</Label>
-            <Select
-              value={durationDays.toString()}
-              onValueChange={(v) => setDurationDays(parseInt(v))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DURATION_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value.toString()}>
-                    {opt.label} — {calculateMarketingPrice(opt.value)} ADA
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Select Dates</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !selectedRange?.from && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedRange?.from ? (
+                    selectedRange.to ? (
+                      <>
+                        {format(selectedRange.from, "MMM d")} - {format(selectedRange.to, "MMM d, yyyy")}
+                        <Badge variant="secondary" className="ml-auto">
+                          {durationDays} day{durationDays !== 1 ? 's' : ''}
+                        </Badge>
+                      </>
+                    ) : (
+                      format(selectedRange.from, "MMM d, yyyy")
+                    )
+                  ) : (
+                    "Pick your marketing dates"
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={selectedRange}
+                  onSelect={(range) => {
+                    // Enforce max 5 days
+                    if (range?.from && range?.to) {
+                      const days = differenceInDays(range.to, range.from) + 1;
+                      if (days > 5) {
+                        range.to = addDays(range.from, 4);
+                      }
+                    }
+                    setSelectedRange(range);
+                  }}
+                  disabled={disabledDays}
+                  modifiers={{
+                    booked: bookedDates,
+                    pending: pendingDates,
+                  }}
+                  modifiersStyles={{
+                    booked: { 
+                      backgroundColor: 'hsl(var(--destructive) / 0.2)',
+                      color: 'hsl(var(--destructive))',
+                      textDecoration: 'line-through',
+                    },
+                    pending: { 
+                      backgroundColor: 'hsl(var(--warning) / 0.2)',
+                      border: '1px dashed hsl(var(--warning))',
+                    },
+                  }}
+                  numberOfMonths={1}
+                  className="p-3 pointer-events-auto"
+                />
+                {/* Legend */}
+                <div className="border-t p-3 space-y-1 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded bg-destructive/20 border border-destructive/50" />
+                    <span className="text-muted-foreground">Booked (unavailable)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded border border-dashed border-amber-500 bg-amber-500/20" />
+                    <span className="text-muted-foreground">Pending request</span>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Validation messages */}
+            {durationDays > 5 && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                Maximum 5 consecutive days allowed
+              </p>
+            )}
+            {hasOverlapWithBooked && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                Selected dates overlap with an existing booking
+              </p>
+            )}
+            {hasOverlapWithPending && !hasOverlapWithBooked && (
+              <p className="text-sm text-amber-600 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                Note: Some dates have pending requests (yours may be queued)
+              </p>
+            )}
           </div>
 
-          {/* Hero Image Upload */}
+          {/* Hero Image Upload (Optional) */}
           <div className="space-y-2">
-            <Label>Hero Image (16:9 recommended)</Label>
+            <Label>Hero Image (optional, 16:9 recommended)</Label>
             <div
               {...getRootProps()}
               className={cn(
@@ -327,7 +458,10 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
                     <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
                   )}
                   <p className="text-sm text-muted-foreground">
-                    {isDragActive ? 'Drop image here' : 'Click or drag to upload 16:9 image'}
+                    {isDragActive ? 'Drop image here' : 'Upload a 16:9 image (optional)'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Without an image, the default gradient will be used
                   </p>
                 </div>
               )}
@@ -354,7 +488,7 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
             <Button
               size="lg"
               onClick={handleSubmit}
-              disabled={!heroImageUrl || createRequest.isPending}
+              disabled={!selectedRange?.from || !selectedRange?.to || durationDays > 5 || hasOverlapWithBooked || createRequest.isPending}
             >
               {createRequest.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

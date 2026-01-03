@@ -1,15 +1,19 @@
 import { Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
-import { useActiveMarketing } from '@/hooks/use-marketing';
+import { useActiveMarketing, useFeaturedPreview } from '@/hooks/use-marketing';
 import { cn } from '@/lib/utils';
 
 export function FeaturedMarquee() {
-  const { data: activeMarketing, isLoading } = useActiveMarketing();
+  const { data: activeMarketing, isLoading: loadingActive } = useActiveMarketing();
+  const { data: featuredPreview, isLoading: loadingPreview } = useFeaturedPreview();
 
-  if (isLoading || !activeMarketing) return null;
+  // Use active marketing or fallback to demo preview
+  const featuredData = activeMarketing || featuredPreview;
 
-  const projectName = activeMarketing.project.name;
-  const tagline = activeMarketing.product_page?.tagline || 'Minting Now!';
+  if (loadingActive || loadingPreview || !featuredData) return null;
+
+  const projectName = featuredData.project.name;
+  const tagline = featuredData.product_page?.tagline || 'Minting Now!';
   
   const content = (
     <>
@@ -25,7 +29,7 @@ export function FeaturedMarquee() {
   return (
     <div className="relative overflow-hidden bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600">
       <Link 
-        to={`/collection/${activeMarketing.project_id}`}
+        to={`/collection/${featuredData.project_id}`}
         className="block hover:opacity-90 transition-opacity"
       >
         <div className="flex animate-marquee whitespace-nowrap py-2">

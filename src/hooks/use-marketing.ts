@@ -31,9 +31,33 @@ export interface MarketingRequestWithProject extends MarketingRequest {
   };
 }
 
+export interface MarketingBooking {
+  id: string;
+  start_date: string | null;
+  end_date: string | null;
+  status: string;
+}
+
 const PRICE_PER_DAY = 25;
 
 export const calculateMarketingPrice = (days: number) => days * PRICE_PER_DAY;
+
+// Fetch marketing bookings for calendar availability
+export function useMarketingBookings() {
+  return useQuery({
+    queryKey: ['marketing-bookings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('marketing_requests')
+        .select('id, start_date, end_date, status')
+        .in('status', ['pending', 'approved', 'active'])
+        .gte('end_date', new Date().toISOString());
+
+      if (error) throw error;
+      return (data || []) as MarketingBooking[];
+    },
+  });
+}
 
 // Fetch marketing request for a specific project
 export function useProjectMarketingRequest(projectId: string) {
@@ -85,6 +109,42 @@ export function useActiveMarketing() {
         ...request,
         product_page: productPage,
       } as MarketingRequestWithProject;
+    },
+  });
+}
+
+// Fetch demo featured collection (first live collection for preview)
+export function useFeaturedPreview() {
+  return useQuery({
+    queryKey: ['featured-preview'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_pages')
+        .select(`
+          project_id,
+          logo_url,
+          banner_url,
+          tagline,
+          project:projects!inner(id, name)
+        `)
+        .eq('is_live', true)
+        .eq('is_hidden', false)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return null;
+
+      return {
+        project_id: data.project_id,
+        project: data.project,
+        product_page: {
+          logo_url: data.logo_url,
+          banner_url: data.banner_url,
+          tagline: data.tagline,
+        },
+        hero_image_url: '/images/demo-hero.png',
+      };
     },
   });
 }
@@ -163,12 +223,16 @@ export function useCreateMarketingRequest() {
       projectId,
       userId,
       durationDays,
+      startDate,
+      endDate,
       message,
       heroImageUrl,
     }: {
       projectId: string;
       userId: string;
       durationDays: number;
+      startDate: string;
+      endDate: string;
       message?: string;
       heroImageUrl?: string;
     }) => {
@@ -181,6 +245,8 @@ export function useCreateMarketingRequest() {
           user_id: userId,
           duration_days: durationDays,
           price_ada: priceAda,
+          start_date: startDate,
+          end_date: endDate,
           message: message || null,
           hero_image_url: heroImageUrl || null,
         })
@@ -193,6 +259,7 @@ export function useCreateMarketingRequest() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['marketing-request', variables.projectId] });
       queryClient.invalidateQueries({ queryKey: ['pending-marketing-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
       toast.success('Marketing request submitted!');
     },
     onError: (error: Error) => {
@@ -232,27 +299,30 @@ export function useApproveMarketingRequest() {
 
   return useMutation({
     mutationFn: async ({ requestId }: { requestId: string }) => {
-      const now = new Date();
-      
-      // Get the request first to calculate end date
+      // Get the request first
       const { data: request, error: fetchError } = await supabase
         .from('marketing_requests')
-        .select('duration_days, project_id')
+        .select('duration_days, project_id, start_date, end_date')
         .eq('id', requestId)
         .single();
 
       if (fetchError) throw fetchError;
 
-      const endDate = new Date(now);
-      endDate.setDate(endDate.getDate() + request.duration_days);
+      // Use the dates set by the user, or default to now if not set
+      const startDate = request.start_date || new Date().toISOString();
+      const endDate = request.end_date || (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + request.duration_days);
+        return d.toISOString();
+      })();
 
       // Update the request to active
       const { error: updateError } = await supabase
         .from('marketing_requests')
         .update({
           status: 'active',
-          start_date: now.toISOString(),
-          end_date: endDate.toISOString(),
+          start_date: startDate,
+          end_date: endDate,
         })
         .eq('id', requestId);
 
@@ -263,7 +333,7 @@ export function useApproveMarketingRequest() {
         .from('product_pages')
         .update({
           is_featured: true,
-          featured_until: endDate.toISOString(),
+          featured_until: endDate,
         })
         .eq('project_id', request.project_id);
 
@@ -275,6 +345,7 @@ export function useApproveMarketingRequest() {
       queryClient.invalidateQueries({ queryKey: ['pending-marketing-requests'] });
       queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
       queryClient.invalidateQueries({ queryKey: ['active-marketing'] });
+      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
       toast.success('Marketing request approved!');
     },
     onError: (error: Error) => {
@@ -302,6 +373,7 @@ export function useRejectMarketingRequest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-marketing-requests'] });
       queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
       toast.success('Marketing request rejected');
     },
     onError: (error: Error) => {
@@ -341,6 +413,7 @@ export function useEndMarketingEarly() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
       queryClient.invalidateQueries({ queryKey: ['active-marketing'] });
+      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
       toast.success('Marketing ended');
     },
     onError: (error: Error) => {
