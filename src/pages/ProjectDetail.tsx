@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -26,10 +28,13 @@ import {
   Clock,
   GraduationCap,
   Eye,
+  List,
+  GitBranch,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { LayerUploadZone } from '@/components/project/LayerUploadZone';
 import { CategoryList } from '@/components/project/CategoryList';
+import { LayerNodeEditor } from '@/components/project/LayerNodeEditor';
 import { GenerationPanel } from '@/components/project/GenerationPanel';
 import { GenerationHistory } from '@/components/project/GenerationHistory';
 import { PublishPanel } from '@/components/project/PublishPanel';
@@ -54,6 +59,11 @@ export default function ProjectDetail() {
   const [activeTab, setActiveTab] = useState('layers');
   const [deepLinkGenerationId, setDeepLinkGenerationId] = useState<string | null>(null);
   const [deepLinkModalOpen, setDeepLinkModalOpen] = useState(false);
+  const [useNodeView, setUseNodeView] = useState(() => {
+    // Load preference from localStorage
+    const saved = localStorage.getItem('layerforge-layer-view-mode');
+    return saved === 'node';
+  });
 
   const { data: project, isLoading: projectLoading } = useProject(id!);
   const { data: categories } = useCategories(id!);
@@ -258,34 +268,59 @@ export default function ProjectDetail() {
               </TabsList>
             </div>
 
-            {activeTab === 'layers' && canEdit && !isReadOnly && (
-              <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Layers
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle className="font-display">Upload Layers</DialogTitle>
-                    <DialogDescription>
-                      Upload PNG files with the correct naming format
-                    </DialogDescription>
-                  </DialogHeader>
-                  <LayerUploadZone
-                    projectId={id!}
-                    onComplete={() => setUploadDialogOpen(false)}
+            <div className="flex items-center gap-4">
+              {/* View Toggle for Layers tab */}
+              {activeTab === 'layers' && (
+                <div className="flex items-center gap-2">
+                  <List className={`h-4 w-4 ${!useNodeView ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <Switch
+                    id="view-mode"
+                    checked={useNodeView}
+                    onCheckedChange={(checked) => {
+                      setUseNodeView(checked);
+                      localStorage.setItem('layerforge-layer-view-mode', checked ? 'node' : 'list');
+                    }}
                   />
-                </DialogContent>
-              </Dialog>
-            )}
+                  <GitBranch className={`h-4 w-4 ${useNodeView ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <Label htmlFor="view-mode" className="text-sm text-muted-foreground hidden sm:inline">
+                    {useNodeView ? 'Visual' : 'List'}
+                  </Label>
+                </div>
+              )}
+
+              {activeTab === 'layers' && canEdit && !isReadOnly && (
+                <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Layers
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle className="font-display">Upload Layers</DialogTitle>
+                      <DialogDescription>
+                        Upload PNG files with the correct naming format
+                      </DialogDescription>
+                    </DialogHeader>
+                    <LayerUploadZone
+                      projectId={id!}
+                      onComplete={() => setUploadDialogOpen(false)}
+                    />
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
           </div>
 
           <TabsContent value="layers">
             <ErrorBoundary>
               <div data-tutorial="category-card">
-                <CategoryList projectId={id!} />
+                {useNodeView ? (
+                  <LayerNodeEditor projectId={id!} />
+                ) : (
+                  <CategoryList projectId={id!} />
+                )}
               </div>
             </ErrorBoundary>
           </TabsContent>
