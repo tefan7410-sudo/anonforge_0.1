@@ -5,11 +5,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Credit tiers configuration
+// Credit tiers configuration - must match src/lib/credit-constants.ts
 const CREDIT_TIERS = {
-  starter: { credits: 200, priceAda: 17 },
-  standard: { credits: 500, priceAda: 38 },
-  premium: { credits: 1200, priceAda: 85 },
+  starter: { credits: 1000, priceAda: 17 },
+  popular: { credits: 2500, priceAda: 33 },
+  pro: { credits: 5000, priceAda: 53 },
 };
 
 Deno.serve(async (req) => {
