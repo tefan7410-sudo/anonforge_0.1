@@ -443,6 +443,7 @@ export type Database = {
       marketing_requests: {
         Row: {
           admin_notes: string | null
+          approved_at: string | null
           created_at: string | null
           duration_days: number | null
           end_date: string | null
@@ -459,6 +460,7 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          approved_at?: string | null
           created_at?: string | null
           duration_days?: number | null
           end_date?: string | null
@@ -475,6 +477,7 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          approved_at?: string | null
           created_at?: string | null
           duration_days?: number | null
           end_date?: string | null
