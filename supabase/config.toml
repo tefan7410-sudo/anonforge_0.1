@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.create-marketing-payment-intent]
 verify_jwt = false
+
+[functions.marketing-scheduler]
+verify_jwt = false
