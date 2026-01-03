@@ -130,15 +130,15 @@ export function useCompletedCreditPurchases() {
   return useQuery({
     queryKey: ["completed-credit-purchases"],
     queryFn: async () => {
-      // First get purchases
+      // Get completed payments from pending_credit_payments table
       const { data: purchases, error: purchasesError } = await supabase
-        .from("credit_purchases")
+        .from("pending_credit_payments")
         .select("*")
         .eq("status", "completed")
         .order("completed_at", { ascending: false });
 
       if (purchasesError) throw purchasesError;
-      if (!purchases.length) return [] as CreditPurchase[];
+      if (!purchases || !purchases.length) return [] as CreditPurchase[];
 
       // Get unique user IDs
       const userIds = [...new Set(purchases.map((p) => p.user_id))];
@@ -155,7 +155,13 @@ export function useCompletedCreditPurchases() {
       const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
 
       return purchases.map((p) => ({
-        ...p,
+        id: p.id,
+        user_id: p.user_id,
+        credits_amount: p.credits_amount,
+        price_ada: Number(p.price_ada),
+        status: p.status,
+        completed_at: p.completed_at,
+        created_at: p.created_at,
         user_email: profileMap.get(p.user_id)?.email,
         user_display_name: profileMap.get(p.user_id)?.display_name,
       })) as CreditPurchase[];

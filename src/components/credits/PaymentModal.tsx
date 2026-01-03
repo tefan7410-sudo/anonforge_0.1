@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Copy, Check, ExternalLink, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Copy, Check, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { PaymentIntent, usePaymentStatus, useCancelPayment } from '@/hooks/use-payment-intent';
 import { CountdownTimer } from '@/components/CountdownTimer';
@@ -46,13 +46,6 @@ export function PaymentModal({ open, onOpenChange, paymentIntent }: PaymentModal
     } catch {
       toast.error('Failed to copy');
     }
-  };
-
-  const openInWallet = () => {
-    if (!paymentIntent) return;
-    // web+cardano URI scheme for compatible wallets
-    const uri = `web+cardano:${paymentIntent.address}?amount=${paymentIntent.amountLovelace}`;
-    window.open(uri, '_blank');
   };
 
   const handleCancel = async () => {
@@ -170,20 +163,15 @@ export function PaymentModal({ open, onOpenChange, paymentIntent }: PaymentModal
               </div>
             </div>
 
-            {/* Wallet button */}
-            <Button 
-              variant="outline" 
-              className="w-full gap-2"
-              onClick={openInWallet}
-            >
-              <ExternalLink className="h-4 w-4" />
-              Open in Wallet
-            </Button>
-
-            {/* Status indicator */}
-            <div className="flex items-center justify-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <span className="text-sm text-primary">Waiting for payment...</span>
+            {/* Status indicator with warning */}
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span className="text-sm text-primary">Waiting for payment...</span>
+              </div>
+              <p className="text-xs text-center text-muted-foreground">
+                Do not close this window. Transaction confirmation can take 1-2 minutes.
+              </p>
             </div>
 
             {/* Cancel button */}
