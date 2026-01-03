@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDropzone } from 'react-dropzone';
 import { DateRange } from 'react-day-picker';
@@ -8,6 +8,7 @@ import {
   useUploadMarketingImage,
   useMarketingBookings,
   useCreateMarketingPaymentIntent,
+  useExistingMarketingPayment,
   calculateMarketingPrice,
   type MarketingPaymentIntent,
 } from '@/hooks/use-marketing';
@@ -78,6 +79,29 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
   const [uploading, setUploading] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentIntent, setPaymentIntent] = useState<MarketingPaymentIntent | null>(null);
+
+  // Check for existing pending payment (session persistence)
+  const { data: existingPayment } = useExistingMarketingPayment(
+    marketingRequest?.status === 'approved' ? marketingRequest.id : null
+  );
+
+  // Auto-resume existing payment session by calling the edge function
+  // (which will return the existing payment with full details including address)
+  useEffect(() => {
+    const resumePayment = async () => {
+      if (existingPayment && marketingRequest?.status === 'approved' && !paymentIntent) {
+        try {
+          // Call the edge function which will return the existing payment details
+          const intent = await createPaymentIntent.mutateAsync(marketingRequest.id);
+          setPaymentIntent(intent);
+          setPaymentModalOpen(true);
+        } catch {
+          // Error handled by hook
+        }
+      }
+    };
+    resumePayment();
+  }, [existingPayment, marketingRequest?.status, marketingRequest?.id]);
 
   // Payment deadline for approved requests (24h from approval)
   const paymentDeadline = useMemo(() => {
