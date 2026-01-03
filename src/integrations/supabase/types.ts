@@ -1012,6 +1012,7 @@ export type Database = {
           description: string | null
           id: string
           is_public: boolean
+          is_tutorial_template: boolean | null
           last_modified: string
           name: string
           owner_id: string
@@ -1025,6 +1026,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
+          is_tutorial_template?: boolean | null
           last_modified?: string
           name: string
           owner_id: string
@@ -1038,6 +1040,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
+          is_tutorial_template?: boolean | null
           last_modified?: string
           name?: string
           owner_id?: string
@@ -1086,6 +1089,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tutorial_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          current_step: number | null
+          id: string
+          skipped_at: string | null
+          tutorial_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_step?: number | null
+          id?: string
+          skipped_at?: string | null
+          tutorial_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_step?: number | null
+          id?: string
+          skipped_at?: string | null
+          tutorial_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_credits: {
         Row: {

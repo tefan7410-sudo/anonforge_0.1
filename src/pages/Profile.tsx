@@ -26,11 +26,69 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Layers, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, BadgeCheck, Clock, X, Twitter, Coins, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Layers, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, BadgeCheck, Clock, X, Twitter, Coins, TrendingUp, GraduationCap, RotateCcw } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { PageTransition } from '@/components/PageTransition';
+import { useTutorial } from '@/contexts/TutorialContext';
+
+function TutorialSection() {
+  const { isActive, isCompleted, restartTutorial, loading } = useTutorial();
+  const { toast } = useToast();
+  const [isRestarting, setIsRestarting] = useState(false);
+
+  const handleRestart = async () => {
+    setIsRestarting(true);
+    try {
+      await restartTutorial();
+      toast({ title: 'Tutorial restarted', description: 'Head to your dashboard to begin' });
+    } catch (error: any) {
+      toast({ title: 'Failed to restart', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsRestarting(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 font-display">
+          <GraduationCap className="h-5 w-5" />
+          Tutorial
+        </CardTitle>
+        <CardDescription>Learn how to use AnonForge</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-medium">
+              {isActive ? 'Tutorial in Progress' : isCompleted ? 'Tutorial Completed' : 'Interactive Tutorial'}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {isActive 
+                ? 'Continue from where you left off' 
+                : 'Take a guided tour of the platform features'
+              }
+            </p>
+          </div>
+          <Button 
+            variant={isActive ? 'default' : 'outline'} 
+            onClick={handleRestart}
+            disabled={loading || isRestarting}
+          >
+            {isRestarting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RotateCcw className="mr-2 h-4 w-4" />
+            )}
+            {isActive ? 'Restart Tutorial' : 'Start Tutorial'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -512,6 +570,9 @@ export default function Profile() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Tutorial */}
+          <TutorialSection />
 
           {/* Danger Zone */}
           <Card className="border-destructive/50">
