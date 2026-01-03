@@ -72,18 +72,22 @@ export default function Credits() {
 
   const getTransactionTypeLabel = (type: string) => {
     switch (type) {
-      case 'usage': return 'Generation';
       case 'purchase': return 'Purchase';
       case 'monthly_reset': return 'Monthly Reset';
+      case 'admin_add': return 'Admin Credit';
+      case 'admin_remove': return 'Admin Adjustment';
+      case 'credits_depleted': return 'Credits Depleted';
       default: return type;
     }
   };
 
   const getTransactionTypeColor = (type: string) => {
     switch (type) {
-      case 'usage': return 'text-orange-500';
       case 'purchase': return 'text-green-500';
       case 'monthly_reset': return 'text-blue-500';
+      case 'admin_add': return 'text-green-500';
+      case 'admin_remove': return 'text-orange-500';
+      case 'credits_depleted': return 'text-red-500';
       default: return 'text-muted-foreground';
     }
   };
