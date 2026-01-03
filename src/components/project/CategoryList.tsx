@@ -38,6 +38,7 @@ import {
   Ban,
   Layers,
   Sparkles,
+  ArrowUpDown,
 } from 'lucide-react';
 import {
   useCategories,
@@ -50,12 +51,14 @@ import {
   useReorderCategories,
   useLayerExclusions,
   useLayerEffects,
+  useLayerSwitches,
   useMarkAsEffectLayer,
   type Category,
   type Layer,
 } from '@/hooks/use-project';
 import { LayerExclusionsModal } from './LayerExclusionsModal';
 import { LayerEffectsModal } from './LayerEffectsModal';
+import { LayerSwitchModal } from './LayerSwitchModal';
 
 interface CategoryListProps {
   projectId: string;
@@ -81,12 +84,15 @@ function LayerItem({
   const [displayName, setDisplayName] = useState(layer.display_name);
   const [showExclusionsModal, setShowExclusionsModal] = useState(false);
   const [showEffectsModal, setShowEffectsModal] = useState(false);
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
 
   const { data: exclusions } = useLayerExclusions(layer.id);
   const { data: effects } = useLayerEffects(layer.id);
+  const { data: switches } = useLayerSwitches(layer.id);
 
   const exclusionCount = exclusions?.length ? Math.floor(exclusions.length / 2) : 0; // Bidirectional, so divide by 2
   const effectCount = effects?.length || 0;
+  const switchCount = switches?.length || 0;
 
   const percentage = totalWeight > 0 ? ((weight / totalWeight) * 100).toFixed(1) : '0';
   const isZeroWeight = weight === 0;
@@ -234,6 +240,27 @@ function LayerItem({
                 {effectCount > 0 ? `${effectCount} effect layer${effectCount !== 1 ? 's' : ''}` : 'Link effect layers'}
               </TooltipContent>
             </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-7 w-7 ${switchCount > 0 ? 'text-amber-500' : 'opacity-0 group-hover:opacity-100'}`}
+                  onClick={() => setShowSwitchModal(true)}
+                >
+                  <ArrowUpDown className="h-3.5 w-3.5" />
+                  {switchCount > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500 text-[9px] text-white">
+                      {switchCount}
+                    </span>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {switchCount > 0 ? `${switchCount} layer switch${switchCount !== 1 ? 'es' : ''}` : 'Set layer switches'}
+              </TooltipContent>
+            </Tooltip>
           </div>
         )}
 
@@ -339,6 +366,12 @@ function LayerItem({
       <LayerEffectsModal
         open={showEffectsModal}
         onOpenChange={setShowEffectsModal}
+        layer={layer}
+        projectId={projectId}
+      />
+      <LayerSwitchModal
+        open={showSwitchModal}
+        onOpenChange={setShowSwitchModal}
         layer={layer}
         projectId={projectId}
       />

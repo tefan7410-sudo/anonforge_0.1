@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useCategories, useAllLayers, useAllExclusions, useAllEffects, type Project, type Layer, type Category } from '@/hooks/use-project';
+import { useCategories, useAllLayers, useAllExclusions, useAllEffects, useAllSwitches, type Project, type Layer, type Category } from '@/hooks/use-project';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -77,6 +77,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const { data: generations } = useGenerations(projectId);
   const { data: exclusions } = useAllExclusions(projectId);
   const { data: effects } = useAllEffects(projectId);
+  const { data: switches } = useAllSwitches(projectId);
   const { toast } = useToast();
   const createGeneration = useCreateGeneration();
   const cleanupGenerations = useCleanupGenerations();
@@ -145,6 +146,16 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     });
     return map;
   }, [effects]);
+
+  // Build switch map: layer_id -> partner layer_id (for order swapping)
+  const switchMap = useMemo(() => {
+    const map = new Map<string, string>();
+    switches?.forEach((s) => {
+      map.set(s.layer_a_id, s.layer_b_id);
+      map.set(s.layer_b_id, s.layer_a_id);
+    });
+    return map;
+  }, [switches]);
 
   // Group layers by category (excluding effect layers)
   const layersByCategory = new Map<string, Layer[]>();
@@ -388,7 +399,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     await Promise.all(allPaths.map(path => loadImageWithCache(path)));
   };
 
-  // Compose layers onto canvas (including effect layers)
+  // Compose layers onto canvas (including effect layers and layer switches)
   const composeLayers = async (
     layers: { category: Category; layer: Layer }[],
     fullResolution: boolean = false
@@ -411,17 +422,42 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Build render list with effect layers
+    // Check for active layer switches - find pairs that are both selected
+    const selectedLayerIds = new Set(layers.map(({ layer }) => layer.id));
+    const activeSwaps = new Map<string, number>(); // layer_id -> swapped order
+    
+    // Build a map of layer_id to its original index
+    const layerOrderMap = new Map<string, number>();
+    layers.forEach(({ layer }, index) => {
+      layerOrderMap.set(layer.id, index);
+    });
+
+    // Find active switch pairs and calculate swapped orders
+    for (const { layer } of layers) {
+      const partnerId = switchMap.get(layer.id);
+      if (partnerId && selectedLayerIds.has(partnerId) && !activeSwaps.has(layer.id)) {
+        // Both layers in a switch pair are selected - swap their orders
+        const orderA = layerOrderMap.get(layer.id)!;
+        const orderB = layerOrderMap.get(partnerId)!;
+        activeSwaps.set(layer.id, orderB);
+        activeSwaps.set(partnerId, orderA);
+      }
+    }
+
+    // Build render list with effect layers and potentially swapped orders
     const renderList: { layer: Layer; order: number }[] = [];
     
     layers.forEach(({ layer }, index) => {
-      // Add the main layer
-      renderList.push({ layer, order: index * 10 }); // Base order
+      // Use swapped order if this layer is part of an active switch, otherwise use original
+      const baseOrder = activeSwaps.has(layer.id) ? activeSwaps.get(layer.id)! * 10 : index * 10;
 
-      // Add any effect layers for this layer
+      // Add the main layer
+      renderList.push({ layer, order: baseOrder });
+
+      // Add any effect layers for this layer (they follow their parent's order)
       const layerEffects = effectMap.get(layer.id) || [];
       layerEffects.forEach(({ layer: effectLayer, renderOrder }) => {
-        renderList.push({ layer: effectLayer, order: index * 10 + renderOrder });
+        renderList.push({ layer: effectLayer, order: baseOrder + renderOrder });
       });
     });
 
