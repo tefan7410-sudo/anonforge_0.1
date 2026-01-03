@@ -8,6 +8,7 @@ import {
   useToggleFavorite,
   useDeleteGeneration,
   useClearAllGenerations,
+  useAutoCleanupOldGenerations,
   getGenerationFileUrl,
   type Generation,
 } from '@/hooks/use-generations';
@@ -27,6 +28,7 @@ import {
   Loader2,
   MessageSquare,
   AtSign,
+  Info,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -53,6 +55,9 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
   const deleteGeneration = useDeleteGeneration();
   const clearAllGenerations = useClearAllGenerations();
   const { toast } = useToast();
+
+  // Auto-cleanup old generations on mount
+  useAutoCleanupOldGenerations(projectId);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedGeneration, setSelectedGeneration] = useState<Generation | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -156,6 +161,15 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
 
   return (
     <div className="space-y-8">
+      {/* Retention Notice */}
+      <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/30 p-3 text-sm text-muted-foreground">
+        <Info className="mt-0.5 h-4 w-4 shrink-0" />
+        <p>
+          Generations are automatically deleted after 15 days. 
+          <span className="font-medium text-foreground"> Favorite items are kept indefinitely.</span>
+        </p>
+      </div>
+
       {/* Clear All Button */}
       <div className="flex justify-end">
         <AlertDialog>
