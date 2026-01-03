@@ -7,6 +7,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Layers, ExternalLink, Sparkles } from 'lucide-react';
 
 const STORAGE_KEY = 'anonforge-welcome-seen';
@@ -33,6 +35,7 @@ function generateParticles(): Particle[] {
 
 export function WelcomeModal() {
   const [open, setOpen] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
   const particles = useMemo(() => generateParticles(), []);
 
   useEffect(() => {
@@ -43,6 +46,13 @@ export function WelcomeModal() {
   }, []);
 
   const handleClose = () => {
+    if (dontShowAgain) {
+      localStorage.setItem(STORAGE_KEY, 'true');
+    }
+    setOpen(false);
+  };
+
+  const handleExplore = () => {
     localStorage.setItem(STORAGE_KEY, 'true');
     setOpen(false);
   };
@@ -117,9 +127,21 @@ export function WelcomeModal() {
               </a>
             </Button>
           </div>
+
+          {/* Don't show again */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="dont-show-welcome"
+              checked={dontShowAgain}
+              onCheckedChange={(checked) => setDontShowAgain(checked === true)}
+            />
+            <Label htmlFor="dont-show-welcome" className="text-sm text-muted-foreground cursor-pointer">
+              Don't show this again
+            </Label>
+          </div>
         </div>
 
-        <Button onClick={handleClose} className="w-full relative z-10">
+        <Button onClick={handleExplore} className="w-full relative z-10">
           Let's Explore!
         </Button>
       </DialogContent>

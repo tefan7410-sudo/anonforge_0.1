@@ -53,6 +53,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 import { GENERATION_CONFIG, calculateBase64Size, formatFileSize } from '@/lib/generation-constants';
 import { useCreditBalance, useDeductCredits, useHasEnoughCredits } from '@/hooks/use-credits';
 import { CREDIT_COSTS, calculateCreditsNeeded, formatCredits } from '@/lib/credit-constants';
@@ -96,6 +97,16 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const [lastBatchZipPath, setLastBatchZipPath] = useState<string | null>(null);
   const [lastImageSize, setLastImageSize] = useState<number | null>(null);
   const [batchTotalSize, setBatchTotalSize] = useState<number>(0);
+  
+  // "Don't show again" preferences
+  const [warningDismissed, setWarningDismissed] = useState(() => 
+    localStorage.getItem('anonforge-generation-warning-dismissed') === 'true'
+  );
+  const [fullResWarningDismissed, setFullResWarningDismissed] = useState(() => 
+    localStorage.getItem('anonforge-fullres-warning-dismissed') === 'true'
+  );
+  const [dontShowWarningAgain, setDontShowWarningAgain] = useState(false);
+  const [dontShowFullResAgain, setDontShowFullResAgain] = useState(false);
   
   // Metadata settings
   const [generateMetadata, setGenerateMetadata] = useState(true);
@@ -518,14 +529,16 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
     }
 
     // Check for full resolution warning first (higher priority)
-    if (isFullResolution) {
+    // Skip if dismissed, unless batch > 100 (always warn for large batches)
+    if (isFullResolution && (!fullResWarningDismissed || batchSize > 100)) {
       setShowFullResWarning(true);
       return;
     }
 
     // Analyze conditions and show warning if needed
+    // Skip if dismissed, unless batch > 100 (always warn for very large batches)
     const warnings = analyzeGenerationConditions();
-    if (warnings.length > 0) {
+    if (warnings.length > 0 && (!warningDismissed || batchSize > 100)) {
       setGenerationWarnings(warnings);
       setShowWarningDialog(true);
       return;
@@ -537,16 +550,34 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
 
   // Handle full resolution confirmation
   const handleFullResConfirm = () => {
+    // Save preference if checkbox was checked
+    if (dontShowFullResAgain) {
+      localStorage.setItem('anonforge-fullres-warning-dismissed', 'true');
+      setFullResWarningDismissed(true);
+    }
     setShowFullResWarning(false);
+    setDontShowFullResAgain(false);
     
     // Check for other warnings after full res confirmation
     const warnings = analyzeGenerationConditions();
-    if (warnings.length > 0) {
+    if (warnings.length > 0 && (!warningDismissed || batchSize > 100)) {
       setGenerationWarnings(warnings);
       setShowWarningDialog(true);
       return;
     }
     
+    handleGeneratePreview();
+  };
+
+  // Handle rarity warning confirmation
+  const handleWarningConfirm = () => {
+    // Save preference if checkbox was checked
+    if (dontShowWarningAgain) {
+      localStorage.setItem('anonforge-generation-warning-dismissed', 'true');
+      setWarningDismissed(true);
+    }
+    setShowWarningDialog(false);
+    setDontShowWarningAgain(false);
     handleGeneratePreview();
   };
 
@@ -1005,12 +1036,26 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
                   <p className="text-sm">
                     Results may not reflect the ideal weight distribution. Do you want to continue?
                   </p>
+                  
+                  {/* Don't show again checkbox */}
+                  {batchSize <= 100 && (
+                    <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                      <Checkbox
+                        id="dont-show-warning"
+                        checked={dontShowWarningAgain}
+                        onCheckedChange={(checked) => setDontShowWarningAgain(checked === true)}
+                      />
+                      <Label htmlFor="dont-show-warning" className="text-sm text-muted-foreground cursor-pointer">
+                        Don't show this warning again
+                      </Label>
+                    </div>
+                  )}
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleGeneratePreview}>
+              <AlertDialogCancel onClick={() => setDontShowWarningAgain(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleWarningConfirm}>
                 Generate Anyway
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -1060,11 +1105,25 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
                   <p className="text-sm font-medium text-amber-600">
                     This process is resource-intensive and may take a while to complete.
                   </p>
+                  
+                  {/* Don't show again checkbox */}
+                  {batchSize <= 100 && (
+                    <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                      <Checkbox
+                        id="dont-show-fullres"
+                        checked={dontShowFullResAgain}
+                        onCheckedChange={(checked) => setDontShowFullResAgain(checked === true)}
+                      />
+                      <Label htmlFor="dont-show-fullres" className="text-sm text-muted-foreground cursor-pointer">
+                        Don't show this warning again
+                      </Label>
+                    </div>
+                  )}
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setDontShowFullResAgain(false)}>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleFullResConfirm} disabled={!hasEnoughCredits}>
                 Generate Full Resolution
               </AlertDialogAction>
