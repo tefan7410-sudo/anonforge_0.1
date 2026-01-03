@@ -161,23 +161,22 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
 
   return (
     <div className="space-y-8">
-      {/* Retention Notice */}
-      <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/30 p-3 text-sm text-muted-foreground">
-        <Info className="mt-0.5 h-4 w-4 shrink-0" />
-        <p>
-          Generations are automatically deleted after 15 days. 
-          <span className="font-medium text-foreground"> Favorite items are kept indefinitely.</span>
-        </p>
-      </div>
-
-      {/* Clear All Button */}
-      <div className="flex justify-end">
+      {/* Retention Notice + Clear All Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-border/50 bg-muted/30 p-3">
+        <div className="flex items-start gap-3 text-sm text-muted-foreground">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            Generations are automatically deleted after 15 days. 
+            <span className="font-medium text-foreground"> Favorite items are kept indefinitely.</span>
+          </p>
+        </div>
+        
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant="outline"
               size="sm"
-              className="text-destructive hover:text-destructive"
+              className="text-destructive hover:text-destructive shrink-0"
               disabled={clearAllGenerations.isPending}
             >
               {clearAllGenerations.isPending ? (
