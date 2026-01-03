@@ -440,6 +440,65 @@ export type Database = {
           },
         ]
       }
+      marketing_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          duration_days: number | null
+          end_date: string | null
+          hero_image_url: string | null
+          id: string
+          message: string | null
+          payment_status: string | null
+          price_ada: number
+          project_id: string
+          start_date: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          duration_days?: number | null
+          end_date?: string | null
+          hero_image_url?: string | null
+          id?: string
+          message?: string | null
+          payment_status?: string | null
+          price_ada: number
+          project_id: string
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          duration_days?: number | null
+          end_date?: string | null
+          hero_image_url?: string | null
+          id?: string
+          message?: string | null
+          payment_status?: string | null
+          price_ada?: number
+          project_id?: string
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nmkr_projects: {
         Row: {
           created_at: string
@@ -675,12 +734,14 @@ export type Database = {
           buy_button_text: string | null
           created_at: string
           discord_url: string | null
+          featured_until: string | null
           founder_bio: string | null
           founder_name: string | null
           founder_pfp_url: string | null
           founder_twitter: string | null
           founder_verified: boolean | null
           id: string
+          is_featured: boolean | null
           is_hidden: boolean | null
           is_live: boolean | null
           logo_url: string | null
@@ -703,12 +764,14 @@ export type Database = {
           buy_button_text?: string | null
           created_at?: string
           discord_url?: string | null
+          featured_until?: string | null
           founder_bio?: string | null
           founder_name?: string | null
           founder_pfp_url?: string | null
           founder_twitter?: string | null
           founder_verified?: boolean | null
           id?: string
+          is_featured?: boolean | null
           is_hidden?: boolean | null
           is_live?: boolean | null
           logo_url?: string | null
@@ -731,12 +794,14 @@ export type Database = {
           buy_button_text?: string | null
           created_at?: string
           discord_url?: string | null
+          featured_until?: string | null
           founder_bio?: string | null
           founder_name?: string | null
           founder_pfp_url?: string | null
           founder_twitter?: string | null
           founder_verified?: boolean | null
           id?: string
+          is_featured?: boolean | null
           is_hidden?: boolean | null
           is_live?: boolean | null
           logo_url?: string | null

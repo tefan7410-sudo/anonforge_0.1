@@ -32,6 +32,7 @@ import { GenerationPanel } from '@/components/project/GenerationPanel';
 import { GenerationHistory } from '@/components/project/GenerationHistory';
 import { PublishPanel } from '@/components/project/PublishPanel';
 import { ProductPageTab } from '@/components/project/ProductPageTab';
+import { MarketingTab } from '@/components/project/MarketingTab';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
@@ -201,6 +202,7 @@ export default function ProjectDetail() {
                 <TabsTrigger value="generate">Generate</TabsTrigger>
                 <TabsTrigger value="history">History</TabsTrigger>
                 <TabsTrigger value="product" className="whitespace-nowrap">Product Page</TabsTrigger>
+                <TabsTrigger value="marketing">Marketing</TabsTrigger>
                 <TabsTrigger value="publish">Publish</TabsTrigger>
               </TabsList>
             </div>
@@ -250,6 +252,12 @@ export default function ProjectDetail() {
           <TabsContent value="product">
             <ErrorBoundary>
               <ProductPageTab projectId={id!} projectName={project.name} />
+            </ErrorBoundary>
+          </TabsContent>
+
+          <TabsContent value="marketing">
+            <ErrorBoundary>
+              <MarketingTab projectId={id!} />
             </ErrorBoundary>
           </TabsContent>
 
