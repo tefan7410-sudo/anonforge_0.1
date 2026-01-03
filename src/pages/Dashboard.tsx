@@ -17,6 +17,7 @@ import { NotificationDropdown } from '@/components/NotificationDropdown';
 import { useCreditBalance } from '@/hooks/use-credits';
 import { formatCredits } from '@/lib/credit-constants';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
+import { NewAccountWelcomeModal } from '@/components/NewAccountWelcomeModal';
 
 interface Project {
   id: string;
@@ -359,6 +360,7 @@ export default function Dashboard() {
       </main>
 
       <FloatingHelpButton />
+      <NewAccountWelcomeModal />
     </div>
   );
 }
