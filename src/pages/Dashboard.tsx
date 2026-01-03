@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X, Coins, AlertTriangle } from 'lucide-react';
+import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X, Coins, AlertTriangle, GraduationCap, Sparkles } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
@@ -19,6 +19,8 @@ import { formatCredits } from '@/lib/credit-constants';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { NewAccountWelcomeModal } from '@/components/NewAccountWelcomeModal';
 import { PageTransition } from '@/components/PageTransition';
+import { useTutorial } from '@/contexts/TutorialContext';
+import { useTutorialProject, TUTORIAL_PROJECT_ID } from '@/hooks/use-tutorial';
 
 interface Project {
   id: string;
@@ -29,6 +31,7 @@ interface Project {
   created_at: string;
   owner_id: string;
   deletion_warning_sent_at: string | null;
+  is_tutorial_template?: boolean;
 }
 
 interface Invitation {
@@ -53,6 +56,8 @@ export default function Dashboard() {
   const acceptInvitation = useAcceptInvitation();
   const declineInvitation = useDeclineInvitation();
   const { totalCredits, isLowCredits } = useCreditBalance();
+  const { isActive: isTutorialActive, currentStep } = useTutorial();
+  const { project: tutorialProject } = useTutorialProject();
 
   useEffect(() => {
     if (user) {
@@ -104,7 +109,9 @@ export default function Dashboard() {
         setInvitations((invites as Invitation[]) || []);
       }
 
-      setOwnedProjects(owned || []);
+      // Filter out tutorial template from owned projects
+      const filteredOwned = (owned || []).filter(p => !p.is_tutorial_template);
+      setOwnedProjects(filteredOwned);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       toast({
@@ -117,7 +124,7 @@ export default function Dashboard() {
     }
   };
 
-  const ProjectCard = ({ project, isOwner = true }: { project: Project; isOwner?: boolean }) => {
+  const ProjectCard = ({ project, isOwner = true, isTutorial = false }: { project: Project; isOwner?: boolean; isTutorial?: boolean }) => {
     // Calculate days until deletion if warning was sent
     const getDaysUntilDeletion = () => {
       if (!project.deletion_warning_sent_at) return null;
@@ -132,11 +139,13 @@ export default function Dashboard() {
     const hasWarning = daysUntilDeletion !== null;
 
     return (
-      <Link to={`/project/${project.id}`}>
+      <Link to={`/project/${project.id}`} data-tutorial={isTutorial ? "tutorial-project" : undefined}>
         <Card className={`group cursor-pointer transition-all hover:shadow-md ${
-          hasWarning 
-            ? 'border-orange-500/50 hover:border-orange-500' 
-            : 'border-border/50 hover:border-primary/30'
+          isTutorial
+            ? 'border-primary/50 hover:border-primary bg-primary/5'
+            : hasWarning 
+              ? 'border-orange-500/50 hover:border-orange-500' 
+              : 'border-border/50 hover:border-primary/30'
         }`}>
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between gap-2">
@@ -144,15 +153,23 @@ export default function Dashboard() {
                 {project.name}
               </CardTitle>
               <div className="flex gap-1.5 shrink-0">
+                {isTutorial && (
+                  <Badge className="text-xs bg-primary/20 text-primary border-primary/30">
+                    <GraduationCap className="h-3 w-3 mr-1" />
+                    Tutorial
+                  </Badge>
+                )}
                 {hasWarning && (
                   <Badge variant="outline" className="text-xs border-orange-500/50 text-orange-500 bg-orange-500/10">
                     <AlertTriangle className="h-3 w-3 mr-1" />
                     {daysUntilDeletion}d left
                   </Badge>
                 )}
-                <Badge variant={project.is_public ? 'secondary' : 'outline'} className="text-xs">
-                  {project.is_public ? 'Public' : 'Private'}
-                </Badge>
+                {!isTutorial && (
+                  <Badge variant={project.is_public ? 'secondary' : 'outline'} className="text-xs">
+                    {project.is_public ? 'Public' : 'Private'}
+                  </Badge>
+                )}
               </div>
             </div>
             <CardDescription className="line-clamp-2">
@@ -161,15 +178,24 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {formatDistanceToNow(new Date(project.last_modified), { addSuffix: true })}
-              </span>
-              {!isOwner && (
-                <span className="flex items-center gap-1">
-                  <Users className="h-3 w-3" />
-                  Shared
+              {isTutorial ? (
+                <span className="flex items-center gap-1 text-primary">
+                  <Sparkles className="h-3 w-3" />
+                  Click to explore
                 </span>
+              ) : (
+                <>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {formatDistanceToNow(new Date(project.last_modified), { addSuffix: true })}
+                  </span>
+                  {!isOwner && (
+                    <span className="flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      Shared
+                    </span>
+                  )}
+                </>
               )}
             </div>
           </CardContent>
@@ -208,6 +234,7 @@ export default function Dashboard() {
                   : 'border-border/50 hover:bg-muted'
               }`}
               title="View credits"
+              data-tutorial="credits-display"
             >
               <Coins className="h-4 w-4" />
               <span className="font-medium">{formatCredits(totalCredits)}</span>
@@ -236,13 +263,37 @@ export default function Dashboard() {
             <h1 className="font-display text-3xl font-bold">Dashboard</h1>
             <p className="mt-1 text-muted-foreground">Manage your layer generation projects</p>
           </div>
-          <Button asChild>
+          <Button asChild data-tutorial="new-project">
             <Link to="/project/new">
               <Plus className="mr-2 h-4 w-4" />
               New Project
             </Link>
           </Button>
         </div>
+
+        {/* Tutorial Section - Show when tutorial is active */}
+        {isTutorialActive && tutorialProject && (
+          <Card className="mb-8 border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 font-display text-lg">
+                <GraduationCap className="h-5 w-5 text-primary" />
+                Tutorial
+              </CardTitle>
+              <CardDescription>
+                Explore this example project to learn how AnonForge works
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="max-w-md">
+                <ProjectCard 
+                  project={tutorialProject} 
+                  isOwner={false} 
+                  isTutorial 
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {invitations.length > 0 && (
           <Card className="mb-8 border-primary/20 bg-primary/5">

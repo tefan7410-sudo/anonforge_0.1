@@ -24,6 +24,8 @@ import {
   Layers,
   Image as ImageIcon,
   Clock,
+  GraduationCap,
+  Eye,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { LayerUploadZone } from '@/components/project/LayerUploadZone';
@@ -40,6 +42,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GenerationDetailModal } from '@/components/project/GenerationDetailModal';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { PageTransition } from '@/components/PageTransition';
+import { isTutorialProject, TUTORIAL_PROJECT_ID } from '@/hooks/use-tutorial';
+import { useTutorial } from '@/contexts/TutorialContext';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -56,6 +60,10 @@ export default function ProjectDetail() {
   const { data: allLayers } = useAllLayers(id!);
   const { data: generations } = useGenerations(id!);
   const { canEdit } = useCanEditProject(id!);
+  const { isActive: isTutorialActive } = useTutorial();
+
+  const isTutorial = id ? isTutorialProject(id) : false;
+  const isReadOnly = isTutorial;
 
   // Handle deep-link to generation from notification
   useEffect(() => {
@@ -71,6 +79,14 @@ export default function ProjectDetail() {
       }
     }
   }, [searchParams, generations, setSearchParams]);
+
+  // Handle tab query param for tutorial
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['layers', 'generate', 'history'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const deepLinkGeneration = generations?.find(g => g.id === deepLinkGenerationId) || null;
 
@@ -126,9 +142,31 @@ export default function ProjectDetail() {
 
   const totalCombinations = calculateCombinations();
 
+  // Available tabs for tutorial project
+  const tutorialTabs = ['layers', 'generate', 'history'];
+
   return (
     <PageTransition>
     <div className="min-h-screen bg-background">
+      {/* Tutorial Mode Banner */}
+      {isTutorial && (
+        <div className="bg-primary/10 border-b border-primary/20">
+          <div className="container mx-auto flex items-center justify-between px-4 py-2 sm:px-6">
+            <div className="flex items-center gap-2 text-sm">
+              <GraduationCap className="h-4 w-4 text-primary" />
+              <span className="font-medium text-primary">Tutorial Example</span>
+              <span className="text-muted-foreground hidden sm:inline">
+                — This is a read-only demo project
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Eye className="h-3 w-3" />
+              Read-only
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="border-b border-border/50">
         <div className="container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
@@ -142,7 +180,14 @@ export default function ProjectDetail() {
               </div>
             </Link>
             <div className="min-w-0">
-              <h1 className="font-display text-base sm:text-xl font-semibold truncate">{project.name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="font-display text-base sm:text-xl font-semibold truncate">{project.name}</h1>
+                {isTutorial && (
+                  <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
+                    Tutorial
+                  </Badge>
+                )}
+              </div>
               <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 Updated {formatDistanceToNow(new Date(project.last_modified), { addSuffix: true })}
@@ -152,10 +197,12 @@ export default function ProjectDetail() {
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <NotificationDropdown />
             <ThemeToggle />
-            <Badge variant={project.is_public ? 'secondary' : 'outline'} className="hidden sm:inline-flex">
-              {project.is_public ? 'Public' : 'Private'}
-            </Badge>
-            {isOwner && (
+            {!isTutorial && (
+              <Badge variant={project.is_public ? 'secondary' : 'outline'} className="hidden sm:inline-flex">
+                {project.is_public ? 'Public' : 'Private'}
+              </Badge>
+            )}
+            {isOwner && !isTutorial && (
               <Button variant="outline" size="sm" asChild className="hidden md:inline-flex">
                 <Link to={`/project/${id}/settings`}>
                   <Settings className="mr-2 h-4 w-4" />
@@ -198,16 +245,20 @@ export default function ProjectDetail() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
               <TabsList className="w-max">
-                <TabsTrigger value="layers">Layers</TabsTrigger>
-                <TabsTrigger value="generate">Generate</TabsTrigger>
-                <TabsTrigger value="history">History</TabsTrigger>
-                <TabsTrigger value="product" className="whitespace-nowrap">Product Page</TabsTrigger>
-                <TabsTrigger value="marketing">Marketing</TabsTrigger>
-                <TabsTrigger value="publish">Publish</TabsTrigger>
+                <TabsTrigger value="layers" data-tutorial="layers-tab">Layers</TabsTrigger>
+                <TabsTrigger value="generate" data-tutorial="generate-tab">Generate</TabsTrigger>
+                <TabsTrigger value="history" data-tutorial="history-tab">History</TabsTrigger>
+                {!isTutorial && (
+                  <>
+                    <TabsTrigger value="product" className="whitespace-nowrap">Product Page</TabsTrigger>
+                    <TabsTrigger value="marketing">Marketing</TabsTrigger>
+                    <TabsTrigger value="publish">Publish</TabsTrigger>
+                  </>
+                )}
               </TabsList>
             </div>
 
-            {activeTab === 'layers' && canEdit && (
+            {activeTab === 'layers' && canEdit && !isReadOnly && (
               <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>
@@ -233,13 +284,17 @@ export default function ProjectDetail() {
 
           <TabsContent value="layers">
             <ErrorBoundary>
-              <CategoryList projectId={id!} />
+              <div data-tutorial="category-card">
+                <CategoryList projectId={id!} />
+              </div>
             </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="generate">
             <ErrorBoundary>
-              <GenerationPanel projectId={id!} project={project} />
+              <div data-tutorial="generation-controls">
+                <GenerationPanel projectId={id!} project={project} />
+              </div>
             </ErrorBoundary>
           </TabsContent>
 
@@ -249,23 +304,27 @@ export default function ProjectDetail() {
             </ErrorBoundary>
           </TabsContent>
 
-          <TabsContent value="product">
-            <ErrorBoundary>
-              <ProductPageTab projectId={id!} projectName={project.name} />
-            </ErrorBoundary>
-          </TabsContent>
+          {!isTutorial && (
+            <>
+              <TabsContent value="product">
+                <ErrorBoundary>
+                  <ProductPageTab projectId={id!} projectName={project.name} />
+                </ErrorBoundary>
+              </TabsContent>
 
-          <TabsContent value="marketing">
-            <ErrorBoundary>
-              <MarketingTab projectId={id!} />
-            </ErrorBoundary>
-          </TabsContent>
+              <TabsContent value="marketing">
+                <ErrorBoundary>
+                  <MarketingTab projectId={id!} />
+                </ErrorBoundary>
+              </TabsContent>
 
-          <TabsContent value="publish">
-            <ErrorBoundary>
-              <PublishPanel projectId={id!} projectName={project.name} />
-            </ErrorBoundary>
-          </TabsContent>
+              <TabsContent value="publish">
+                <ErrorBoundary>
+                  <PublishPanel projectId={id!} projectName={project.name} />
+                </ErrorBoundary>
+              </TabsContent>
+            </>
+          )}
         </Tabs>
 
         {/* Deep-link Generation Modal */}

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { TutorialProvider } from "@/components/tutorial/TutorialProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { CookieBanner } from "@/components/CookieBanner";
 import { WelcomeModal } from "@/components/WelcomeModal";
@@ -36,6 +37,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
+              <TutorialProvider>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
@@ -105,6 +107,7 @@ const App = () => (
               </Routes>
               <CookieBanner />
               <WelcomeModal />
+              </TutorialProvider>
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
