@@ -19,7 +19,7 @@ import {
   type Notification,
 } from '@/hooks/use-notifications';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Check, CheckCheck, Users, MessageSquare, Loader2 } from 'lucide-react';
+import { Bell, Check, CheckCheck, Users, MessageSquare, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export function NotificationDropdown() {
@@ -62,6 +62,10 @@ export function NotificationDropdown() {
       case 'comment_mention':
       case 'comment_reply':
         return <MessageSquare className="h-4 w-4 text-primary" />;
+      case 'project_inactivity_warning':
+        return <AlertTriangle className="h-4 w-4 text-orange-500" />;
+      case 'project_deleted':
+        return <Trash2 className="h-4 w-4 text-destructive" />;
       default:
         return <Bell className="h-4 w-4 text-primary" />;
     }

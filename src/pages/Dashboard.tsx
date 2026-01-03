@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X, Coins } from 'lucide-react';
+import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X, Coins, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
@@ -28,6 +28,7 @@ interface Project {
   last_modified: string;
   created_at: string;
   owner_id: string;
+  deletion_warning_sent_at: string | null;
 }
 
 interface Invitation {
@@ -116,39 +117,66 @@ export default function Dashboard() {
     }
   };
 
-  const ProjectCard = ({ project, isOwner = true }: { project: Project; isOwner?: boolean }) => (
-    <Link to={`/project/${project.id}`}>
-      <Card className="group cursor-pointer border-border/50 transition-all hover:border-primary/30 hover:shadow-md">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <CardTitle className="font-display text-lg group-hover:text-primary transition-colors">
-              {project.name}
-            </CardTitle>
-            <Badge variant={project.is_public ? 'secondary' : 'outline'} className="text-xs">
-              {project.is_public ? 'Public' : 'Private'}
-            </Badge>
-          </div>
-          <CardDescription className="line-clamp-2">
-            {project.description || 'No description'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {formatDistanceToNow(new Date(project.last_modified), { addSuffix: true })}
-            </span>
-            {!isOwner && (
+  const ProjectCard = ({ project, isOwner = true }: { project: Project; isOwner?: boolean }) => {
+    // Calculate days until deletion if warning was sent
+    const getDaysUntilDeletion = () => {
+      if (!project.deletion_warning_sent_at) return null;
+      const warningDate = new Date(project.deletion_warning_sent_at);
+      const deletionDate = new Date(warningDate.getTime() + 15 * 24 * 60 * 60 * 1000);
+      const now = new Date();
+      const daysLeft = Math.ceil((deletionDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+      return daysLeft > 0 ? daysLeft : 0;
+    };
+
+    const daysUntilDeletion = getDaysUntilDeletion();
+    const hasWarning = daysUntilDeletion !== null;
+
+    return (
+      <Link to={`/project/${project.id}`}>
+        <Card className={`group cursor-pointer transition-all hover:shadow-md ${
+          hasWarning 
+            ? 'border-orange-500/50 hover:border-orange-500' 
+            : 'border-border/50 hover:border-primary/30'
+        }`}>
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-2">
+              <CardTitle className="font-display text-lg group-hover:text-primary transition-colors">
+                {project.name}
+              </CardTitle>
+              <div className="flex gap-1.5 shrink-0">
+                {hasWarning && (
+                  <Badge variant="outline" className="text-xs border-orange-500/50 text-orange-500 bg-orange-500/10">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    {daysUntilDeletion}d left
+                  </Badge>
+                )}
+                <Badge variant={project.is_public ? 'secondary' : 'outline'} className="text-xs">
+                  {project.is_public ? 'Public' : 'Private'}
+                </Badge>
+              </div>
+            </div>
+            <CardDescription className="line-clamp-2">
+              {project.description || 'No description'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                Shared
+                <Clock className="h-3 w-3" />
+                {formatDistanceToNow(new Date(project.last_modified), { addSuffix: true })}
               </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
+              {!isOwner && (
+                <span className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  Shared
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+    );
+  };
 
   const EmptyState = ({ title, description }: { title: string; description: string }) => (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/50 py-12">
