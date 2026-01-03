@@ -15,6 +15,13 @@ import {
   useUserCreditTransactions,
   useAdminAdjustCredits,
 } from '@/hooks/use-admin';
+import {
+  usePendingMarketingRequests,
+  useAllMarketingRequests,
+  useApproveMarketingRequest,
+  useRejectMarketingRequest,
+  useEndMarketingEarly,
+} from '@/hooks/use-marketing';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -58,6 +65,10 @@ import {
   Loader2,
   BarChart3,
   ArrowUpDown,
+  Megaphone,
+  Sparkles,
+  Image as ImageIcon,
+  StopCircle,
 } from 'lucide-react';
 import { CostsAnalyticsTab } from '@/components/admin/CostsAnalyticsTab';
 import { toast } from 'sonner';
@@ -72,17 +83,22 @@ export default function Admin() {
   const { data: pendingCollections, isLoading: pendingLoading } = usePendingCollections();
   const { data: pendingVerifications, isLoading: verificationsLoading } = usePendingVerificationRequests();
   const { data: userCredits, isLoading: creditsLoading } = useAllUserCredits();
+  const { data: pendingMarketing, isLoading: marketingLoading } = usePendingMarketingRequests();
+  const { data: allMarketing } = useAllMarketingRequests();
   const toggleHidden = useToggleCollectionHidden();
   const approveCollection = useApproveCollection();
   const rejectCollection = useRejectCollection();
   const approveVerification = useApproveVerification();
   const rejectVerification = useRejectVerification();
   const adjustCredits = useAdminAdjustCredits();
+  const approveMarketing = useApproveMarketingRequest();
+  const rejectMarketing = useRejectMarketingRequest();
+  const endMarketing = useEndMarketingEarly();
 
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [rejectType, setRejectType] = useState<'collection' | 'verification'>('collection');
+  const [rejectType, setRejectType] = useState<'collection' | 'verification' | 'marketing'>('collection');
   
   // Credit management state
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
@@ -182,7 +198,7 @@ export default function Admin() {
     return creditSortOrder === 'asc' ? aVal - bVal : bVal - aVal;
   });
 
-  const handleRejectClick = (id: string, type: 'collection' | 'verification') => {
+  const handleRejectClick = (id: string, type: 'collection' | 'verification' | 'marketing') => {
     setRejectingId(id);
     setRejectType(type);
     setRejectReason('');
@@ -194,8 +210,10 @@ export default function Admin() {
     
     if (rejectType === 'collection') {
       await rejectCollection.mutateAsync({ productPageId: rejectingId, reason: rejectReason });
-    } else {
+    } else if (rejectType === 'verification') {
       await rejectVerification.mutateAsync({ requestId: rejectingId, reason: rejectReason });
+    } else if (rejectType === 'marketing') {
+      await rejectMarketing.mutateAsync({ requestId: rejectingId, reason: rejectReason });
     }
     
     setRejectDialogOpen(false);
@@ -502,6 +520,15 @@ export default function Admin() {
               <BarChart3 className="h-4 w-4" />
               Costs & Analytics
             </TabsTrigger>
+            <TabsTrigger value="marketing" className="gap-2">
+              <Megaphone className="h-4 w-4" />
+              Marketing
+              {pendingMarketing && pendingMarketing.length > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 justify-center">
+                  {pendingMarketing.length}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* Pending Launches Tab */}
@@ -780,6 +807,243 @@ export default function Admin() {
           <TabsContent value="costs-analytics">
             <CostsAnalyticsTab />
           </TabsContent>
+
+          {/* Marketing Tab */}
+          <TabsContent value="marketing">
+            <div className="space-y-6">
+              {/* Active Marketing */}
+              {allMarketing?.find(m => m.status === 'active') && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-amber-500" />
+                      Currently Featured
+                    </CardTitle>
+                    <CardDescription>
+                      This collection is currently being promoted across AnonForge
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const active = allMarketing?.find(m => m.status === 'active');
+                      if (!active) return null;
+                      return (
+                        <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+                          <div className="flex items-center gap-4">
+                            {active.product_page?.logo_url ? (
+                              <img 
+                                src={active.product_page.logo_url} 
+                                alt="" 
+                                className="h-12 w-12 rounded-lg object-cover"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                                <Store className="h-6 w-6 text-amber-500" />
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-semibold">{active.project.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {active.duration_days} day(s) • {active.price_ada} ADA
+                              </p>
+                              {active.end_date && (
+                                <p className="text-xs text-muted-foreground">
+                                  Ends: {format(new Date(active.end_date), 'MMM d, yyyy HH:mm')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => endMarketing.mutate({ 
+                              requestId: active.id, 
+                              projectId: active.project_id 
+                            })}
+                            disabled={endMarketing.isPending}
+                          >
+                            <StopCircle className="mr-2 h-4 w-4" />
+                            End Early
+                          </Button>
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Pending Marketing Requests */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Megaphone className="h-5 w-5 text-primary" />
+                    Pending Marketing Requests
+                  </CardTitle>
+                  <CardDescription>
+                    Review and approve marketing requests from creators
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {marketingLoading ? (
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-16 w-full" />
+                      ))}
+                    </div>
+                  ) : pendingMarketing && pendingMarketing.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Collection</TableHead>
+                            <TableHead>Duration</TableHead>
+                            <TableHead>Price</TableHead>
+                            <TableHead>Hero Image</TableHead>
+                            <TableHead>Submitted</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {pendingMarketing.map((request) => (
+                            <TableRow key={request.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  {request.product_page?.logo_url ? (
+                                    <img 
+                                      src={request.product_page.logo_url} 
+                                      alt="" 
+                                      className="h-10 w-10 rounded-lg object-cover"
+                                    />
+                                  ) : (
+                                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                                      <Store className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <p className="font-medium">{request.project.name}</p>
+                                    {request.message && (
+                                      <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                        {request.message}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{request.duration_days} day(s)</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-medium">{request.price_ada} ADA</span>
+                              </TableCell>
+                              <TableCell>
+                                {request.hero_image_url ? (
+                                  <a 
+                                    href={request.hero_image_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-sm text-primary hover:underline"
+                                  >
+                                    <ImageIcon className="h-4 w-4" />
+                                    View
+                                  </a>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">None</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-green-600 hover:text-green-700 hover:bg-green-100"
+                                    onClick={() => approveMarketing.mutate({ requestId: request.id })}
+                                    disabled={approveMarketing.isPending || !!allMarketing?.find(m => m.status === 'active')}
+                                  >
+                                    <Check className="h-4 w-4 mr-1" />
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => handleRejectClick(request.id, 'marketing')}
+                                    disabled={rejectMarketing.isPending}
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    Reject
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/30" />
+                      <p className="mt-4 text-muted-foreground">No pending marketing requests</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Marketing History */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <History className="h-5 w-5" />
+                    Marketing History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {allMarketing && allMarketing.filter(m => m.status === 'completed').length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Collection</TableHead>
+                            <TableHead>Duration</TableHead>
+                            <TableHead>Revenue</TableHead>
+                            <TableHead>Period</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allMarketing
+                            .filter(m => m.status === 'completed')
+                            .map((request) => (
+                              <TableRow key={request.id}>
+                                <TableCell>
+                                  <p className="font-medium">{request.project.name}</p>
+                                </TableCell>
+                                <TableCell>{request.duration_days} day(s)</TableCell>
+                                <TableCell className="text-green-600 font-medium">
+                                  {request.price_ada} ADA
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">
+                                  {request.start_date && format(new Date(request.start_date), 'MMM d')} - {request.end_date && format(new Date(request.end_date), 'MMM d, yyyy')}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>No marketing history yet</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -788,7 +1052,11 @@ export default function Admin() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {rejectType === 'collection' ? 'Reject Collection' : 'Reject Verification Request'}
+              {rejectType === 'collection' 
+                ? 'Reject Collection' 
+                : rejectType === 'verification' 
+                  ? 'Reject Verification Request'
+                  : 'Reject Marketing Request'}
             </DialogTitle>
             <DialogDescription>
               Please provide a reason for rejection. This will be shown to the creator.

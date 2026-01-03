@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Layers, ArrowRight, Sparkles, Palette, Store, Zap, Shield, Users, CreditCard, LayoutGrid, Rocket, Menu, BookOpen } from 'lucide-react';
@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { MarketplaceSection } from '@/components/MarketplaceSection';
+import { FeaturedMarquee } from '@/components/FeaturedMarquee';
+import { useActiveMarketing } from '@/hooks/use-marketing';
 import { useScrollAnimation } from '@/hooks/use-scroll-animation';
 import { useTranslations } from '@/hooks/use-translations';
 import { cn } from '@/lib/utils';
@@ -47,10 +49,23 @@ function AnimatedSection({
 export default function Index() {
   const { t } = useTranslations();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { data: activeMarketing } = useActiveMarketing();
+  const [currentBgIndex, setCurrentBgIndex] = useState(0);
   const heroAnimation = useScrollAnimation<HTMLDivElement>();
   const creatorsAnimation = useScrollAnimation<HTMLDivElement>();
   const benefitsAnimation = useScrollAnimation<HTMLDivElement>();
   const ctaAnimation = useScrollAnimation<HTMLDivElement>();
+
+  // Hero background slideshow effect
+  useEffect(() => {
+    if (!activeMarketing?.hero_image_url) return;
+    
+    const interval = setInterval(() => {
+      setCurrentBgIndex((prev) => (prev === 0 ? 1 : 0));
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [activeMarketing?.hero_image_url]);
 
   const scrollToSection = (e: React.MouseEvent, sectionId: string) => {
     e.preventDefault();
@@ -181,10 +196,36 @@ export default function Index() {
         </nav>
       </header>
 
+      {/* Featured Marquee */}
+      <FeaturedMarquee />
+
       <main>
         {/* Hero Section - Dual Audience */}
         <section className="relative overflow-hidden" aria-labelledby="hero-heading">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
+          {/* Default gradient background */}
+          <div 
+            className={cn(
+              "absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent transition-opacity duration-1000",
+              activeMarketing?.hero_image_url && currentBgIndex === 1 ? "opacity-0" : "opacity-100"
+            )} 
+          />
+          
+          {/* Featured hero image background */}
+          {activeMarketing?.hero_image_url && (
+            <div 
+              className={cn(
+                "absolute inset-0 transition-opacity duration-1000",
+                currentBgIndex === 1 ? "opacity-100" : "opacity-0"
+              )}
+            >
+              <img 
+                src={activeMarketing.hero_image_url} 
+                alt="" 
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
+            </div>
+          )}
           <div 
             ref={heroAnimation.ref}
             className={cn(

@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Store, ArrowRight, ExternalLink } from 'lucide-react';
+import { Store, ArrowRight, ExternalLink, Sparkles } from 'lucide-react';
 import { useScrollAnimation } from '@/hooks/use-scroll-animation';
 import { useCollectionStatuses } from '@/hooks/use-collection-status';
+import { FeaturedSpotlight } from '@/components/FeaturedSpotlight';
 import { cn } from '@/lib/utils';
 
 interface LiveCollection {
@@ -17,6 +18,7 @@ interface LiveCollection {
   banner_url: string | null;
   logo_url: string | null;
   tagline: string | null;
+  is_featured: boolean | null;
   project: {
     id: string;
     name: string;
@@ -36,6 +38,7 @@ const useMarketplaceCollections = (limit?: number) => {
           banner_url,
           logo_url,
           tagline,
+          is_featured,
           project:projects!inner(id, name, description)
         `)
         .eq('is_live', true)
@@ -56,6 +59,7 @@ const useMarketplaceCollections = (limit?: number) => {
 
 function CollectionCard({ collection, index, isSoldOut }: { collection: LiveCollection; index: number; isSoldOut?: boolean }) {
   const { ref, isVisible } = useScrollAnimation<HTMLDivElement>();
+  const isFeatured = collection.is_featured;
   
   return (
     <div
@@ -64,7 +68,12 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
       style={{ animationDelay: `${index * 100}ms` }}
     >
     <Link to={`/collection/${collection.project_id}`}>
-      <Card className="group cursor-pointer overflow-hidden border-border/50 transition-all hover:border-primary/30 hover:shadow-lg">
+      <Card className={cn(
+        "group cursor-pointer overflow-hidden transition-all hover:shadow-lg",
+        isFeatured 
+          ? "border-2 border-amber-500/50 hover:border-amber-500 hover:shadow-amber-500/10" 
+          : "border-border/50 hover:border-primary/30"
+      )}>
         {/* Banner wrapper - relative without overflow-hidden to allow logo overlap */}
         <div className="relative">
           {/* Banner image container - overflow-hidden to crop image */}
@@ -81,17 +90,25 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
               </div>
             )}
             
-            {/* Status badge */}
-            {isSoldOut ? (
-              <Badge className="absolute right-2 top-2 bg-orange-500/90 text-white hover:bg-orange-500">
-                SOLD OUT
-              </Badge>
-            ) : (
-              <Badge className="absolute right-2 top-2 bg-green-500/90 text-white hover:bg-green-500">
-                <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-                LIVE
-              </Badge>
-            )}
+            {/* Status badges */}
+            <div className="absolute right-2 top-2 flex flex-col gap-1">
+              {isFeatured && (
+                <Badge className="bg-amber-500 text-white hover:bg-amber-600">
+                  <Sparkles className="mr-1 h-3 w-3" />
+                  FEATURED
+                </Badge>
+              )}
+              {isSoldOut ? (
+                <Badge className="bg-orange-500/90 text-white hover:bg-orange-500">
+                  SOLD OUT
+                </Badge>
+              ) : (
+                <Badge className="bg-green-500/90 text-white hover:bg-green-500">
+                  <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                  LIVE
+                </Badge>
+              )}
+            </div>
           </div>
           
           {/* Logo overlay - positioned on outer wrapper to allow overlap */}
@@ -141,7 +158,12 @@ export function MarketplaceSection() {
   const { data: collections, isLoading } = useMarketplaceCollections(6);
   const headerAnimation = useScrollAnimation<HTMLDivElement>();
 
-  // Get project IDs for status fetching
+  // Get project IDs for status fetching (exclude featured to show separately)
+  const nonFeaturedCollections = useMemo(() => 
+    (collections || []).filter(c => !c.is_featured), 
+    [collections]
+  );
+  
   const projectIds = useMemo(() => 
     (collections || []).map(c => c.project_id), 
     [collections]
@@ -150,11 +172,13 @@ export function MarketplaceSection() {
   // Fetch NMKR counts for all collections
   const { data: statusMap } = useCollectionStatuses(projectIds);
 
-  const collectionCount = collections?.length || 0;
+  const collectionCount = nonFeaturedCollections?.length || 0;
 
   return (
     <section className="border-t border-border/50 bg-card/50" aria-labelledby="marketplace-heading">
       <div className="container mx-auto px-6 py-20">
+        {/* Featured Spotlight */}
+        <FeaturedSpotlight />
         <div 
           ref={headerAnimation.ref}
           className={cn(
@@ -193,9 +217,9 @@ export function MarketplaceSection() {
               <CollectionCardSkeleton key={i} />
             ))}
           </div>
-        ) : collections && collections.length > 0 ? (
+        ) : nonFeaturedCollections && nonFeaturedCollections.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {collections.map((collection, index) => (
+            {nonFeaturedCollections.map((collection, index) => (
               <CollectionCard 
                 key={collection.id} 
                 collection={collection} 

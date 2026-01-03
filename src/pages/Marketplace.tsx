@@ -7,11 +7,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Layers, Store, ExternalLink, ArrowLeft, Clock } from 'lucide-react';
+import { Layers, Store, ExternalLink, ArrowLeft, Clock, Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useCollectionStatuses } from '@/hooks/use-collection-status';
+import { FeaturedSpotlight } from '@/components/FeaturedSpotlight';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { PageTransition } from '@/components/PageTransition';
+import { cn } from '@/lib/utils';
 import {
   Pagination,
   PaginationContent,
@@ -31,6 +33,7 @@ interface LiveCollection {
   logo_url: string | null;
   tagline: string | null;
   scheduled_launch_at: string | null;
+  is_featured: boolean | null;
   project: {
     id: string;
     name: string;
@@ -51,6 +54,7 @@ function useMarketplaceData() {
           logo_url,
           tagline,
           scheduled_launch_at,
+          is_featured,
           project:projects!inner(id, name, description)
         `)
         .eq('is_live', true)
@@ -67,10 +71,16 @@ function useMarketplaceData() {
 function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection; isSoldOut?: boolean }) {
   const isUpcoming = collection.scheduled_launch_at && 
     new Date(collection.scheduled_launch_at) > new Date();
+  const isFeatured = collection.is_featured;
 
   return (
     <Link to={`/collection/${collection.project_id}`}>
-      <Card className="group cursor-pointer overflow-hidden border-border/50 transition-all hover:border-primary/30 hover:shadow-lg">
+      <Card className={cn(
+        "group cursor-pointer overflow-hidden transition-all hover:shadow-lg",
+        isFeatured 
+          ? "border-2 border-amber-500/50 hover:border-amber-500 hover:shadow-amber-500/10" 
+          : "border-border/50 hover:border-primary/30"
+      )}>
         {/* Banner and Logo wrapper */}
         <div className="relative">
           {/* Banner */}
@@ -87,22 +97,30 @@ function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection;
               </div>
             )}
             
-            {/* Status badge */}
-            {isUpcoming ? (
-              <Badge className="absolute right-3 top-3 bg-amber-500/90 text-white hover:bg-amber-500">
-                <Clock className="mr-1 h-3 w-3" />
-                UPCOMING
-              </Badge>
-            ) : isSoldOut ? (
-              <Badge className="absolute right-3 top-3 bg-orange-500/90 text-white hover:bg-orange-500">
-                SOLD OUT
-              </Badge>
-            ) : (
-              <Badge className="absolute right-3 top-3 bg-green-500/90 text-white hover:bg-green-500">
-                <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-white" />
-                LIVE
-              </Badge>
-            )}
+            {/* Status badges */}
+            <div className="absolute right-3 top-3 flex flex-col gap-1.5">
+              {isFeatured && (
+                <Badge className="bg-amber-500 text-white hover:bg-amber-600">
+                  <Sparkles className="mr-1 h-3 w-3" />
+                  FEATURED
+                </Badge>
+              )}
+              {isUpcoming ? (
+                <Badge className="bg-amber-500/90 text-white hover:bg-amber-500">
+                  <Clock className="mr-1 h-3 w-3" />
+                  UPCOMING
+                </Badge>
+              ) : isSoldOut ? (
+                <Badge className="bg-orange-500/90 text-white hover:bg-orange-500">
+                  SOLD OUT
+                </Badge>
+              ) : (
+                <Badge className="bg-green-500/90 text-white hover:bg-green-500">
+                  <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-white" />
+                  LIVE
+                </Badge>
+              )}
+            </div>
           </div>
           
           {/* Logo overlay - OUTSIDE overflow-hidden */}
@@ -238,8 +256,9 @@ export default function Marketplace() {
           </div>
         </nav>
       </header>
-
-      <main className="container mx-auto px-4 py-8 sm:px-6 sm:py-12">
+        <main className="container mx-auto px-4 py-8 sm:px-6 sm:py-12">
+        {/* Featured Spotlight */}
+        <FeaturedSpotlight className="mb-8" />
         {/* Breadcrumb */}
         <div className="mb-6 sm:mb-8">
           <Button variant="ghost" size="sm" asChild className="gap-2">
