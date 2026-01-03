@@ -27,10 +27,10 @@ function LayerNodeComponent({ data, selected }: NodeProps<LayerNodeType>) {
     ? ((layer.rarity_weight / totalWeight) * 100).toFixed(1) 
     : '0';
 
-  // Get public URL for storage path
+  // Get public URL for storage path (must include 'layers' bucket name)
   const imageUrl = layer.storage_path.startsWith('http') 
     ? layer.storage_path 
-    : `https://tyrsrwmwwfqdzsmogjwb.supabase.co/storage/v1/object/public/${layer.storage_path}`;
+    : `https://tyrsrwmwwfqdzsmogjwb.supabase.co/storage/v1/object/public/layers/${layer.storage_path}`;
 
   return (
     <div

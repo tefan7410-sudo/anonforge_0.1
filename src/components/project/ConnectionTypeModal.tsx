@@ -44,7 +44,7 @@ export function ConnectionTypeModal({
   const getImageUrl = (storagePath: string) => {
     return storagePath.startsWith('http')
       ? storagePath
-      : `https://tyrsrwmwwfqdzsmogjwb.supabase.co/storage/v1/object/public/${storagePath}`;
+      : `https://tyrsrwmwwfqdzsmogjwb.supabase.co/storage/v1/object/public/layers/${storagePath}`;
   };
 
   // Check if layers are from different categories (required for exclusions and switches)
