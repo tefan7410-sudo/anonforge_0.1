@@ -27,13 +27,13 @@ import {
   History,
   Zap,
   Image as ImageIcon,
-  HelpCircle,
   LogOut,
   TrendingUp,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
+import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 
 export default function Credits() {
   const navigate = useNavigate();
@@ -108,11 +108,6 @@ export default function Credits() {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
-            <Button variant="ghost" size="icon" asChild title="Help & Documentation">
-              <Link to="/documentation">
-                <HelpCircle className="h-4 w-4" />
-              </Link>
-            </Button>
             <ThemeToggle />
             <Button variant="outline" onClick={handleSignOut} className="hidden md:inline-flex">
               <LogOut className="mr-2 h-4 w-4" />
@@ -199,7 +194,31 @@ export default function Credits() {
             </CardContent>
           </Card>
 
-          {/* Purchase Credits */}
+          {/* Credit Info - How Credits Work */}
+          <Card className="border-border/50 bg-muted/20">
+            <CardContent className="pt-6">
+              <h3 className="font-semibold mb-3">How Credits Work</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <span>Every user receives <strong className="text-foreground">{MONTHLY_FREE_CREDITS} free credits</strong> each month, resetting on your registration anniversary.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <ImageIcon className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <span>Full resolution (3000×3000) exports cost <strong className="text-foreground">{CREDIT_COSTS.FULL_RESOLUTION} credits</strong> each.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Zap className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <span>Preview (384×384) exports cost only <strong className="text-foreground">{CREDIT_COSTS.PREVIEW} credits</strong> each — 20x cheaper!</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Clock className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <span>Free credits reset monthly. Purchased credits <strong className="text-foreground">never expire</strong>.</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display">
@@ -326,32 +345,10 @@ export default function Credits() {
             </CardContent>
           </Card>
 
-          {/* Credit Info */}
-          <Card className="border-border/50 bg-muted/20">
-            <CardContent className="pt-6">
-              <h3 className="font-semibold mb-3">How Credits Work</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <span>Every user receives <strong className="text-foreground">{MONTHLY_FREE_CREDITS} free credits</strong> each month, resetting on your registration anniversary.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <ImageIcon className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <span>Full resolution (3000×3000) exports cost <strong className="text-foreground">{CREDIT_COSTS.FULL_RESOLUTION} credits</strong> each.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Zap className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <span>Preview (384×384) exports cost only <strong className="text-foreground">{CREDIT_COSTS.PREVIEW} credits</strong> each — 20x cheaper!</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Clock className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <span>Free credits reset monthly. Purchased credits <strong className="text-foreground">never expire</strong>.</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
         </div>
       </main>
+
+      <FloatingHelpButton />
     </div>
   );
 }

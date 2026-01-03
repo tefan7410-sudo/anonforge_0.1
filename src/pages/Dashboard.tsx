@@ -9,13 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X, HelpCircle, Coins } from 'lucide-react';
+import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X, Coins } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
 import { useCreditBalance } from '@/hooks/use-credits';
 import { formatCredits } from '@/lib/credit-constants';
+import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 
 interface Project {
   id: string;
@@ -180,11 +181,6 @@ export default function Dashboard() {
               <Coins className="h-4 w-4" />
               <span className="font-medium">{formatCredits(totalCredits)}</span>
             </Link>
-            <Button variant="ghost" size="icon" asChild title="Help & Documentation">
-              <Link to="/documentation">
-                <HelpCircle className="h-4 w-4" />
-              </Link>
-            </Button>
             <NotificationDropdown />
             <ThemeToggle />
             <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
@@ -361,6 +357,8 @@ export default function Dashboard() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <FloatingHelpButton />
     </div>
   );
 }

@@ -24,7 +24,6 @@ import {
   Layers,
   Image as ImageIcon,
   Clock,
-  HelpCircle,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { LayerUploadZone } from '@/components/project/LayerUploadZone';
@@ -38,6 +37,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GenerationDetailModal } from '@/components/project/GenerationDetailModal';
+import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -147,11 +147,6 @@ export default function ProjectDetail() {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            <Button variant="ghost" size="icon" asChild title="Help & Documentation">
-              <Link to="/documentation">
-                <HelpCircle className="h-4 w-4" />
-              </Link>
-            </Button>
             <NotificationDropdown />
             <ThemeToggle />
             <Badge variant={project.is_public ? 'secondary' : 'outline'} className="hidden sm:inline-flex">
@@ -271,6 +266,8 @@ export default function ProjectDetail() {
           onOpenChange={setDeepLinkModalOpen}
         />
       </main>
+
+      <FloatingHelpButton />
     </div>
   );
 }

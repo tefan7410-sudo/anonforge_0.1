@@ -1036,6 +1036,27 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
                     )}
                     <li>Actual sizes will be shown during generation</li>
                   </ul>
+                  
+                  {/* Credit Cost Preview */}
+                  <div className="rounded-lg bg-muted p-3 space-y-1 mt-3">
+                    <div className="flex justify-between text-sm">
+                      <span>Credits required:</span>
+                      <span className="font-medium">{formatCredits(creditsNeeded)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Your balance:</span>
+                      <span className={`font-medium ${hasEnoughCredits ? 'text-green-600' : 'text-orange-500'}`}>
+                        {formatCredits(totalCredits)}
+                      </span>
+                    </div>
+                    {!hasEnoughCredits && (
+                      <div className="flex justify-between text-sm text-orange-500">
+                        <span>Shortfall:</span>
+                        <span className="font-medium">{formatCredits(creditsNeeded - totalCredits)}</span>
+                      </div>
+                    )}
+                  </div>
+                  
                   <p className="text-sm font-medium text-amber-600">
                     This process is resource-intensive and may take a while to complete.
                   </p>
@@ -1044,7 +1065,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleFullResConfirm}>
+              <AlertDialogAction onClick={handleFullResConfirm} disabled={!hasEnoughCredits}>
                 Generate Full Resolution
               </AlertDialogAction>
             </AlertDialogFooter>
