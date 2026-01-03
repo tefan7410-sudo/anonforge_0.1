@@ -29,6 +29,10 @@ import {
   Check,
   AlertCircle,
   Search,
+  List,
+  GitBranch,
+  Ban,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSelector } from '@/components/LanguageSelector';
@@ -116,7 +120,7 @@ export default function Documentation() {
       id: 'layer-management',
       title: 'Layer Management',
       icon: Palette,
-      keywords: ['layer', 'upload', 'png', 'rarity', 'weight', 'exclusion', 'trait', 'category', 'zip', 'image', 'name', 'naming', 'file', 'filename', 'display_name', 'trait_name', 'convention', 'organize', 'folder', 'structure', 'transparent', 'transparency', 'dimensions', 'size', 'resolution'],
+      keywords: ['layer', 'upload', 'png', 'rarity', 'weight', 'exclusion', 'trait', 'category', 'zip', 'image', 'name', 'naming', 'file', 'filename', 'display_name', 'trait_name', 'convention', 'organize', 'folder', 'structure', 'transparent', 'transparency', 'dimensions', 'size', 'resolution', 'visual', 'view', 'node', 'toggle', 'connection', 'edge', 'effect', 'switch', 'drag', 'graph', 'list'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -175,6 +179,82 @@ export default function Documentation() {
             <p className="text-sm text-muted-foreground">
               Sometimes certain traits shouldn't appear together. Use layer exclusions to prevent incompatible combinations (e.g., a hat that clips through certain hairstyles).
             </p>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold flex items-center gap-2">
+              <LayoutGrid className="h-4 w-4 text-primary" />
+              View Modes
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              The Layers tab offers two ways to view and manage your layers:
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-card">
+                <div className="h-8 w-8 rounded bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                  <List className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">List View</p>
+                  <p className="text-xs text-muted-foreground">Traditional list with categories as cards. Edit rarity weights and manage exclusions via modals.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-card">
+                <div className="h-8 w-8 rounded bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                  <GitBranch className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Visual View</p>
+                  <p className="text-xs text-muted-foreground">Node-based graph showing all layers and connections. Drag between layers to create relationships.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold flex items-center gap-2">
+              <GitBranch className="h-4 w-4 text-primary" />
+              Visual Connection Editor
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              The Visual View displays layers as nodes with connection handles. Create and manage layer relationships by dragging connections between nodes.
+            </p>
+            
+            <div className="space-y-2">
+              <p className="font-medium text-sm">Connection Types:</p>
+              <ul className="space-y-2 text-sm text-muted-foreground ml-6">
+                <li className="flex items-start gap-2">
+                  <div className="h-4 w-6 flex items-center shrink-0">
+                    <div className="h-0.5 w-full rounded bg-destructive" style={{ backgroundImage: 'repeating-linear-gradient(90deg, hsl(var(--destructive)) 0, hsl(var(--destructive)) 4px, transparent 4px, transparent 8px)' }} />
+                  </div>
+                  <span><Ban className="inline h-3 w-3 text-destructive mr-1" /><strong className="text-destructive">Exclusion</strong> — Layers that cannot appear together</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="h-4 w-6 flex items-center shrink-0">
+                    <div className="h-0.5 w-full rounded bg-purple-500" />
+                  </div>
+                  <span><Sparkles className="inline h-3 w-3 text-purple-500 mr-1" /><strong className="text-purple-500">Effect Link</strong> — Links effect layers to parent layers</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="h-4 w-6 flex items-center shrink-0">
+                    <div className="h-0.5 w-full rounded bg-warning" />
+                  </div>
+                  <span><ArrowLeftRight className="inline h-3 w-3 text-warning mr-1" /><strong className="text-warning">Layer Switch</strong> — Swaps render order when combined</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+              <div className="flex gap-3">
+                <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-sm">Quick Actions</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Drag from a layer's handle to another layer to create a connection. Click any connection line and press Delete or Backspace to remove it.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       ),
