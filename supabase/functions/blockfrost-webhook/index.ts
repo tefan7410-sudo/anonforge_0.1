@@ -164,27 +164,43 @@ Deno.serve(async (req) => {
         const amountLovelace = parseInt(lovelaceAmount.quantity, 10);
         console.log(`Found payment of ${amountLovelace} lovelace to our address`);
 
-        // Try to match with a pending payment
-        const { data: result, error } = await supabase.rpc('process_ada_payment', {
+        // Try to match with a pending credit payment
+        const { data: creditResult, error: creditError } = await supabase.rpc('process_ada_payment', {
           p_expected_amount_lovelace: amountLovelace,
           p_tx_hash: txHash,
         });
 
-        if (error) {
-          console.error('Error processing payment:', error);
-          continue;
+        if (creditError) {
+          console.error('Error processing credit payment:', creditError);
+        } else if (creditResult && creditResult.length > 0) {
+          const payment = creditResult[0];
+          if (payment.already_processed) {
+            console.log(`Credit payment ${payment.payment_id} already processed (idempotent)`);
+          } else {
+            console.log(`✅ Credit payment processed! User ${payment.user_id} received ${payment.credits_amount} credits`);
+          }
+          continue; // Found a match, no need to check marketing
         }
 
-        if (result && result.length > 0) {
-          const payment = result[0];
+        // Try to match with a pending marketing payment
+        const { data: marketingResult, error: marketingError } = await supabase.rpc('process_marketing_payment', {
+          p_expected_amount_lovelace: amountLovelace,
+          p_tx_hash: txHash,
+        });
+
+        if (marketingError) {
+          console.error('Error processing marketing payment:', marketingError);
+        } else if (marketingResult && marketingResult.length > 0) {
+          const payment = marketingResult[0];
           if (payment.already_processed) {
-            console.log(`Payment ${payment.payment_id} already processed (idempotent)`);
+            console.log(`Marketing payment ${payment.payment_id} already processed (idempotent)`);
           } else {
-            console.log(`✅ Payment processed! User ${payment.user_id} received ${payment.credits_amount} credits`);
+            console.log(`✅ Marketing payment processed! Request ${payment.marketing_request_id} set to paid`);
           }
-        } else {
-          console.log(`No matching pending payment found for ${amountLovelace} lovelace`);
+          continue; // Found a match
         }
+
+        console.log(`No matching pending payment found for ${amountLovelace} lovelace`);
       }
     }
 
