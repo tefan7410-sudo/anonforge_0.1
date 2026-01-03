@@ -19,7 +19,7 @@ export const CREDIT_TIERS: CreditTier[] = [
   { 
     id: 'starter',
     credits: 1000, 
-    priceAda: 25, 
+    priceAda: 17, 
     label: 'Starter',
     fullResExports: 20000,
     previewExports: 500000,
@@ -27,7 +27,7 @@ export const CREDIT_TIERS: CreditTier[] = [
   { 
     id: 'popular',
     credits: 2500, 
-    priceAda: 50, 
+    priceAda: 33, 
     label: 'Popular', 
     badge: 'Most Popular',
     fullResExports: 50000,
@@ -36,7 +36,7 @@ export const CREDIT_TIERS: CreditTier[] = [
   { 
     id: 'pro',
     credits: 5000, 
-    priceAda: 80, 
+    priceAda: 53, 
     label: 'Pro', 
     badge: 'Best Value',
     fullResExports: 100000,
