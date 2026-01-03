@@ -621,6 +621,51 @@ export type Database = {
           },
         ]
       }
+      pending_credit_payments: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          credits_amount: number
+          dust_amount: number
+          expected_amount_lovelace: number
+          expires_at: string
+          id: string
+          price_ada: number
+          status: string
+          tier_id: string
+          tx_hash: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          credits_amount: number
+          dust_amount: number
+          expected_amount_lovelace: number
+          expires_at?: string
+          id?: string
+          price_ada: number
+          status?: string
+          tier_id: string
+          tx_hash?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          credits_amount?: number
+          dust_amount?: number
+          expected_amount_lovelace?: number
+          expires_at?: string
+          id?: string
+          price_ada?: number
+          status?: string
+          tier_id?: string
+          tx_hash?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_pages: {
         Row: {
           admin_approved: boolean | null
@@ -1072,6 +1117,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      expire_pending_payments: { Args: never; Returns: number }
       get_my_pending_invitations: {
         Args: never
         Returns: {
@@ -1103,6 +1149,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      process_ada_payment: {
+        Args: { p_expected_amount_lovelace: number; p_tx_hash: string }
+        Returns: {
+          already_processed: boolean
+          credits_amount: number
+          payment_id: string
+          user_id: string
+        }[]
       }
       project_has_live_product_page: {
         Args: { project_id: string }

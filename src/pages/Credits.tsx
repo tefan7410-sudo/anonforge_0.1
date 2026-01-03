@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreditBalance, useCreditTransactions } from '@/hooks/use-credits';
 import { CREDIT_TIERS, MONTHLY_FREE_CREDITS, CREDIT_COSTS, formatCredits } from '@/lib/credit-constants';
@@ -19,30 +19,35 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft,
-  Layers,
   Coins,
   Sparkles,
   Clock,
-  ExternalLink,
   History,
   Zap,
   Image as ImageIcon,
   LogOut,
   TrendingUp,
+  Loader2,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { PageTransition } from '@/components/PageTransition';
+import { PaymentModal } from '@/components/credits/PaymentModal';
+import { useCreatePaymentIntent, PaymentIntent } from '@/hooks/use-payment-intent';
 
 export default function Credits() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuth();
   const { toast } = useToast();
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [currentPaymentIntent, setCurrentPaymentIntent] = useState<PaymentIntent | null>(null);
+  const [loadingTier, setLoadingTier] = useState<string | null>(null);
+  
+  const createPaymentIntent = useCreatePaymentIntent();
   
   const {
-    credits,
     isLoading,
     totalCredits,
     freeCredits,
@@ -56,14 +61,22 @@ export default function Credits() {
   
   const { data: transactions, isLoading: transactionsLoading } = useCreditTransactions(20);
 
-  const handlePurchase = (tier: typeof CREDIT_TIERS[number]) => {
-    // Open NMKR payment link - for now just show toast
-    toast({
-      title: 'Coming Soon',
-      description: `Payment integration for ${tier.credits} credits (${tier.priceAda} ADA) will be available soon.`,
-    });
-    // TODO: Integrate with NMKR payment links
-    // window.open(`https://pay.nmkr.io/...`, '_blank');
+  const handlePurchase = async (tier: typeof CREDIT_TIERS[number]) => {
+    try {
+      setLoadingTier(tier.id);
+      const paymentIntent = await createPaymentIntent.mutateAsync(tier.id);
+      setCurrentPaymentIntent(paymentIntent);
+      setPaymentModalOpen(true);
+    } catch (error) {
+      console.error('Payment intent error:', error);
+      toast({
+        title: 'Payment Error',
+        description: error instanceof Error ? error.message : 'Failed to create payment. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingTier(null);
+    }
   };
 
   const handleSignOut = async () => {
@@ -279,9 +292,16 @@ export default function Credits() {
                         className="w-full" 
                         variant={tier.badge ? 'default' : 'outline'}
                         onClick={() => handlePurchase(tier)}
+                        disabled={loadingTier === tier.id || createPaymentIntent.isPending}
                       >
-                        Buy Now
-                        <ExternalLink className="ml-2 h-4 w-4" />
+                        {loadingTier === tier.id ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          'Buy Now'
+                        )}
                       </Button>
                     </CardContent>
                   </Card>
@@ -289,7 +309,7 @@ export default function Credits() {
               </div>
 
               <p className="text-sm text-muted-foreground text-center mt-6">
-                All payments are processed securely through NMKR Pay in ADA.
+                All payments are processed securely via Cardano blockchain.
               </p>
             </CardContent>
           </Card>
@@ -355,6 +375,12 @@ export default function Credits() {
       </main>
 
       <FloatingHelpButton />
+
+      <PaymentModal
+        open={paymentModalOpen}
+        onOpenChange={setPaymentModalOpen}
+        paymentIntent={currentPaymentIntent}
+      />
     </div>
     </PageTransition>
   );
