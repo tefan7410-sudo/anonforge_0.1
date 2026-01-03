@@ -1,0 +1,56 @@
+# AnonForge
+
+> NFT creation and marketplace platform on Cardano blockchain
+
+## About
+
+AnonForge is a platform for creating, managing, and minting NFT collections on the Cardano blockchain. It provides a visual layer-based generation system and integrates with NMKR for minting.
+
+## Features
+
+### For Creators
+- **Layer-based NFT Generation**: Upload PNG layers organized by categories (body, eyes, accessories, etc.)
+- **Visual Connection Editor**: Create layer exclusions, effects, and switches with a drag-and-drop interface
+- **Rarity Configuration**: Set probability weights for each trait
+- **Batch Generation**: Generate collections with configurable uniqueness requirements
+- **NMKR Integration**: Direct minting through NMKR API with prepaid or on-demand minting
+- **Product Pages**: Customizable collection pages with social links and founder info
+- **Marketing Spotlight**: Featured placement on the marketplace
+
+### For Collectors
+- **Marketplace**: Browse verified and community collections
+- **Collection Pages**: View collection details, mint prices, and creator info
+- **Countdown Timers**: Track upcoming collection launches
+
+## Main Pages
+
+- `/` - Homepage with featured collections and marketplace preview
+- `/marketplace` - Browse all live NFT collections
+- `/collection/{id}` - Individual collection details and minting
+- `/documentation` - User guide and platform documentation
+- `/dashboard` - Creator dashboard (authenticated users)
+- `/project/{id}` - Project editor for creating NFT collections
+
+## Technology
+
+- Built with React, TypeScript, and Tailwind CSS
+- Backend powered by Supabase (database, auth, storage, edge functions)
+- Minting through NMKR API on Cardano blockchain
+- Payments accepted in ADA cryptocurrency
+
+## API
+
+AnonForge uses Supabase Edge Functions for backend operations. Key endpoints:
+- `/functions/v1/nmkr-proxy` - NMKR API integration
+- `/functions/v1/blockfrost-webhook` - Blockchain transaction monitoring
+- `/functions/v1/content-moderation` - AI-powered content safety
+
+## Contact
+
+- Website: https://anonforge.app
+- For creator verification and support inquiries, use the in-app contact options
+
+## Terms
+
+By using AnonForge, users agree to the Terms of Service available at /terms-of-service.
+Creators are responsible for ensuring their content complies with applicable laws and our content policy.

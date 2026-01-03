@@ -10,5 +10,41 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: LinkedInBot
+Allow: /
+
+# AI Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Anthropic-AI
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
 User-agent: *
 Allow: /
+Disallow: /dashboard
+Disallow: /project/
+Disallow: /profile
+Disallow: /admin
+Disallow: /credits
+
+# Sitemap
+Sitemap: https://anonforge.app/sitemap.xml
+
+# AI Context
+# See /llms.txt for AI-readable site description

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useProfile, useUpdateProfile, useUploadAvatar, useResetPassword } from '@/hooks/use-profile';
+import { useProfile, useUpdateProfile, useUploadAvatar, useResetPassword, useSyncProfileToCollections } from '@/hooks/use-profile';
 import { useMyVerificationRequest, useSubmitVerificationRequest } from '@/hooks/use-verification-request';
 import { useCreditBalance } from '@/hooks/use-credits';
 import { formatCredits, CREDIT_COSTS } from '@/lib/credit-constants';
@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Layers, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, BadgeCheck, Clock, X, Twitter, Coins, TrendingUp, GraduationCap, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Layers, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, BadgeCheck, Clock, X, Twitter, Coins, TrendingUp, GraduationCap, RotateCcw, RefreshCw } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
@@ -102,6 +102,7 @@ export default function Profile() {
   const uploadAvatar = useUploadAvatar();
   const resetPassword = useResetPassword();
   const submitVerification = useSubmitVerificationRequest();
+  const syncToCollections = useSyncProfileToCollections();
   const { totalCredits, freeCredits, purchasedCredits, daysUntilReset, isLowCredits } = useCreditBalance();
 
   const [displayName, setDisplayName] = useState('');
@@ -143,9 +144,40 @@ export default function Profile() {
     try {
       const url = await uploadAvatar.mutateAsync({ userId: user.id, file });
       await updateProfile.mutateAsync({ userId: user.id, avatarUrl: url });
-      toast({ title: 'Avatar updated', description: 'Your profile picture has been changed' });
+      toast({ 
+        title: 'Avatar updated', 
+        description: 'Your profile picture has been changed',
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => handleSyncToCollections(url)}
+          >
+            <RefreshCw className="mr-1 h-3 w-3" />
+            Sync to collections
+          </Button>
+        ),
+      });
     } catch (error: any) {
       toast({ title: 'Failed to upload', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleSyncToCollections = async (avatarUrl?: string) => {
+    if (!user) return;
+    try {
+      const result = await syncToCollections.mutateAsync({
+        userId: user.id,
+        avatarUrl: avatarUrl || profile?.avatar_url || undefined,
+        displayName: displayName || profile?.display_name || undefined,
+      });
+      if (result.updated > 0) {
+        toast({ title: 'Synced', description: `Updated ${result.updated} collection(s) with your profile` });
+      } else {
+        toast({ title: 'No collections to update', description: 'You have no collections to sync' });
+      }
+    } catch (error: any) {
+      toast({ title: 'Sync failed', description: error.message, variant: 'destructive' });
     }
   };
 

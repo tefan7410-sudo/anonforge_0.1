@@ -13,6 +13,7 @@ import { useCollectionStatuses } from '@/hooks/use-collection-status';
 import { FeaturedSpotlight } from '@/components/FeaturedSpotlight';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { PageTransition } from '@/components/PageTransition';
+import { SEOHead } from '@/components/SEOHead';
 import { cn } from '@/lib/utils';
 import {
   Pagination,
@@ -90,6 +91,8 @@ function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection;
                 src={collection.banner_url}
                 alt={`${collection.project.name} banner`}
                 className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                loading="lazy"
+                decoding="async"
               />
             ) : (
               <div className="flex h-full items-center justify-center">
@@ -130,6 +133,8 @@ function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection;
                 src={collection.logo_url}
                 alt={`${collection.project.name} logo`}
                 className="h-16 w-16 rounded-xl border-2 border-background object-cover shadow-lg"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           )}
@@ -234,6 +239,12 @@ export default function Marketplace() {
 
   return (
     <PageTransition>
+    <SEOHead
+      title="NFT Marketplace"
+      description="Browse curated NFT collections from independent creators on Cardano. Discover unique digital art and mint directly with NMKR."
+      url="/marketplace"
+      keywords={['NFT marketplace', 'Cardano NFT', 'digital art', 'NFT collections', 'mint NFT']}
+    />
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50">

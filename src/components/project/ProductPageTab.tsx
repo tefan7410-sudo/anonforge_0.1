@@ -7,7 +7,7 @@ import {
   useDeleteProductImage,
   type PortfolioItem 
 } from '@/hooks/use-product-page';
-import { useProfile } from '@/hooks/use-profile';
+import { useProfile, useUpdateProfile } from '@/hooks/use-profile';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNmkrProject, useGetNmkrPayLink } from '@/hooks/use-nmkr';
 import { useCreatorCollections } from '@/hooks/use-creator-collections';
@@ -193,14 +193,34 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
     maxFiles: 1,
   });
 
-  // Founder PFP upload
+  // Founder PFP upload with option to sync to profile
+  const updateProfile = useUpdateProfile();
+  
   const onFounderPfpDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (!file) return;
     
     const url = await uploadImage.mutateAsync({ projectId, file, type: 'founder' });
     setFounderPfpUrl(url);
-  }, [projectId, uploadImage]);
+    
+    // Offer to sync to profile if user is not a verified creator
+    if (!isVerifiedCreator && user?.id) {
+      toast.info('Founder image uploaded', {
+        description: 'Want to use this as your profile picture too?',
+        action: {
+          label: 'Sync to profile',
+          onClick: async () => {
+            try {
+              await updateProfile.mutateAsync({ userId: user.id, avatarUrl: url });
+              toast.success('Profile picture updated');
+            } catch (err: any) {
+              toast.error('Failed to sync: ' + err.message);
+            }
+          },
+        },
+      });
+    }
+  }, [projectId, uploadImage, isVerifiedCreator, user?.id, updateProfile]);
 
   const { getRootProps: getFounderPfpRootProps, getInputProps: getFounderPfpInputProps, isDragActive: isFounderPfpDragActive } = useDropzone({
     onDrop: onFounderPfpDrop,

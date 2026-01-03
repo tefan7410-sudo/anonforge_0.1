@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { validateImageUpload, type ImageLimits } from '@/lib/image-validation';
 
 export interface PortfolioItem {
   id: string;
@@ -155,7 +156,15 @@ export function useUpdateProductPage() {
   });
 }
 
-// Upload image to product-assets bucket
+// Map product image types to validation types
+const imageTypeMap: Record<string, keyof typeof import('@/lib/image-validation').IMAGE_LIMITS> = {
+  banner: 'banner',
+  logo: 'logo',
+  founder: 'founder',
+  portfolio: 'portfolio',
+};
+
+// Upload image to product-assets bucket with validation
 export function useUploadProductImage() {
   const queryClient = useQueryClient();
 
@@ -169,6 +178,13 @@ export function useUploadProductImage() {
       file: File;
       type: 'banner' | 'logo' | 'founder' | 'portfolio';
     }) => {
+      // Validate image before upload
+      const validationType = imageTypeMap[type] || 'banner';
+      const validation = await validateImageUpload(file, validationType);
+      if (!validation.isValid) {
+        throw new Error(validation.error);
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${projectId}/${type}/${Date.now()}.${fileExt}`;
 

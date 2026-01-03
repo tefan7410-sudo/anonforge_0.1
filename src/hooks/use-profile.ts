@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { validateImageUpload } from '@/lib/image-validation';
 
 export interface Profile {
   id: string;
@@ -90,6 +91,12 @@ export function useUpdateProfile() {
 export function useUploadAvatar() {
   return useMutation({
     mutationFn: async ({ userId, file }: { userId: string; file: File }) => {
+      // Validate image
+      const validation = await validateImageUpload(file, 'avatar');
+      if (!validation.isValid) {
+        throw new Error(validation.error);
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}/avatar.${fileExt}`;
 
@@ -101,6 +108,51 @@ export function useUploadAvatar() {
 
       const { data } = supabase.storage.from('layers').getPublicUrl(fileName);
       return data.publicUrl;
+    },
+  });
+}
+
+/**
+ * Sync profile avatar to all owned collections
+ */
+export function useSyncProfileToCollections() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, avatarUrl, displayName }: { 
+      userId: string; 
+      avatarUrl?: string; 
+      displayName?: string;
+    }) => {
+      // Get all projects owned by user
+      const { data: projects, error: projectsError } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('owner_id', userId);
+
+      if (projectsError) throw projectsError;
+      if (!projects || projects.length === 0) return { updated: 0 };
+
+      const projectIds = projects.map(p => p.id);
+
+      // Update all product pages for these projects
+      const updates: Record<string, unknown> = {};
+      if (avatarUrl !== undefined) updates.founder_pfp_url = avatarUrl;
+      if (displayName !== undefined) updates.founder_name = displayName;
+
+      if (Object.keys(updates).length === 0) return { updated: 0 };
+
+      const { data, error } = await supabase
+        .from('product_pages')
+        .update(updates)
+        .in('project_id', projectIds)
+        .select('id');
+
+      if (error) throw error;
+      return { updated: data?.length || 0 };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['product-page'] });
     },
   });
 }
