@@ -7,12 +7,12 @@ import {
   useCreateMarketingRequest,
   useUploadMarketingImage,
   useMarketingBookings,
-  usePayForMarketing,
+  useCreateMarketingPaymentIntent,
   calculateMarketingPrice,
+  type MarketingPaymentIntent,
 } from '@/hooks/use-marketing';
-import { useCreatePaymentIntent, usePaymentStatus } from '@/hooks/use-payment-intent';
 import { CountdownTimer } from '@/components/CountdownTimer';
-import { PaymentModal } from '@/components/credits/PaymentModal';
+import { MarketingPaymentModal } from '@/components/credits/MarketingPaymentModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,12 +35,11 @@ import {
   Loader2,
   AlertCircle,
   CalendarIcon,
+  CalendarCheck,
   Wallet,
-  Copy,
-  ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatDistanceToNow, format, differenceInDays, eachDayOfInterval, isWithinInterval, addDays, isBefore, startOfDay } from 'date-fns';
+import { formatDistanceToNow, format, differenceInDays, eachDayOfInterval, addDays, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface MarketingTabProps {
@@ -71,13 +70,14 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
   const { data: bookings = [] } = useMarketingBookings();
   const createRequest = useCreateMarketingRequest();
   const uploadImage = useUploadMarketingImage();
-  const payForMarketing = usePayForMarketing();
+  const createPaymentIntent = useCreateMarketingPaymentIntent();
 
   const [selectedRange, setSelectedRange] = useState<DateRange | undefined>();
   const [message, setMessage] = useState('');
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentIntent, setPaymentIntent] = useState<MarketingPaymentIntent | null>(null);
 
   // Payment deadline for approved requests (24h from approval)
   const paymentDeadline = useMemo(() => {
@@ -90,9 +90,6 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
   }, [marketingRequest]);
 
   const isPaymentExpired = paymentDeadline ? new Date() > paymentDeadline : false;
-
-  // Hardcoded ADA address for marketing payments (same as credits)
-  const MARKETING_PAYMENT_ADDRESS = 'addr1qy8ac7qqy0vtulyl7wntmsxc6wex80gvcyjy33qffrhm7sh927ydan5xvkg49szlqedxr7jl62ulnzyxs5p7pnl730zsqc5m4p';
 
   // Calculate duration and price from selected range
   const durationDays = useMemo(() => {
@@ -180,9 +177,23 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
     });
   };
 
-  // Disable dates that are booked or in the past
+  // Handle starting payment flow
+  const handleStartPayment = async () => {
+    if (!marketingRequest) return;
+    
+    try {
+      const intent = await createPaymentIntent.mutateAsync(marketingRequest.id);
+      setPaymentIntent(intent);
+      setPaymentModalOpen(true);
+    } catch {
+      // Error handled by hook
+    }
+  };
+
+  // Disable dates that are booked, in the past, or today (can never purchase for today)
+  const tomorrow = addDays(startOfDay(new Date()), 1);
   const disabledDays = [
-    { before: startOfDay(new Date()) },
+    { before: tomorrow }, // Can't select today or earlier
     ...bookedDates.map(date => startOfDay(date)),
   ];
 
@@ -249,6 +260,22 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
                   </div>
                 </div>
 
+                {/* Spotlight Dates Confirmation */}
+                {marketingRequest.start_date && marketingRequest.end_date && (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CalendarCheck className="h-4 w-4 text-amber-600" />
+                      <span className="font-medium text-amber-700 dark:text-amber-400">Your Spotlight Dates</span>
+                    </div>
+                    <p className="text-sm font-medium">
+                      {format(new Date(marketingRequest.start_date), 'MMMM d')} - {format(new Date(marketingRequest.end_date), 'MMMM d, yyyy')}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your campaign will go live at 00:01 UTC on {format(new Date(marketingRequest.start_date), 'MMMM d')}
+                    </p>
+                  </div>
+                )}
+
                 {/* Payment Card */}
                 <div className="rounded-lg border-2 border-primary/50 bg-card p-6 space-y-4">
                   <div className="flex items-center justify-between">
@@ -271,47 +298,26 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
                     <p className="text-3xl font-bold">{marketingRequest.price_ada} ADA</p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Send payment to this address:</Label>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 rounded bg-muted p-3 text-xs font-mono break-all">
-                        {MARKETING_PAYMENT_ADDRESS}
-                      </code>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          navigator.clipboard.writeText(MARKETING_PAYMENT_ADDRESS);
-                          setCopiedAddress(true);
-                          toast.success('Address copied!');
-                          setTimeout(() => setCopiedAddress(false), 2000);
-                        }}
-                      >
-                        {copiedAddress ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-
                   <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 p-3">
                     <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
                     <p className="text-xs text-amber-700 dark:text-amber-400">
-                      Send <strong>exactly {marketingRequest.price_ada} ADA</strong>. After sending, click "I've Paid" below. 
-                      Your marketing will activate once we verify the payment.
+                      Click the button below to get a unique payment amount. 
+                      The unique decimal amount will be used to automatically verify your payment.
                     </p>
                   </div>
 
                   <Button 
                     className="w-full" 
                     size="lg"
-                    onClick={() => payForMarketing.mutate({ requestId: marketingRequest.id })}
-                    disabled={payForMarketing.isPending}
+                    onClick={handleStartPayment}
+                    disabled={createPaymentIntent.isPending}
                   >
-                    {payForMarketing.isPending ? (
+                    {createPaymentIntent.isPending ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                      <Check className="mr-2 h-4 w-4" />
+                      <Wallet className="mr-2 h-4 w-4" />
                     )}
-                    I've Paid - Activate My Spotlight
+                    Start Payment
                   </Button>
                 </div>
               </div>
@@ -326,6 +332,25 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
                     <p className="text-sm text-muted-foreground mt-1">
                       The 24-hour payment window has passed. Please submit a new marketing request.
                     </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {marketingRequest.status === 'paid' && (
+              <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+                <div className="flex items-start gap-3">
+                  <CalendarCheck className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <p className="font-medium text-primary">Payment Confirmed - Spotlight Scheduled!</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Your spotlight is scheduled and will go live at 00:01 UTC on the start date.
+                    </p>
+                    {marketingRequest.start_date && marketingRequest.end_date && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Spotlight dates: {format(new Date(marketingRequest.start_date), 'MMMM d')} - {format(new Date(marketingRequest.end_date), 'MMMM d, yyyy')}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -381,6 +406,13 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Payment Modal */}
+        <MarketingPaymentModal
+          open={paymentModalOpen}
+          onOpenChange={setPaymentModalOpen}
+          paymentIntent={paymentIntent}
+        />
 
         {/* Coming Soon Section */}
         <ComingSoonSection />
@@ -644,6 +676,13 @@ function StatusBadge({ status }: { status: string }) {
         <Badge className="gap-1 bg-amber-500 text-white">
           <Sparkles className="h-3 w-3" />
           Active
+        </Badge>
+      );
+    case 'paid':
+      return (
+        <Badge variant="outline" className="gap-1 text-primary border-primary/50">
+          <CalendarCheck className="h-3 w-3" />
+          Scheduled
         </Badge>
       );
     case 'rejected':

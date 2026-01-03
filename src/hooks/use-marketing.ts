@@ -6,7 +6,7 @@ export interface MarketingRequest {
   id: string;
   project_id: string;
   user_id: string;
-  status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed' | 'expired';
+  status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed' | 'expired' | 'paid';
   duration_days: number;
   price_ada: number;
   message: string | null;
@@ -39,6 +39,18 @@ export interface MarketingBooking {
   status: string;
 }
 
+export interface MarketingPaymentIntent {
+  paymentId: string;
+  address: string;
+  amountAda: string;
+  amountLovelace: number;
+  priceAda: number;
+  dustAmount: number;
+  expiresAt: string;
+  startDate: string | null;
+  endDate: string | null;
+}
+
 const PRICE_PER_DAY = 25;
 
 export const calculateMarketingPrice = (days: number) => days * PRICE_PER_DAY;
@@ -51,11 +63,59 @@ export function useMarketingBookings() {
       const { data, error } = await supabase
         .from('marketing_requests')
         .select('id, start_date, end_date, status')
-        .in('status', ['pending', 'approved', 'active'])
+        .in('status', ['pending', 'approved', 'active', 'paid'])
         .gte('end_date', new Date().toISOString());
 
       if (error) throw error;
       return (data || []) as MarketingBooking[];
+    },
+  });
+}
+
+// Create marketing payment intent (for Blockfrost webhook flow)
+export function useCreateMarketingPaymentIntent() {
+  return useMutation({
+    mutationFn: async (marketingRequestId: string) => {
+      const { data, error } = await supabase.functions.invoke(
+        'create-marketing-payment-intent',
+        { body: { marketingRequestId } }
+      );
+      
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      return data as MarketingPaymentIntent;
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to create payment');
+    },
+  });
+}
+
+// Check marketing payment status
+export function useMarketingPaymentStatus(paymentId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ['marketing-payment-status', paymentId],
+    queryFn: async () => {
+      if (!paymentId) return null;
+      
+      const { data, error } = await supabase
+        .from('pending_marketing_payments')
+        .select('status, tx_hash, completed_at, expires_at')
+        .eq('id', paymentId)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!paymentId && enabled,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      // Poll every 5 seconds if payment is still pending
+      if (data?.status === 'pending') {
+        return 5000;
+      }
+      return false;
     },
   });
 }

@@ -135,7 +135,10 @@ export function NotificationDropdown() {
                       <div className="h-2 w-2 rounded-full bg-primary" />
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p 
+                    className="text-xs text-muted-foreground line-clamp-3"
+                    title={notification.message}
+                  >
                     {notification.message}
                   </p>
                   <span className="text-xs text-muted-foreground/70">

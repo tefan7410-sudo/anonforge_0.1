@@ -728,6 +728,56 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_marketing_payments: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          dust_amount: number
+          expected_amount_lovelace: number
+          expires_at: string
+          id: string
+          marketing_request_id: string
+          price_ada: number
+          status: string
+          tx_hash: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          dust_amount: number
+          expected_amount_lovelace: number
+          expires_at?: string
+          id?: string
+          marketing_request_id: string
+          price_ada: number
+          status?: string
+          tx_hash?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          dust_amount?: number
+          expected_amount_lovelace?: number
+          expires_at?: string
+          id?: string
+          marketing_request_id?: string
+          price_ada?: number
+          status?: string
+          tx_hash?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_marketing_payments_marketing_request_id_fkey"
+            columns: ["marketing_request_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_pages: {
         Row: {
           admin_approved: boolean | null
@@ -1159,6 +1209,7 @@ export type Database = {
         Args: { invitation_id: string }
         Returns: undefined
       }
+      activate_marketing_on_schedule: { Args: never; Returns: number }
       add_purchased_credits: {
         Args: { p_amount: number; p_description?: string; p_user_id: string }
         Returns: undefined
@@ -1185,6 +1236,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      expire_pending_marketing_payments: { Args: never; Returns: number }
       expire_pending_payments: { Args: never; Returns: number }
       get_my_pending_invitations: {
         Args: never
@@ -1223,6 +1275,15 @@ export type Database = {
         Returns: {
           already_processed: boolean
           credits_amount: number
+          payment_id: string
+          user_id: string
+        }[]
+      }
+      process_marketing_payment: {
+        Args: { p_expected_amount_lovelace: number; p_tx_hash: string }
+        Returns: {
+          already_processed: boolean
+          marketing_request_id: string
           payment_id: string
           user_id: string
         }[]
