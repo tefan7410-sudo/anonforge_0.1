@@ -17,6 +17,7 @@ import NewProject from "./pages/NewProject";
 import ProjectDetail from "./pages/ProjectDetail";
 import ProjectSettings from "./pages/ProjectSettings";
 import Profile from "./pages/Profile";
+import Credits from "./pages/Credits";
 import TermsOfService from "./pages/TermsOfService";
 import Collection from "./pages/Collection";
 import Marketplace from "./pages/Marketplace";
@@ -53,6 +54,14 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/credits"
+                  element={
+                    <ProtectedRoute>
+                      <Credits />
                     </ProtectedRoute>
                   }
                 />

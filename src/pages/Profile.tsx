@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile, useUpdateProfile, useUploadAvatar, useResetPassword } from '@/hooks/use-profile';
 import { useMyVerificationRequest, useSubmitVerificationRequest } from '@/hooks/use-verification-request';
+import { useCreditBalance } from '@/hooks/use-credits';
+import { formatCredits, CREDIT_COSTS } from '@/lib/credit-constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Layers, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, HelpCircle, BadgeCheck, Clock, X, Twitter } from 'lucide-react';
+import { ArrowLeft, Layers, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, HelpCircle, BadgeCheck, Clock, X, Twitter, Coins, TrendingUp } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 
@@ -40,6 +42,7 @@ export default function Profile() {
   const uploadAvatar = useUploadAvatar();
   const resetPassword = useResetPassword();
   const submitVerification = useSubmitVerificationRequest();
+  const { totalCredits, freeCredits, purchasedCredits, daysUntilReset, isLowCredits } = useCreditBalance();
 
   const [displayName, setDisplayName] = useState('');
   const [initialized, setInitialized] = useState(false);
@@ -398,6 +401,51 @@ export default function Profile() {
                   </Button>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Credits & Billing */}
+          <Card className={isLowCredits ? 'border-orange-500/50' : ''}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-display">
+                <Coins className="h-5 w-5" />
+                Credits & Billing
+                {isLowCredits && (
+                  <Badge variant="outline" className="border-orange-500 text-orange-500">
+                    Low Balance
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription>Your credit balance and usage</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="rounded-lg border border-border/50 bg-muted/30 p-3 text-center">
+                  <p className="text-2xl font-bold">{formatCredits(totalCredits)}</p>
+                  <p className="text-xs text-muted-foreground">Total Credits</p>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-muted/30 p-3 text-center">
+                  <p className="text-2xl font-bold">{formatCredits(freeCredits)}</p>
+                  <p className="text-xs text-muted-foreground">Free (resets in {daysUntilReset}d)</p>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-muted/30 p-3 text-center">
+                  <p className="text-2xl font-bold">{formatCredits(purchasedCredits)}</p>
+                  <p className="text-xs text-muted-foreground">Purchased</p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-2">
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Full resolution: {CREDIT_COSTS.FULL_RESOLUTION} credits • Preview: {CREDIT_COSTS.PREVIEW} credits
+                  </p>
+                </div>
+                <Button variant="outline" asChild>
+                  <Link to="/credits">
+                    <TrendingUp className="mr-2 h-4 w-4" />
+                    View Details & Buy
+                  </Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
 

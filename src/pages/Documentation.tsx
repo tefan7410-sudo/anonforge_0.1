@@ -622,6 +622,97 @@ export default function Documentation() {
       ),
     },
     {
+      id: 'credits-system',
+      title: 'Credits System',
+      icon: CreditCard,
+      keywords: ['credits', 'balance', 'purchase', 'buy', 'cost', 'price', 'ada', 'free', 'monthly', 'reset', 'generation', 'preview', 'full resolution'],
+      content: (
+        <div className="space-y-6">
+          <p className="text-muted-foreground">
+            AnonForge uses a credit system for generating images. Every user receives free monthly credits, and you can purchase more for larger batch generations.
+          </p>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold">Credit Costs</h4>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-card">
+                <div className="h-8 w-8 rounded bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                  <FileImage className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Full Resolution (3000×3000)</p>
+                  <p className="text-xs text-muted-foreground">0.1 credits per image</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-card">
+                <div className="h-8 w-8 rounded bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                  <Zap className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Preview Mode (384×384)</p>
+                  <p className="text-xs text-muted-foreground">0.005 credits per image (20x cheaper!)</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold">Free Monthly Credits</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground ml-6">
+              <li className="flex items-start gap-2">
+                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <span>Every user receives <strong className="text-foreground">100 free credits</strong> each month</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <span>Credits reset on your registration anniversary date each month</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <span>100 credits = 1,000 full resolution exports OR 20,000 preview exports</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold">Purchase Credits</h4>
+            <p className="text-sm text-muted-foreground">
+              Need to generate thousands of assets for a large collection? Purchase additional credits that never expire.
+            </p>
+            <div className="rounded-lg border border-border/50 bg-muted/30 p-4">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center">
+                  <span>1,000 credits</span>
+                  <span className="font-semibold">25 ADA</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>2,500 credits</span>
+                  <span className="font-semibold">50 ADA</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>5,000 credits</span>
+                  <span className="font-semibold">80 ADA</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <div className="flex gap-3">
+              <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Purchased Credits Never Expire</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Unlike free monthly credits, purchased credits remain in your account indefinitely. Free credits are always used first.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
       id: 'marketplace',
       title: 'Marketplace Listing',
       icon: Store,

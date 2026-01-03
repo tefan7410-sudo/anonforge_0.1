@@ -142,6 +142,72 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_purchases: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          credits_amount: number
+          id: string
+          nmkr_payment_id: string | null
+          price_ada: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          credits_amount: number
+          id?: string
+          nmkr_payment_id?: string | null
+          price_ada: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          credits_amount?: number
+          id?: string
+          nmkr_payment_id?: string | null
+          price_ada?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          generation_id: string | null
+          generation_type: string | null
+          id: string
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          generation_id?: string | null
+          generation_type?: string | null
+          id?: string
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          generation_id?: string | null
+          generation_type?: string | null
+          id?: string
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       generation_comments: {
         Row: {
           content: string
@@ -772,6 +838,36 @@ export type Database = {
           },
         ]
       }
+      user_credits: {
+        Row: {
+          created_at: string
+          free_credits: number
+          id: string
+          next_reset_at: string
+          purchased_credits: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          free_credits?: number
+          id?: string
+          next_reset_at: string
+          purchased_credits?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          free_credits?: number
+          id?: string
+          next_reset_at?: string
+          purchased_credits?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_nmkr_credentials: {
         Row: {
           api_key: string
@@ -856,9 +952,31 @@ export type Database = {
         Args: { invitation_id: string }
         Returns: undefined
       }
+      add_purchased_credits: {
+        Args: { p_amount: number; p_description?: string; p_user_id: string }
+        Returns: undefined
+      }
+      check_and_reset_credits: {
+        Args: { p_user_id: string }
+        Returns: {
+          free_credits: number
+          next_reset_at: string
+          purchased_credits: number
+        }[]
+      }
       decline_project_invitation: {
         Args: { invitation_id: string }
         Returns: undefined
+      }
+      deduct_credits: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_generation_id?: string
+          p_generation_type?: string
+          p_user_id: string
+        }
+        Returns: boolean
       }
       get_my_pending_invitations: {
         Args: never
