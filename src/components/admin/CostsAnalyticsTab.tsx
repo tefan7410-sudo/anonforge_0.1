@@ -1,19 +1,20 @@
-import { useOperationalCosts, useCompletedCreditPurchases } from "@/hooks/use-admin-costs";
+import { useOperationalCosts, useCompletedCreditPurchases, useCompletedMarketingPayments } from "@/hooks/use-admin-costs";
 import { useAdaPrice } from "@/hooks/use-ada-price";
 import { CostsSummaryCards } from "./CostsSummaryCards";
 import { RevenueChart } from "./RevenueChart";
-import { CreditPurchasesTable } from "./CreditPurchasesTable";
+import { InAppRevenueTable } from "./InAppRevenueTable";
 import { OperationalCostsTable } from "./OperationalCostsTable";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 
 export function CostsAnalyticsTab() {
   const { data: costs = [], isLoading: costsLoading } = useOperationalCosts();
   const { data: purchases = [], isLoading: purchasesLoading } = useCompletedCreditPurchases();
+  const { data: marketingPayments = [], isLoading: marketingLoading } = useCompletedMarketingPayments();
   const { data: adaPrice, isLoading: adaPriceLoading, isError: adaPriceError } = useAdaPrice();
 
-  const isLoading = costsLoading || purchasesLoading;
+  const isLoading = costsLoading || purchasesLoading || marketingLoading;
 
   if (isLoading) {
     return (
@@ -46,12 +47,13 @@ export function CostsAnalyticsTab() {
       <CostsSummaryCards 
         costs={costs} 
         purchases={purchases} 
+        marketingPayments={marketingPayments}
         adaPrice={adaPrice}
         adaPriceLoading={adaPriceLoading}
       />
-      <RevenueChart purchases={purchases} costs={costs} adaPrice={adaPrice} />
+      <RevenueChart purchases={purchases} marketingPayments={marketingPayments} costs={costs} adaPrice={adaPrice} />
       <div className="grid gap-6 lg:grid-cols-2">
-        <CreditPurchasesTable purchases={purchases} adaPrice={adaPrice} />
+        <InAppRevenueTable purchases={purchases} marketingPayments={marketingPayments} adaPrice={adaPrice} />
         <OperationalCostsTable costs={costs} />
       </div>
     </div>

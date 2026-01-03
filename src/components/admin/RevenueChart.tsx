@@ -3,23 +3,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
-import type { CreditPurchase, OperationalCost } from "@/hooks/use-admin-costs";
+import type { CreditPurchase, OperationalCost, MarketingPayment } from "@/hooks/use-admin-costs";
 import { calculateTotalMonthlyOperatingCosts } from "@/hooks/use-admin-costs";
 
 interface RevenueChartProps {
   purchases: CreditPurchase[];
+  marketingPayments: MarketingPayment[];
   costs: OperationalCost[];
   adaPrice: number | undefined;
 }
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
 
-export function RevenueChart({ purchases, costs, adaPrice }: RevenueChartProps) {
+export function RevenueChart({ purchases, marketingPayments, costs, adaPrice }: RevenueChartProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
 
   const chartData = useMemo(() => {
     const now = new Date();
     let startDate: Date;
+
+    // Combine all revenue items for finding oldest date
+    const allRevenueDates = [
+      ...purchases.map(p => p.completed_at),
+      ...marketingPayments.map(p => p.completed_at),
+    ].filter(Boolean) as string[];
 
     switch (timeRange) {
       case "7d":
@@ -32,11 +39,11 @@ export function RevenueChart({ purchases, costs, adaPrice }: RevenueChartProps) 
         startDate = subDays(now, 90);
         break;
       case "all":
-        const oldestPurchase = purchases.reduce((oldest, p) => {
-          const date = p.completed_at ? new Date(p.completed_at) : now;
+        const oldestDate = allRevenueDates.reduce((oldest, dateStr) => {
+          const date = new Date(dateStr);
           return date < oldest ? date : oldest;
         }, now);
-        startDate = oldestPurchase;
+        startDate = oldestDate;
         break;
     }
 
@@ -49,7 +56,8 @@ export function RevenueChart({ purchases, costs, adaPrice }: RevenueChartProps) 
       const dayEnd = new Date(dayStart);
       dayEnd.setDate(dayEnd.getDate() + 1);
 
-      const dayRevenueAda = purchases
+      // Credit purchases revenue
+      const creditRevenueAda = purchases
         .filter((p) => {
           if (!p.completed_at) return false;
           const date = new Date(p.completed_at);
@@ -57,8 +65,19 @@ export function RevenueChart({ purchases, costs, adaPrice }: RevenueChartProps) 
         })
         .reduce((sum, p) => sum + p.price_ada, 0);
 
+      // Marketing payments revenue
+      const marketingRevenueAda = marketingPayments
+        .filter((p) => {
+          if (!p.completed_at) return false;
+          const date = new Date(p.completed_at);
+          return date >= dayStart && date < dayEnd;
+        })
+        .reduce((sum, p) => sum + p.price_ada, 0);
+
+      const totalRevenueAda = creditRevenueAda + marketingRevenueAda;
+
       // Convert ADA revenue to USD
-      const dayRevenueUsd = adaPrice ? dayRevenueAda * adaPrice : 0;
+      const dayRevenueUsd = adaPrice ? totalRevenueAda * adaPrice : 0;
 
       return {
         date: format(day, "MMM dd"),
@@ -66,7 +85,7 @@ export function RevenueChart({ purchases, costs, adaPrice }: RevenueChartProps) 
         costs: Math.round(dailyCostUsd * 100) / 100,
       };
     });
-  }, [purchases, costs, timeRange, adaPrice]);
+  }, [purchases, marketingPayments, costs, timeRange, adaPrice]);
 
   return (
     <Card>

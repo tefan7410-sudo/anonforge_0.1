@@ -1,18 +1,19 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Wallet, PiggyBank } from "lucide-react";
-import type { OperationalCost, CreditPurchase } from "@/hooks/use-admin-costs";
+import type { OperationalCost, CreditPurchase, MarketingPayment } from "@/hooks/use-admin-costs";
 import { calculateTotalMonthlyOperatingCosts, calculateTotalRevenue } from "@/hooks/use-admin-costs";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CostsSummaryCardsProps {
   costs: OperationalCost[];
   purchases: CreditPurchase[];
+  marketingPayments: MarketingPayment[];
   adaPrice: number | undefined;
   adaPriceLoading: boolean;
 }
 
-export function CostsSummaryCards({ costs, purchases, adaPrice, adaPriceLoading }: CostsSummaryCardsProps) {
-  const totalRevenueAda = calculateTotalRevenue(purchases);
+export function CostsSummaryCards({ costs, purchases, marketingPayments, adaPrice, adaPriceLoading }: CostsSummaryCardsProps) {
+  const totalRevenueAda = calculateTotalRevenue(purchases, marketingPayments);
   const monthlyOperatingCostsUsd = calculateTotalMonthlyOperatingCosts(costs);
   
   // Convert revenue to USD
@@ -23,21 +24,35 @@ export function CostsSummaryCards({ costs, purchases, adaPrice, adaPriceLoading 
   // Calculate this month's revenue
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const thisMonthRevenueAda = purchases
+  
+  const thisMonthCreditRevenueAda = purchases
     .filter((p) => p.completed_at && new Date(p.completed_at) >= startOfMonth)
     .reduce((sum, p) => sum + p.price_ada, 0);
+  const thisMonthMarketingRevenueAda = marketingPayments
+    .filter((p) => p.completed_at && new Date(p.completed_at) >= startOfMonth)
+    .reduce((sum, p) => sum + p.price_ada, 0);
+  const thisMonthRevenueAda = thisMonthCreditRevenueAda + thisMonthMarketingRevenueAda;
   const thisMonthRevenueUsd = adaPrice ? thisMonthRevenueAda * adaPrice : 0;
 
   // Calculate last month's revenue for comparison
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-  const lastMonthRevenueAda = purchases
+  
+  const lastMonthCreditRevenueAda = purchases
     .filter((p) => {
       if (!p.completed_at) return false;
       const date = new Date(p.completed_at);
       return date >= startOfLastMonth && date <= endOfLastMonth;
     })
     .reduce((sum, p) => sum + p.price_ada, 0);
+  const lastMonthMarketingRevenueAda = marketingPayments
+    .filter((p) => {
+      if (!p.completed_at) return false;
+      const date = new Date(p.completed_at);
+      return date >= startOfLastMonth && date <= endOfLastMonth;
+    })
+    .reduce((sum, p) => sum + p.price_ada, 0);
+  const lastMonthRevenueAda = lastMonthCreditRevenueAda + lastMonthMarketingRevenueAda;
   const lastMonthRevenueUsd = adaPrice ? lastMonthRevenueAda * adaPrice : 0;
 
   const revenueChange = lastMonthRevenueUsd > 0 

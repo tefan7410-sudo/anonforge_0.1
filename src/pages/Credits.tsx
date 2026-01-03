@@ -228,7 +228,7 @@ export default function Credits() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Zap className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <span>Preview (384×384) exports cost only <strong className="text-foreground">{CREDIT_COSTS.PREVIEW} credits</strong> each — 20x cheaper!</span>
+                  <span>Preview (384×384) exports cost only <strong className="text-foreground">{CREDIT_COSTS.PREVIEW} credits</strong> each, 20x cheaper!</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Clock className="h-4 w-4 text-primary shrink-0 mt-0.5" />

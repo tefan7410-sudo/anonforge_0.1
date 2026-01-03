@@ -529,9 +529,9 @@ export default function Documentation() {
             </ul>
           </div>
 
-          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
             <div className="flex gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-sm">Important</p>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -709,6 +709,144 @@ export default function Documentation() {
               </div>
             </div>
           </div>
+
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <div className="flex gap-3">
+              <Shield className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Secure Blockchain Payments</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Credit purchases are paid in ADA and verified automatically via blockchain. Each payment includes a unique dust amount for automatic verification.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'marketing-spotlight',
+      title: 'Marketing & Spotlight',
+      icon: Sparkles,
+      keywords: ['marketing', 'spotlight', 'featured', 'promote', 'promotion', 'hero', 'banner', 'marquee', 'ada', 'payment', 'campaign'],
+      content: (
+        <div className="space-y-6">
+          <p className="text-muted-foreground">
+            Get your collection featured prominently on AnonForge. The spotlight program puts your project in front of collectors through hero placement, featured badges, and marquee banners.
+          </p>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold">What You Get</h4>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-card">
+                <div className="h-8 w-8 rounded bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Featured Badge</p>
+                  <p className="text-xs text-muted-foreground">Stand out in the marketplace</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-card">
+                <div className="h-8 w-8 rounded bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                  <FileImage className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Hero Placement</p>
+                  <p className="text-xs text-muted-foreground">Landing page spotlight section</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-card">
+                <div className="h-8 w-8 rounded bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                  <Link2 className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Marquee Banner</p>
+                  <p className="text-xs text-muted-foreground">Scrolling promotion across pages</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold">How It Works</h4>
+            <div className="space-y-3">
+              <div className="flex gap-4 items-start">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                  <span className="text-sm font-bold text-primary">1</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Select Your Dates</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Go to Marketing tab in your project. Select 1-5 consecutive days on the calendar. Unavailable dates are marked.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex gap-4 items-start">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                  <span className="text-sm font-bold text-primary">2</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Submit Request</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Optionally upload a custom hero image (16:9 recommended). Submit your request for admin review.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex gap-4 items-start">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                  <span className="text-sm font-bold text-primary">3</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Complete Payment</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Once approved, you have 24 hours to pay. Send exact ADA amount (includes unique dust amount for verification) to the provided address.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex gap-4 items-start">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                  <span className="text-sm font-bold text-primary">4</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Campaign Goes Live</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Your spotlight activates automatically at 00:01 UTC on your start date.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border/50 bg-muted/30 p-4">
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Price</span>
+                <span className="font-semibold">25 ADA per day</span>
+              </div>
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Maximum duration</span>
+                <span>5 consecutive days</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <div className="flex gap-3">
+              <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Payment Verification</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Payments are verified automatically via blockchain. The unique dust amount ensures your payment is correctly identified. Do not round the amount.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       ),
     },
@@ -764,9 +902,9 @@ export default function Documentation() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
             <div className="flex gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-sm">24-Hour Review Period</p>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -783,6 +921,18 @@ export default function Documentation() {
                 <p className="font-medium text-sm">Visibility</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   You can hide your collection from the marketplace at any time while still allowing direct access via your collection URL.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <div className="flex gap-3">
+              <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Want More Visibility?</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Check out our Marketing & Spotlight feature to get your collection featured prominently on the landing page and marketplace.
                 </p>
               </div>
             </div>
