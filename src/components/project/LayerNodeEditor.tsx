@@ -1,16 +1,31 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import {
   ReactFlow,
   Background,
   MiniMap,
   type Node,
   type Edge,
+  type Connection,
   useNodesState,
   useEdgesState,
+  ConnectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useCategories, useAllLayers, useAllExclusions, useAllEffects, useAllSwitches, type Layer } from '@/hooks/use-project';
+import { 
+  useCategories, 
+  useAllLayers, 
+  useAllExclusions, 
+  useAllEffects, 
+  useAllSwitches, 
+  useCreateExclusion,
+  useDeleteExclusion,
+  useCreateEffect,
+  useDeleteEffect,
+  useCreateSwitch,
+  useDeleteSwitch,
+  type Layer 
+} from '@/hooks/use-project';
 import { LayerNode, type LayerNodeData, type LayerNodeType } from './nodes/LayerNode';
 import { CategoryHeader, type CategoryHeaderData, type CategoryHeaderNodeType } from './nodes/CategoryHeader';
 import { ExclusionEdge } from './edges/ExclusionEdge';
@@ -18,8 +33,10 @@ import { EffectEdge } from './edges/EffectEdge';
 import { SwitchEdge } from './edges/SwitchEdge';
 import { LayerNodeControls } from './LayerNodeControls';
 import { LayerNodeLegend } from './LayerNodeLegend';
+import { ConnectionTypeModal, type ConnectionType } from './ConnectionTypeModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { isTutorialProject } from '@/hooks/use-tutorial';
+import { toast } from 'sonner';
 
 interface LayerNodeEditorProps {
   projectId: string;
@@ -53,10 +70,135 @@ export function LayerNodeEditor({ projectId }: LayerNodeEditorProps) {
   const { data: effects } = useAllEffects(projectId);
   const { data: switches } = useAllSwitches(projectId);
 
+  // Mutation hooks for connections
+  const createExclusion = useCreateExclusion();
+  const deleteExclusion = useDeleteExclusion();
+  const createEffect = useCreateEffect();
+  const deleteEffect = useDeleteEffect();
+  const createSwitch = useCreateSwitch();
+  const deleteSwitch = useDeleteSwitch();
+
   const isReadOnly = isTutorialProject(projectId);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  
+  // Connection modal state
+  const [connectionModalOpen, setConnectionModalOpen] = useState(false);
+  const [pendingConnection, setPendingConnection] = useState<{
+    sourceId: string;
+    targetId: string;
+  } | null>(null);
+
+  // Get layer data by ID
+  const getLayerById = useCallback((id: string) => {
+    return allLayers?.find(l => l.id === id) || null;
+  }, [allLayers]);
+
+  // Handle connection creation
+  const onConnect = useCallback((connection: Connection) => {
+    if (!connection.source || !connection.target || isReadOnly) return;
+    
+    // Check if connection already exists
+    const existingEdge = edges.find(
+      e => (e.source === connection.source && e.target === connection.target) ||
+           (e.source === connection.target && e.target === connection.source)
+    );
+    
+    if (existingEdge) {
+      toast.error('Connection already exists between these layers');
+      return;
+    }
+    
+    setPendingConnection({
+      sourceId: connection.source,
+      targetId: connection.target,
+    });
+    setConnectionModalOpen(true);
+  }, [edges, isReadOnly]);
+
+  // Handle connection type confirmation
+  const handleConnectionConfirm = useCallback((type: ConnectionType) => {
+    if (!pendingConnection) return;
+    
+    const { sourceId, targetId } = pendingConnection;
+    
+    if (type === 'exclusion') {
+      createExclusion.mutate(
+        { layerId: sourceId, excludedLayerId: targetId, projectId },
+        {
+          onSuccess: () => toast.success('Exclusion created'),
+          onError: () => toast.error('Failed to create exclusion'),
+        }
+      );
+    } else if (type === 'effect') {
+      // Get the max render order for the parent layer
+      const existingEffects = effects?.filter(e => e.parent_layer_id === sourceId) || [];
+      const maxOrder = existingEffects.length > 0 
+        ? Math.max(...existingEffects.map(e => e.render_order)) 
+        : 0;
+      
+      createEffect.mutate(
+        { parentLayerId: sourceId, effectLayerId: targetId, renderOrder: maxOrder + 1, projectId },
+        {
+          onSuccess: () => toast.success('Effect link created'),
+          onError: () => toast.error('Failed to create effect link'),
+        }
+      );
+    } else if (type === 'switch') {
+      createSwitch.mutate(
+        { layerAId: sourceId, layerBId: targetId, projectId },
+        {
+          onSuccess: () => toast.success('Layer switch created'),
+          onError: () => toast.error('Failed to create layer switch'),
+        }
+      );
+    }
+    
+    setPendingConnection(null);
+  }, [pendingConnection, createExclusion, createEffect, createSwitch, projectId, effects]);
+
+  // Handle edge deletion
+  const onEdgesDelete = useCallback((edgesToDelete: Edge[]) => {
+    if (isReadOnly) return;
+    
+    for (const edge of edgesToDelete) {
+      // Parse edge ID to get the type and use source/target for deletion
+      const [type] = edge.id.split('-');
+      
+      if (type === 'exclusion') {
+        deleteExclusion.mutate(
+          { layerId: edge.source, excludedLayerId: edge.target, projectId },
+          {
+            onSuccess: () => toast.success('Exclusion removed'),
+            onError: () => toast.error('Failed to remove exclusion'),
+          }
+        );
+      } else if (type === 'effect') {
+        // Get the effect ID from the edge ID
+        const effectId = edge.id.replace('effect-', '');
+        deleteEffect.mutate(
+          { id: effectId, projectId },
+          {
+            onSuccess: () => toast.success('Effect link removed'),
+            onError: () => toast.error('Failed to remove effect link'),
+          }
+        );
+      } else if (type === 'switch') {
+        deleteSwitch.mutate(
+          { layerAId: edge.source, layerBId: edge.target, projectId },
+          {
+            onSuccess: () => toast.success('Layer switch removed'),
+            onError: () => toast.error('Failed to remove layer switch'),
+          }
+        );
+      }
+    }
+  }, [isReadOnly, deleteExclusion, deleteEffect, deleteSwitch]);
+
+  // Get source and target layers for the modal
+  const sourceLayer = pendingConnection ? getLayerById(pendingConnection.sourceId) : null;
+  const targetLayer = pendingConnection ? getLayerById(pendingConnection.targetId) : null;
 
   // Calculate total weight per category for rarity percentage
   const categoryWeights = useMemo(() => {
@@ -239,8 +381,11 @@ export function LayerNodeEditor({ projectId }: LayerNodeEditorProps) {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onEdgesDelete={onEdgesDelete}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
+        connectionMode={ConnectionMode.Loose}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.2}
@@ -250,6 +395,7 @@ export function LayerNodeEditor({ projectId }: LayerNodeEditorProps) {
         nodesDraggable={false}
         nodesConnectable={!isReadOnly}
         elementsSelectable={!isReadOnly}
+        deleteKeyCode={isReadOnly ? null : ['Backspace', 'Delete']}
         proOptions={{ hideAttribution: true }}
       >
         <Background gap={20} size={1} color="hsl(var(--border))" />
@@ -264,6 +410,27 @@ export function LayerNodeEditor({ projectId }: LayerNodeEditorProps) {
         <LayerNodeControls />
       </ReactFlow>
       <LayerNodeLegend />
+
+      {/* Connection Type Selection Modal */}
+      <ConnectionTypeModal
+        open={connectionModalOpen}
+        onOpenChange={setConnectionModalOpen}
+        sourceLayer={sourceLayer ? {
+          id: sourceLayer.id,
+          display_name: sourceLayer.display_name,
+          storage_path: sourceLayer.storage_path,
+          is_effect_layer: sourceLayer.is_effect_layer || false,
+          category_id: sourceLayer.category_id,
+        } : null}
+        targetLayer={targetLayer ? {
+          id: targetLayer.id,
+          display_name: targetLayer.display_name,
+          storage_path: targetLayer.storage_path,
+          is_effect_layer: targetLayer.is_effect_layer || false,
+          category_id: targetLayer.category_id,
+        } : null}
+        onConfirm={handleConnectionConfirm}
+      />
     </div>
   );
 }
