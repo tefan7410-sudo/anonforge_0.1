@@ -301,6 +301,10 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
       }
     }
 
+    // For verified creators, use their verified profile data for founder fields
+    const finalFounderName = isVerifiedCreator ? (profile?.display_name || founderName) : founderName;
+    const finalFounderTwitter = isVerifiedCreator ? (profile?.twitter_handle || founderTwitter) : founderTwitter;
+
     await updateProductPage.mutateAsync({
       projectId,
       updates: {
@@ -310,10 +314,10 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
         twitter_url: twitterUrl || null,
         discord_url: discordUrl || null,
         website_url: websiteUrl || null,
-        founder_name: founderName || null,
+        founder_name: finalFounderName || null,
         founder_pfp_url: founderPfpUrl,
         founder_bio: founderBio || null,
-        founder_twitter: founderTwitter || null,
+        founder_twitter: finalFounderTwitter || null,
         portfolio,
         buy_button_enabled: buyButtonEnabled,
         buy_button_text: buyButtonText || 'Mint Now',
@@ -1053,6 +1057,16 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
             </div>
           )}
           
+          {/* Verified creator info notice */}
+          {isVerifiedCreator && (
+            <Alert className="border-primary/50 bg-primary/5">
+              <BadgeCheck className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-primary">
+                Your name and Twitter handle are synced from your verified profile and cannot be changed.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-4">
             {/* Founder PFP */}
@@ -1092,13 +1106,23 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
 
             {/* Founder Name */}
             <div className="space-y-2">
-              <Label htmlFor="founder-name">Name</Label>
+              <Label htmlFor="founder-name" className="flex items-center gap-2">
+                Name
+                {isVerifiedCreator && (
+                  <Badge variant="outline" className="text-xs">Locked</Badge>
+                )}
+              </Label>
               <Input
                 id="founder-name"
-                value={founderName}
-                onChange={(e) => setFounderName(e.target.value)}
+                value={isVerifiedCreator ? (profile?.display_name || founderName) : founderName}
+                onChange={(e) => !isVerifiedCreator && setFounderName(e.target.value)}
                 placeholder="Your name or alias"
+                disabled={isVerifiedCreator}
+                className={isVerifiedCreator ? "bg-muted cursor-not-allowed" : ""}
               />
+              {isVerifiedCreator && (
+                <p className="text-xs text-muted-foreground">From your verified profile</p>
+              )}
             </div>
 
             {/* Founder Twitter */}
@@ -1106,17 +1130,24 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
               <Label htmlFor="founder-twitter" className="flex items-center gap-2">
                 <Twitter className="h-3 w-3" />
                 Twitter Handle
+                {isVerifiedCreator && (
+                  <Badge variant="outline" className="text-xs">Locked</Badge>
+                )}
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
                 <Input
                   id="founder-twitter"
-                  value={founderTwitter}
-                  onChange={(e) => setFounderTwitter(e.target.value.replace('@', ''))}
+                  value={isVerifiedCreator ? (profile?.twitter_handle || founderTwitter) : founderTwitter}
+                  onChange={(e) => !isVerifiedCreator && setFounderTwitter(e.target.value.replace('@', ''))}
                   placeholder="yourhandle"
-                  className="pl-7"
+                  className={cn("pl-7", isVerifiedCreator && "bg-muted cursor-not-allowed")}
+                  disabled={isVerifiedCreator}
                 />
               </div>
+              {isVerifiedCreator && (
+                <p className="text-xs text-muted-foreground">From your verified profile</p>
+              )}
             </div>
           </div>
 

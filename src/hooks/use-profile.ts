@@ -6,6 +6,8 @@ export interface Profile {
   email: string;
   display_name: string | null;
   avatar_url: string | null;
+  twitter_handle: string | null;
+  is_verified_creator: boolean;
   created_at: string;
   updated_at: string;
 }
