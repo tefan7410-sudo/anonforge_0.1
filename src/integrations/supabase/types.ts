@@ -574,6 +574,53 @@ export type Database = {
         }
         Relationships: []
       }
+      operational_costs: {
+        Row: {
+          amount_ada: number
+          billing_period: string
+          category: string
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          id: string
+          name: string
+          notes: string | null
+          start_date: string
+        }
+        Insert: {
+          amount_ada: number
+          billing_period: string
+          category: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          start_date: string
+        }
+        Update: {
+          amount_ada?: number
+          billing_period?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operational_costs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_pages: {
         Row: {
           admin_approved: boolean | null
