@@ -71,7 +71,7 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
       <Card className={cn(
         "group cursor-pointer overflow-hidden transition-all hover:shadow-lg",
         isFeatured 
-          ? "border-2 border-amber-500/50 hover:border-amber-500 hover:shadow-amber-500/10" 
+          ? "border-2 border-primary/50 hover:border-primary hover:shadow-primary/10" 
           : "border-border/50 hover:border-primary/30"
       )}>
         {/* Banner wrapper - relative without overflow-hidden to allow logo overlap */}
@@ -93,7 +93,7 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
             {/* Status badges */}
             <div className="absolute right-2 top-2 flex flex-col gap-1">
               {isFeatured && (
-                <Badge className="bg-amber-500 text-white hover:bg-amber-600">
+                <Badge className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <Sparkles className="mr-1 h-3 w-3" />
                   FEATURED
                 </Badge>
@@ -158,12 +158,7 @@ export function MarketplaceSection() {
   const { data: collections, isLoading } = useMarketplaceCollections(6);
   const headerAnimation = useScrollAnimation<HTMLDivElement>();
 
-  // Get project IDs for status fetching (exclude featured to show separately)
-  const nonFeaturedCollections = useMemo(() => 
-    (collections || []).filter(c => !c.is_featured), 
-    [collections]
-  );
-  
+  // Get project IDs for status fetching
   const projectIds = useMemo(() => 
     (collections || []).map(c => c.project_id), 
     [collections]
@@ -172,7 +167,7 @@ export function MarketplaceSection() {
   // Fetch NMKR counts for all collections
   const { data: statusMap } = useCollectionStatuses(projectIds);
 
-  const collectionCount = nonFeaturedCollections?.length || 0;
+  const collectionCount = collections?.length || 0;
 
   return (
     <section className="border-t border-border/50 bg-card/50" aria-labelledby="marketplace-heading">
@@ -217,9 +212,9 @@ export function MarketplaceSection() {
               <CollectionCardSkeleton key={i} />
             ))}
           </div>
-        ) : nonFeaturedCollections && nonFeaturedCollections.length > 0 ? (
+        ) : collections && collections.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {nonFeaturedCollections.map((collection, index) => (
+            {collections.map((collection, index) => (
               <CollectionCard 
                 key={collection.id} 
                 collection={collection} 

@@ -68,6 +68,7 @@ const COMING_SOON_OPTIONS = [
 export function MarketingTab({ projectId }: MarketingTabProps) {
   const { user } = useAuth();
   const { data: marketingRequest, isLoading } = useProjectMarketingRequest(projectId);
+  const [showNewRequestForm, setShowNewRequestForm] = useState(false);
   const { data: bookings = [] } = useMarketingBookings();
   const createRequest = useCreateMarketingRequest();
   const uploadImage = useUploadMarketingImage();
@@ -114,6 +115,13 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
   }, [marketingRequest]);
 
   const isPaymentExpired = paymentDeadline ? new Date() > paymentDeadline : false;
+
+  // Check if user can create a new request (terminal states)
+  const canCreateNewRequest = 
+    marketingRequest?.status === 'rejected' || 
+    marketingRequest?.status === 'completed' || 
+    marketingRequest?.status === 'expired' ||
+    (marketingRequest?.status === 'approved' && isPaymentExpired);
 
   // Calculate duration and price from selected range
   const durationDays = useMemo(() => {
@@ -230,8 +238,8 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
     );
   }
 
-  // Show current status if there's an existing request
-  if (marketingRequest) {
+  // Show current status if there's an existing request (unless user chose to create new)
+  if (marketingRequest && !showNewRequestForm) {
     return (
       <div className="space-y-6">
         {/* Current Status Card */}
@@ -286,10 +294,10 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
 
                 {/* Spotlight Dates Confirmation */}
                 {marketingRequest.start_date && marketingRequest.end_date && (
-                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+                  <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <CalendarCheck className="h-4 w-4 text-amber-600" />
-                      <span className="font-medium text-amber-700 dark:text-amber-400">Your Spotlight Dates</span>
+                      <CalendarCheck className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-primary">Your Spotlight Dates</span>
                     </div>
                     <p className="text-sm font-medium">
                       {format(new Date(marketingRequest.start_date), 'MMMM d')} - {format(new Date(marketingRequest.end_date), 'MMMM d, yyyy')}
@@ -308,11 +316,11 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
                       <span className="font-semibold">Complete Payment</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <Clock className="h-4 w-4 text-amber-500" />
+                      <Clock className="h-4 w-4 text-destructive" />
                       <CountdownTimer 
                         targetDate={paymentDeadline} 
                         compact 
-                        className="text-amber-600 font-medium"
+                        className="text-destructive font-medium"
                       />
                     </div>
                   </div>
@@ -322,9 +330,9 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
                     <p className="text-3xl font-bold">{marketingRequest.price_ada} ADA</p>
                   </div>
 
-                  <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 p-3">
-                    <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                  <div className="flex items-start gap-2 rounded-lg bg-muted border border-border p-3">
+                    <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <p className="text-xs text-muted-foreground">
                       Click the button below to get a unique payment amount. 
                       The unique decimal amount will be used to automatically verify your payment.
                     </p>
@@ -348,16 +356,26 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
             )}
 
             {marketingRequest.status === 'approved' && isPaymentExpired && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
-                <div className="flex items-start gap-3">
-                  <Clock className="h-5 w-5 text-destructive mt-0.5" />
-                  <div>
-                    <p className="font-medium text-destructive">Payment Window Expired</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      The 24-hour payment window has passed. Please submit a new marketing request.
-                    </p>
+              <div className="space-y-4">
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+                  <div className="flex items-start gap-3">
+                    <Clock className="h-5 w-5 text-destructive mt-0.5" />
+                    <div>
+                      <p className="font-medium text-destructive">Payment Window Expired</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        The 24-hour payment window has passed. Please submit a new marketing request.
+                      </p>
+                    </div>
                   </div>
                 </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setShowNewRequestForm(true)}
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Request New Campaign
+                </Button>
               </div>
             )}
 
@@ -400,21 +418,60 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
             )}
 
             {marketingRequest.status === 'rejected' && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
-                <div className="flex items-start gap-3">
-                  <X className="h-5 w-5 text-destructive mt-0.5" />
-                  <div>
-                    <p className="font-medium text-destructive">Request Rejected</p>
-                    {marketingRequest.admin_notes && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Reason: {marketingRequest.admin_notes}
+              <div className="space-y-4">
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+                  <div className="flex items-start gap-3">
+                    <X className="h-5 w-5 text-destructive mt-0.5" />
+                    <div>
+                      <p className="font-medium text-destructive">Request Rejected</p>
+                      {marketingRequest.admin_notes && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Reason: {marketingRequest.admin_notes}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        You can submit a new request after addressing the feedback.
                       </p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-2">
-                      You can submit a new request after addressing the feedback.
-                    </p>
+                    </div>
                   </div>
                 </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setShowNewRequestForm(true)}
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Request New Campaign
+                </Button>
+              </div>
+            )}
+
+            {marketingRequest.status === 'completed' && (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-muted bg-muted/50 p-4">
+                  <div className="flex items-start gap-3">
+                    <Check className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="font-medium">Campaign Completed</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Your spotlight campaign has ended successfully.
+                      </p>
+                      {marketingRequest.start_date && marketingRequest.end_date && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Campaign ran: {format(new Date(marketingRequest.start_date), 'MMM d')} - {format(new Date(marketingRequest.end_date), 'MMM d, yyyy')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setShowNewRequestForm(true)}
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Request New Campaign
+                </Button>
               </div>
             )}
 

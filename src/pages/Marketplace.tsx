@@ -78,7 +78,7 @@ function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection;
       <Card className={cn(
         "group cursor-pointer overflow-hidden transition-all hover:shadow-lg",
         isFeatured 
-          ? "border-2 border-amber-500/50 hover:border-amber-500 hover:shadow-amber-500/10" 
+          ? "border-2 border-primary/50 hover:border-primary hover:shadow-primary/10" 
           : "border-border/50 hover:border-primary/30"
       )}>
         {/* Banner and Logo wrapper */}
@@ -100,13 +100,13 @@ function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection;
             {/* Status badges */}
             <div className="absolute right-3 top-3 flex flex-col gap-1.5">
               {isFeatured && (
-                <Badge className="bg-amber-500 text-white hover:bg-amber-600">
+                <Badge className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <Sparkles className="mr-1 h-3 w-3" />
                   FEATURED
                 </Badge>
               )}
               {isUpcoming ? (
-                <Badge className="bg-amber-500/90 text-white hover:bg-amber-500">
+                <Badge className="bg-primary/90 text-primary-foreground hover:bg-primary">
                   <Clock className="mr-1 h-3 w-3" />
                   UPCOMING
                 </Badge>

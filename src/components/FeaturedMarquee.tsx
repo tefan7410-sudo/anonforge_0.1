@@ -17,17 +17,17 @@ export function FeaturedMarquee() {
   
   const content = (
     <>
-      <Sparkles className="h-3.5 w-3.5 text-amber-200" />
+      <Sparkles className="h-3.5 w-3.5 text-primary-foreground/80" />
       <span className="font-medium">Featured:</span>
       <span>{projectName}</span>
-      <span className="text-amber-200/80">|</span>
-      <span className="text-amber-100/90">{tagline}</span>
-      <span className="text-amber-200">→</span>
+      <span className="text-primary-foreground/60">|</span>
+      <span className="text-primary-foreground/90">{tagline}</span>
+      <span className="text-primary-foreground/80">→</span>
     </>
   );
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600">
+    <div className="relative overflow-hidden bg-gradient-to-r from-primary via-primary/90 to-primary">
       <Link 
         to={`/collection/${featuredData.project_id}`}
         className="block hover:opacity-90 transition-opacity"
@@ -38,7 +38,7 @@ export function FeaturedMarquee() {
             <div 
               key={i} 
               className={cn(
-                "flex items-center gap-2 px-8 text-sm text-white",
+                "flex items-center gap-2 px-8 text-sm text-primary-foreground",
               )}
             >
               {content}
