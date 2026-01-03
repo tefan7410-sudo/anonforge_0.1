@@ -100,6 +100,39 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Use service role for DB operations
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Check for existing pending payment for this marketing request (session persistence)
+    const { data: existingPayment } = await adminSupabase
+      .from('pending_marketing_payments')
+      .select('*')
+      .eq('marketing_request_id', marketingRequestId)
+      .eq('status', 'pending')
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    if (existingPayment) {
+      // Return existing payment intent instead of creating new one
+      console.log(`Returning existing payment intent: ${existingPayment.id}`);
+      const existingAmountAda = existingPayment.expected_amount_lovelace / 1_000_000;
+      return new Response(
+        JSON.stringify({
+          paymentId: existingPayment.id,
+          address: receivingAddress,
+          amountAda: existingAmountAda.toFixed(6),
+          amountLovelace: existingPayment.expected_amount_lovelace,
+          priceAda: existingPayment.price_ada,
+          dustAmount: existingPayment.dust_amount,
+          expiresAt: existingPayment.expires_at,
+          startDate: marketingRequest.start_date,
+          endDate: marketingRequest.end_date,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const priceAda = marketingRequest.price_ada;
     const baseLovelace = priceAda * 1_000_000;
 
@@ -107,12 +140,8 @@ Deno.serve(async (req) => {
     const dustAmount = Math.floor(Math.random() * 999999) + 1;
     const totalLovelace = baseLovelace + dustAmount;
 
-    // Use service role for DB operations
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
-
     // Check if there's already a pending payment with this exact amount (collision prevention)
-    const { data: existingPayment } = await adminSupabase
+    const { data: amountCollision } = await adminSupabase
       .from('pending_marketing_payments')
       .select('id')
       .eq('expected_amount_lovelace', totalLovelace)
@@ -120,7 +149,7 @@ Deno.serve(async (req) => {
       .gt('expires_at', new Date().toISOString())
       .maybeSingle();
 
-    if (existingPayment) {
+    if (amountCollision) {
       // Very rare collision, regenerate
       const newDust = Math.floor(Math.random() * 999999) + 1;
       const newTotal = baseLovelace + newDust;

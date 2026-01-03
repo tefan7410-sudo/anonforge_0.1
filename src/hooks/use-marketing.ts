@@ -120,6 +120,28 @@ export function useMarketingPaymentStatus(paymentId: string | null, enabled = tr
   });
 }
 
+// Fetch existing pending payment for a marketing request (for session persistence)
+export function useExistingMarketingPayment(marketingRequestId: string | null) {
+  return useQuery({
+    queryKey: ['existing-marketing-payment', marketingRequestId],
+    queryFn: async () => {
+      if (!marketingRequestId) return null;
+      
+      const { data, error } = await supabase
+        .from('pending_marketing_payments')
+        .select('*')
+        .eq('marketing_request_id', marketingRequestId)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!marketingRequestId,
+  });
+}
+
 // Fetch marketing request for a specific project
 export function useProjectMarketingRequest(projectId: string) {
   return useQuery({
