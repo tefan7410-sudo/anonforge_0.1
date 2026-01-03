@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   :root {
     /* LayerForge - Monochromatic with Electric Green Accent */
     --background: 0 0% 98%;

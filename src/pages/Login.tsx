@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Layers, ArrowLeft } from 'lucide-react';
+import { PageTransition } from '@/components/PageTransition';
 
 const GoogleIcon = () => (
   <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
@@ -68,7 +69,7 @@ export default function Login() {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-4">
+    <PageTransition className="relative flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <Link to="/" className="absolute left-4 top-4">
         <Button variant="ghost" size="icon" className="h-10 w-10">
           <ArrowLeft className="h-5 w-5" />
@@ -164,6 +165,6 @@ export default function Login() {
           </CardFooter>
         </form>
       </Card>
-    </div>
+    </PageTransition>
   );
 }

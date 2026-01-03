@@ -38,6 +38,7 @@ import { NotificationDropdown } from '@/components/NotificationDropdown';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GenerationDetailModal } from '@/components/project/GenerationDetailModal';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
+import { PageTransition } from '@/components/PageTransition';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -125,6 +126,7 @@ export default function ProjectDetail() {
   const totalCombinations = calculateCombinations();
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50">
@@ -269,5 +271,6 @@ export default function ProjectDetail() {
 
       <FloatingHelpButton />
     </div>
+    </PageTransition>
   );
 }

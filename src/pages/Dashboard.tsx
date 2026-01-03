@@ -18,6 +18,7 @@ import { useCreditBalance } from '@/hooks/use-credits';
 import { formatCredits } from '@/lib/credit-constants';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { NewAccountWelcomeModal } from '@/components/NewAccountWelcomeModal';
+import { PageTransition } from '@/components/PageTransition';
 
 interface Project {
   id: string;
@@ -158,6 +159,7 @@ export default function Dashboard() {
   );
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50">
@@ -362,5 +364,6 @@ export default function Dashboard() {
       <FloatingHelpButton />
       <NewAccountWelcomeModal />
     </div>
+    </PageTransition>
   );
 }

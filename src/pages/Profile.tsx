@@ -30,6 +30,7 @@ import { ArrowLeft, Layers, Save, User, Shield, AlertTriangle, Loader2, Camera, 
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
+import { PageTransition } from '@/components/PageTransition';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -169,6 +170,7 @@ export default function Profile() {
   const isVerifiedCreator = (profile as any)?.is_verified_creator;
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50">
@@ -567,5 +569,6 @@ export default function Profile() {
 
       <FloatingHelpButton />
     </div>
+    </PageTransition>
   );
 }

@@ -11,6 +11,7 @@ import { Layers, Store, ExternalLink, ArrowLeft, Clock } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useCollectionStatuses } from '@/hooks/use-collection-status';
 import { CountdownTimer } from '@/components/CountdownTimer';
+import { PageTransition } from '@/components/PageTransition';
 import {
   Pagination,
   PaginationContent,
@@ -214,6 +215,7 @@ export default function Marketplace() {
   };
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50">
@@ -368,5 +370,6 @@ export default function Marketplace() {
         </div>
       </footer>
     </div>
+    </PageTransition>
   );
 }

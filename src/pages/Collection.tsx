@@ -24,6 +24,7 @@ import { ExternalLinkWarning } from '@/components/ExternalLinkWarning';
 import { MintStatusCard } from '@/components/MintStatusCard';
 import { useCreatorCollections } from '@/hooks/use-creator-collections';
 import { CountdownTimer } from '@/components/CountdownTimer';
+import { PageTransition } from '@/components/PageTransition';
 import { toast } from 'sonner';
 
 export default function Collection() {
@@ -132,6 +133,7 @@ export default function Collection() {
   };
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       {/* Sticky Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
@@ -418,5 +420,6 @@ export default function Collection() {
         onToggleDontShowAgain={externalLink.toggleDontShowAgain}
       />
     </div>
+    </PageTransition>
   );
 }
