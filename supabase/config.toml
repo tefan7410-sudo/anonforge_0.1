@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.project-cleanup]
 verify_jwt = false
+
+[functions.create-payment-intent]
+verify_jwt = true
+
+[functions.blockfrost-webhook]
+verify_jwt = false
