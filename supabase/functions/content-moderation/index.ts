@@ -182,8 +182,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let failClosed = false;
+  
   try {
-    const { type, imageUrl, imageBase64, text, context } = await req.json();
+    const body = await req.json();
+    const { type, imageUrl, imageBase64, text, context } = body;
+    failClosed = body.failClosed === true;
 
     let result: ModerationResult;
 
@@ -205,6 +209,21 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Content moderation error:', error);
+    
+    if (failClosed) {
+      // Fail closed for critical content - block on errors
+      return new Response(JSON.stringify({ 
+        isSafe: false, 
+        flaggedCategories: ['moderation_error'], 
+        confidence: 0,
+        message: 'Moderation unavailable - content blocked for safety' 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Fail open for availability - log but don't block
     return new Response(JSON.stringify({ 
       isSafe: true, 
       flaggedCategories: [], 
