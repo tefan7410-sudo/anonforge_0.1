@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Layers, ExternalLink, Sparkles } from 'lucide-react';
+import { Layers, Sparkles } from 'lucide-react';
 
 const STORAGE_KEY = 'anonforge-welcome-seen';
 
@@ -110,22 +110,6 @@ export function WelcomeModal() {
             <p className="text-sm text-muted-foreground">
               This platform has been tested and is working, but there may be edge cases I haven't covered yet. Your patience and feedback are greatly appreciated!
             </p>
-          </div>
-
-          <div className="text-center">
-            <p className="mb-3 text-sm text-muted-foreground">
-              I launched my own collection using this tool. If you'd like to support AnonForge's growth, check it out!
-            </p>
-            <Button variant="outline" size="sm" asChild>
-              <a
-                href="https://24f02d5b-359d-40ba-8edd-d8a8c0ad3888.lovableproject.com/collection/a1cab3d9-2351-4df9-9988-5f0621e40085"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                View Anon Collection
-              </a>
-            </Button>
           </div>
 
           {/* Don't show again */}
