@@ -30,6 +30,7 @@ const ITEMS_PER_PAGE = 12;
 interface LiveCollection {
   id: string;
   project_id: string;
+  slug: string | null;
   banner_url: string | null;
   logo_url: string | null;
   tagline: string | null;
@@ -51,6 +52,7 @@ function useMarketplaceData() {
         .select(`
           id,
           project_id,
+          slug,
           banner_url,
           logo_url,
           tagline,
@@ -75,7 +77,7 @@ function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection;
   const isFeatured = collection.is_featured;
 
   return (
-    <Link to={`/collection/${collection.project_id}`}>
+    <Link to={`/collection/${collection.slug || collection.project_id}`}>
       <Card className={cn(
         "group cursor-pointer overflow-hidden transition-all hover:shadow-lg",
         isFeatured 

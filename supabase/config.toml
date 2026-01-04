@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.content-moderation]
 verify_jwt = false
+
+[functions.og-handler]
+verify_jwt = false
