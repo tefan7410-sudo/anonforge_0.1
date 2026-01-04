@@ -6,7 +6,7 @@ export interface MarketingRequest {
   id: string;
   project_id: string;
   user_id: string;
-  status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed' | 'expired' | 'paid';
+  status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed' | 'expired' | 'paid' | 'cancelled';
   duration_days: number;
   price_ada: number;
   message: string | null;
