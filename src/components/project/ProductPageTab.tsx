@@ -54,7 +54,7 @@ import {
   XCircle,
   Send,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, generateSlug } from '@/lib/utils';
 import { toast } from 'sonner';
 import { isValidTwitterUrl, isValidDiscordUrl, isValidWebsiteUrl, isValidSecondaryMarketUrl } from '@/lib/url-validation';
 
@@ -325,6 +325,9 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
     const finalFounderName = isVerifiedCreator ? (profile?.display_name || founderName) : founderName;
     const finalFounderTwitter = isVerifiedCreator ? (profile?.twitter_handle || founderTwitter) : founderTwitter;
 
+    // Auto-generate slug from project name if not already set
+    const slug = generateSlug(projectName);
+
     await updateProductPage.mutateAsync({
       projectId,
       updates: {
@@ -347,6 +350,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
         max_supply: maxSupply,
         scheduled_launch_at: scheduledLaunchAt,
         is_hidden: isHidden,
+        slug: slug || null,
       },
     });
   };

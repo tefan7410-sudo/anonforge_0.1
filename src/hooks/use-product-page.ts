@@ -57,6 +57,7 @@ export interface ProductPageUpdate {
   max_supply?: number | null;
   scheduled_launch_at?: string | null;
   is_hidden?: boolean;
+  slug?: string | null;
 }
 
 // Fetch product page for a project
