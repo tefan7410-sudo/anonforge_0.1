@@ -435,6 +435,63 @@ export function useApproveMarketingRequest() {
   });
 }
 
+// Admin: Approve marketing request as FREE promo (no payment required)
+export function useApproveFreeMarketingRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ requestId }: { requestId: string }) => {
+      // Get the request first
+      const { data: request, error: fetchError } = await supabase
+        .from('marketing_requests')
+        .select('user_id, project_id, start_date, end_date')
+        .eq('id', requestId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update the request to paid with is_free_promo = true (skips payment)
+      const { error: updateError } = await supabase
+        .from('marketing_requests')
+        .update({
+          status: 'paid',
+          payment_status: 'completed',
+          is_free_promo: true,
+          approved_at: new Date().toISOString(),
+        })
+        .eq('id', requestId);
+
+      if (updateError) throw updateError;
+
+      // Create notification for user
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: request.user_id,
+          type: 'marketing_approved',
+          title: 'Congratulations! Free Spotlight Granted!',
+          message: 'Your marketing request has been approved as a complimentary promotional spotlight! No payment required.',
+          link: `/project/${request.project_id}?tab=marketing`,
+        });
+
+      if (notifError) console.error('Failed to create notification:', notifError);
+
+      return request;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-marketing-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['actionable-marketing-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['marketing-request'] });
+      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
+      toast.success('Free promo granted! User has been notified.');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to approve free promo');
+    },
+  });
+}
+
 // Pay for approved marketing (activates the marketing)
 export function usePayForMarketing() {
   const queryClient = useQueryClient();

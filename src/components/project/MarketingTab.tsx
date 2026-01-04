@@ -380,14 +380,35 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
             )}
 
             {marketingRequest.status === 'paid' && (
-              <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+              <div className={cn(
+                "rounded-lg border p-4",
+                (marketingRequest as any).is_free_promo 
+                  ? "border-purple-500/30 bg-purple-500/10" 
+                  : "border-primary/30 bg-primary/10"
+              )}>
                 <div className="flex items-start gap-3">
-                  <CalendarCheck className="h-5 w-5 text-primary mt-0.5" />
+                  <CalendarCheck className={cn(
+                    "h-5 w-5 mt-0.5",
+                    (marketingRequest as any).is_free_promo ? "text-purple-500" : "text-primary"
+                  )} />
                   <div>
-                    <p className="font-medium text-primary">Payment Confirmed - Spotlight Scheduled!</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Your spotlight is scheduled and will go live at 00:01 UTC on the start date.
-                    </p>
+                    {(marketingRequest as any).is_free_promo ? (
+                      <>
+                        <p className="font-medium text-purple-500">
+                          🎉 Complimentary Spotlight Scheduled!
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Your collection has been granted a free promotional spotlight! No payment required.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium text-primary">Payment Confirmed - Spotlight Scheduled!</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Your spotlight is scheduled and will go live at 00:01 UTC on the start date.
+                        </p>
+                      </>
+                    )}
                     {marketingRequest.start_date && marketingRequest.end_date && (
                       <p className="text-xs text-muted-foreground mt-2">
                         Spotlight dates: {format(new Date(marketingRequest.start_date), 'MMMM d')} - {format(new Date(marketingRequest.end_date), 'MMMM d, yyyy')}
@@ -482,7 +503,11 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
               </div>
               <div>
                 <p className="text-muted-foreground">Price</p>
-                <p className="font-medium">{marketingRequest.price_ada} ADA</p>
+                {(marketingRequest as any).is_free_promo ? (
+                  <p className="font-medium text-purple-500">FREE (Promotional)</p>
+                ) : (
+                  <p className="font-medium">{marketingRequest.price_ada} ADA</p>
+                )}
               </div>
             </div>
           </CardContent>
