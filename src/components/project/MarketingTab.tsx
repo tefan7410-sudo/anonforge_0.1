@@ -121,6 +121,7 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
     marketingRequest?.status === 'rejected' || 
     marketingRequest?.status === 'completed' || 
     marketingRequest?.status === 'expired' ||
+    marketingRequest?.status === 'cancelled' ||
     (marketingRequest?.status === 'approved' && isPaymentExpired);
 
   // Calculate duration and price from selected range
@@ -482,6 +483,35 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
                           Campaign ran: {format(new Date(marketingRequest.start_date), 'MMM d')} - {format(new Date(marketingRequest.end_date), 'MMM d, yyyy')}
                         </p>
                       )}
+                    </div>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setShowNewRequestForm(true)}
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Request New Campaign
+                </Button>
+              </div>
+            )}
+
+            {marketingRequest.status === 'cancelled' && (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-muted bg-muted/50 p-4">
+                  <div className="flex items-start gap-3">
+                    <X className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="font-medium">Campaign Cancelled</p>
+                      {marketingRequest.admin_notes && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Reason: {marketingRequest.admin_notes}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Your scheduled campaign was cancelled. You can submit a new request.
+                      </p>
                     </div>
                   </div>
                 </div>
