@@ -24,8 +24,8 @@ async function logAdminAction({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Type assertion needed since types.ts hasn't been regenerated yet
-    await (supabase.from('admin_audit_logs') as ReturnType<typeof supabase.from>).insert({
+    // Type assertion needed since admin_audit_logs is not in types.ts
+    await (supabase.from('admin_audit_logs') as unknown as { insert: (data: Record<string, unknown>) => Promise<unknown> }).insert({
       admin_user_id: user.id,
       action_type: actionType,
       target_table: targetTable,
