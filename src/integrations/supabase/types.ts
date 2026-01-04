@@ -495,6 +495,7 @@ export type Database = {
           end_date: string | null
           hero_image_url: string | null
           id: string
+          is_free_promo: boolean | null
           message: string | null
           payment_status: string | null
           price_ada: number
@@ -512,6 +513,7 @@ export type Database = {
           end_date?: string | null
           hero_image_url?: string | null
           id?: string
+          is_free_promo?: boolean | null
           message?: string | null
           payment_status?: string | null
           price_ada: number
@@ -529,6 +531,7 @@ export type Database = {
           end_date?: string | null
           hero_image_url?: string | null
           id?: string
+          is_free_promo?: boolean | null
           message?: string | null
           payment_status?: string | null
           price_ada?: number

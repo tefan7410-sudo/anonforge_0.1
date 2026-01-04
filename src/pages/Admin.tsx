@@ -19,6 +19,7 @@ import {
   useActionableMarketingRequests,
   useAllMarketingRequests,
   useApproveMarketingRequest,
+  useApproveFreeMarketingRequest,
   useRejectMarketingRequest,
   useEndMarketingEarly,
   useCancelScheduledMarketing,
@@ -70,6 +71,7 @@ import {
   Sparkles,
   Image as ImageIcon,
   StopCircle,
+  Gift,
 } from 'lucide-react';
 import { CostsAnalyticsTab } from '@/components/admin/CostsAnalyticsTab';
 import { toast } from 'sonner';
@@ -93,6 +95,7 @@ export default function Admin() {
   const rejectVerification = useRejectVerification();
   const adjustCredits = useAdminAdjustCredits();
   const approveMarketing = useApproveMarketingRequest();
+  const approveFreeMarketing = useApproveFreeMarketingRequest();
   const rejectMarketing = useRejectMarketingRequest();
   const endMarketing = useEndMarketingEarly();
   const cancelMarketing = useCancelScheduledMarketing();
@@ -981,17 +984,28 @@ export default function Admin() {
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-1">
-                                  {request.status === 'pending' && (
+                                {request.status === 'pending' && (
                                     <>
                                       <Button
                                         variant="ghost"
                                         size="sm"
                                         className="text-green-600 hover:text-green-700 hover:bg-green-100"
                                         onClick={() => approveMarketing.mutate({ requestId: request.id })}
-                                        disabled={approveMarketing.isPending || !!allMarketing?.find(m => m.status === 'active')}
+                                        disabled={approveMarketing.isPending || approveFreeMarketing.isPending || !!allMarketing?.find(m => m.status === 'active')}
                                       >
                                         <Check className="h-4 w-4 mr-1" />
                                         Approve
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-100"
+                                        onClick={() => approveFreeMarketing.mutate({ requestId: request.id })}
+                                        disabled={approveMarketing.isPending || approveFreeMarketing.isPending || !!allMarketing?.find(m => m.status === 'active')}
+                                        title="Approve as free promotional spotlight"
+                                      >
+                                        <Gift className="h-4 w-4 mr-1" />
+                                        Free Promo
                                       </Button>
                                       <Button
                                         variant="ghost"
@@ -1095,8 +1109,12 @@ export default function Admin() {
                                   </Badge>
                                 </TableCell>
                                 <TableCell>{request.duration_days} day(s)</TableCell>
-                                <TableCell className="text-green-600 font-medium">
-                                  {request.price_ada} ADA
+                              <TableCell className="font-medium">
+                                  {(request as any).is_free_promo ? (
+                                    <span className="text-purple-600">FREE</span>
+                                  ) : (
+                                    <span className="text-green-600">{request.price_ada} ADA</span>
+                                  )}
                                 </TableCell>
                                 <TableCell className="text-sm text-muted-foreground">
                                   {request.start_date && format(new Date(request.start_date), 'MMM d')} - {request.end_date && format(new Date(request.end_date), 'MMM d, yyyy')}
