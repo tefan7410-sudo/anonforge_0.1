@@ -843,6 +843,7 @@ export type Database = {
           rejection_reason: string | null
           scheduled_launch_at: string | null
           secondary_market_url: string | null
+          slug: string | null
           tagline: string | null
           twitter_url: string | null
           updated_at: string
@@ -873,6 +874,7 @@ export type Database = {
           rejection_reason?: string | null
           scheduled_launch_at?: string | null
           secondary_market_url?: string | null
+          slug?: string | null
           tagline?: string | null
           twitter_url?: string | null
           updated_at?: string
@@ -903,6 +905,7 @@ export type Database = {
           rejection_reason?: string | null
           scheduled_launch_at?: string | null
           secondary_market_url?: string | null
+          slug?: string | null
           tagline?: string | null
           twitter_url?: string | null
           updated_at?: string
@@ -1313,6 +1316,7 @@ export type Database = {
       }
       expire_pending_marketing_payments: { Args: never; Returns: number }
       expire_pending_payments: { Args: never; Returns: number }
+      generate_slug_from_name: { Args: { name: string }; Returns: string }
       get_my_pending_invitations: {
         Args: never
         Returns: {

@@ -1,16 +1,15 @@
 import { Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
-import { useActiveMarketing, useFeaturedPreview } from '@/hooks/use-marketing';
+import { useActiveMarketing } from '@/hooks/use-marketing';
 import { cn } from '@/lib/utils';
 
 export function FeaturedMarquee() {
-  const { data: activeMarketing, isLoading: loadingActive } = useActiveMarketing();
-  const { data: featuredPreview, isLoading: loadingPreview } = useFeaturedPreview();
+  const { data: activeMarketing, isLoading } = useActiveMarketing();
 
-  // Use active marketing or fallback to demo preview
-  const featuredData = activeMarketing || featuredPreview;
+  // Only show when there's active paid marketing
+  if (isLoading || !activeMarketing) return null;
 
-  if (loadingActive || loadingPreview || !featuredData) return null;
+  const featuredData = activeMarketing;
 
   const projectName = featuredData.project.name;
   const tagline = featuredData.product_page?.tagline || 'Minting Now!';

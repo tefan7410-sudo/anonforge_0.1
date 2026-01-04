@@ -18,7 +18,7 @@ import {
   Clock,
   Share2,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, isUUID, generateSlug } from '@/lib/utils';
 import { useExternalLink } from '@/hooks/use-external-link';
 import { ExternalLinkWarning } from '@/components/ExternalLinkWarning';
 import { MintStatusCard } from '@/components/MintStatusCard';
@@ -29,13 +29,31 @@ import { SEOHead } from '@/components/SEOHead';
 import { toast } from 'sonner';
 
 export default function Collection() {
-  const { projectId } = useParams<{ projectId: string }>();
+  const { projectId: projectIdOrSlug } = useParams<{ projectId: string }>();
   const externalLink = useExternalLink();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['public-collection', projectId],
+    queryKey: ['public-collection', projectIdOrSlug],
     queryFn: async () => {
-      if (!projectId) throw new Error('No project ID');
+      if (!projectIdOrSlug) throw new Error('No project ID or slug');
+
+      let projectId = projectIdOrSlug;
+
+      // If not a UUID, try to find by slug
+      if (!isUUID(projectIdOrSlug)) {
+        const { data: productPageBySlug, error: slugError } = await supabase
+          .from('product_pages')
+          .select('project_id')
+          .eq('slug', projectIdOrSlug)
+          .eq('is_live', true)
+          .eq('is_hidden', false)
+          .maybeSingle();
+
+        if (slugError || !productPageBySlug) {
+          return null; // Slug not found
+        }
+        projectId = productPageBySlug.project_id;
+      }
 
       // Fetch project info with owner_id
       const { data: project, error: projectError } = await supabase
@@ -80,11 +98,11 @@ export default function Collection() {
         isVerifiedCreator: creatorProfile?.is_verified_creator ?? false,
       };
     },
-    enabled: !!projectId,
+    enabled: !!projectIdOrSlug,
   });
   
   // Fetch creator's other collections
-  const { data: creatorCollections } = useCreatorCollections(data?.project.owner_id, projectId);
+  const { data: creatorCollections } = useCreatorCollections(data?.project.owner_id, data?.project.id);
 
   if (isLoading) {
     return (
@@ -104,6 +122,7 @@ export default function Collection() {
   }
 
   const { project, productPage, nmkrProject, isVerifiedCreator } = data;
+  const slug = (productPage as { slug?: string }).slug;
   const founderVerified = (productPage as { founder_verified?: boolean }).founder_verified;
   const secondaryMarketUrl = (productPage as { secondary_market_url?: string }).secondary_market_url;
   const maxSupply = (productPage as { max_supply?: number }).max_supply;
@@ -115,6 +134,7 @@ export default function Collection() {
   
   // Check if collection is upcoming (scheduled but not yet launched)
   const isUpcoming = scheduledLaunchAt && new Date(scheduledLaunchAt) > new Date();
+  
   // Format price from lovelace to ADA
   const formatPrice = (lovelace: number) => {
     const ada = lovelace / 1_000_000;
@@ -128,27 +148,33 @@ export default function Collection() {
     }
   };
 
+  // Use slug for shareable link if available, otherwise use project ID
+  const collectionPath = slug || project.id;
+  
   const copyCollectionLink = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/collection/${projectId}`);
+    navigator.clipboard.writeText(`${window.location.origin}/collection/${collectionPath}`);
     toast.success('Link copied!');
   };
 
-  // Generate SEO data
+  // Generate SEO data with enhanced OG meta
   const priceAda = priceInLovelace ? priceInLovelace / 1_000_000 : undefined;
+  const seoDescription = productPage.tagline 
+    ? `${productPage.tagline} - Powered by AnonForge`
+    : `Mint ${project.name} NFTs on Cardano - Powered by AnonForge`;
 
   return (
     <PageTransition>
     <SEOHead
       title={project.name}
-      description={productPage.tagline || project.description || `Mint ${project.name} NFTs on Cardano`}
+      description={seoDescription}
       image={productPage.banner_url || productPage.logo_url || undefined}
-      url={`/collection/${projectId}`}
+      url={`/collection/${collectionPath}`}
       type="product"
       price={priceAda}
       currency="ADA"
       availability={isUpcoming ? 'preorder' : 'in stock'}
       author={productPage.founder_name || undefined}
-      keywords={['NFT', 'Cardano', project.name, 'mint', 'collection']}
+      keywords={['NFT', 'Cardano', project.name, 'mint', 'collection', 'AnonForge']}
     />
     <div className="min-h-screen bg-background">
       {/* Sticky Header */}
@@ -377,7 +403,7 @@ export default function Collection() {
               {creatorCollections.map((collection) => (
                 <Link
                   key={collection.id}
-                  to={`/collection/${collection.id}`}
+                  to={`/collection/${collection.slug || collection.id}`}
                   className="group"
                 >
                   <Card className="overflow-hidden transition-all hover:shadow-lg hover:border-primary">

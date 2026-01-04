@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useActiveMarketing, useFeaturedPreview } from '@/hooks/use-marketing';
+import { useActiveMarketing } from '@/hooks/use-marketing';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,13 +12,10 @@ interface FeaturedSpotlightProps {
 }
 
 export function FeaturedSpotlight({ className }: FeaturedSpotlightProps) {
-  const { data: activeMarketing, isLoading: loadingActive } = useActiveMarketing();
-  const { data: featuredPreview, isLoading: loadingPreview } = useFeaturedPreview();
+  const { data: activeMarketing, isLoading } = useActiveMarketing();
 
-  // Use active marketing or fallback to demo preview
-  const featuredData = activeMarketing || featuredPreview;
-
-  if (loadingActive || loadingPreview) {
+  // Only show when there's active paid marketing
+  if (isLoading) {
     return (
       <div className={cn("mb-8", className)}>
         <Skeleton className="h-64 w-full rounded-xl" />
@@ -26,7 +23,9 @@ export function FeaturedSpotlight({ className }: FeaturedSpotlightProps) {
     );
   }
 
-  if (!featuredData) return null;
+  if (!activeMarketing) return null;
+
+  const featuredData = activeMarketing;
 
   const productPage = featuredData.product_page;
 
