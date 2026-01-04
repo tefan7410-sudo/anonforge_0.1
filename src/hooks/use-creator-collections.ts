@@ -7,6 +7,7 @@ interface CreatorCollection {
   description: string | null;
   banner_url: string | null;
   logo_url: string | null;
+  slug: string | null;
   is_live: boolean;
 }
 
@@ -29,7 +30,7 @@ export function useCreatorCollections(ownerId: string | undefined, excludeProjec
       // Get product pages for these projects that are live
       const { data: productPages, error: pagesError } = await supabase
         .from('product_pages')
-        .select('project_id, banner_url, logo_url, is_live')
+        .select('project_id, banner_url, logo_url, slug, is_live')
         .in('project_id', projects.map(p => p.id))
         .eq('is_live', true);
 
@@ -46,6 +47,7 @@ export function useCreatorCollections(ownerId: string | undefined, excludeProjec
             description: project.description,
             banner_url: productPage.banner_url,
             logo_url: productPage.logo_url,
+            slug: productPage.slug,
             is_live: true,
           });
         }

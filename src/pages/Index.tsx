@@ -7,7 +7,8 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { MarketplaceSection } from '@/components/MarketplaceSection';
 import { FeaturedMarquee } from '@/components/FeaturedMarquee';
-import { useActiveMarketing, useFeaturedPreview } from '@/hooks/use-marketing';
+import { WelcomeModal } from '@/components/WelcomeModal';
+import { useActiveMarketing } from '@/hooks/use-marketing';
 import { useScrollAnimation } from '@/hooks/use-scroll-animation';
 import { useTranslations } from '@/hooks/use-translations';
 import { cn } from '@/lib/utils';
@@ -50,16 +51,14 @@ export default function Index() {
   const { t } = useTranslations();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: activeMarketing } = useActiveMarketing();
-  const { data: featuredPreview } = useFeaturedPreview();
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
   const heroAnimation = useScrollAnimation<HTMLDivElement>();
   const creatorsAnimation = useScrollAnimation<HTMLDivElement>();
   const benefitsAnimation = useScrollAnimation<HTMLDivElement>();
   const ctaAnimation = useScrollAnimation<HTMLDivElement>();
 
-  // Use active marketing or fallback to demo preview
-  const featuredData = activeMarketing || featuredPreview;
-  const heroImageUrl = featuredData?.hero_image_url;
+  // Only show marketing hero when there's active paid marketing
+  const heroImageUrl = activeMarketing?.hero_image_url;
 
   // Hero background slideshow effect
   useEffect(() => {
@@ -412,6 +411,8 @@ export default function Index() {
         </div>
       </footer>
     </div>
+      {/* Welcome Modal - only on landing page */}
+      <WelcomeModal />
     </PageTransition>
   );
 }

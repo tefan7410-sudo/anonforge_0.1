@@ -10,7 +10,6 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { TutorialProvider } from "@/components/tutorial/TutorialProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { CookieBanner } from "@/components/CookieBanner";
-import { WelcomeModal } from "@/components/WelcomeModal";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -108,7 +107,6 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <CookieBanner />
-              <WelcomeModal />
               </TutorialProvider>
             </AuthProvider>
           </BrowserRouter>
