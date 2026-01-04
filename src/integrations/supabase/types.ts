@@ -63,6 +63,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "activity_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_creator_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       admin_audit_logs: {
@@ -720,6 +727,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "operational_costs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_creator_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       pending_credit_payments: {
@@ -1000,6 +1014,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "project_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "public_creator_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "project_invitations_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -1043,6 +1064,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_creator_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1098,6 +1126,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "projects_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "public_creator_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       rate_limits: {
@@ -1128,6 +1163,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rate_limits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_creator_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1199,6 +1241,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "public_creator_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1280,7 +1329,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_creator_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string | null
+          is_verified_creator: boolean | null
+          twitter_handle: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+          is_verified_creator?: boolean | null
+          twitter_handle?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+          is_verified_creator?: boolean | null
+          twitter_handle?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       accept_project_invitation: {
@@ -1317,6 +1392,7 @@ export type Database = {
       expire_pending_marketing_payments: { Args: never; Returns: number }
       expire_pending_payments: { Args: never; Returns: number }
       generate_slug_from_name: { Args: { name: string }; Returns: string }
+      get_masked_api_key: { Args: { user_uuid: string }; Returns: string }
       get_my_pending_invitations: {
         Args: never
         Returns: {
