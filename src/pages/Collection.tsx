@@ -1,4 +1,5 @@
-import { useParams, Navigate, Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ import { toast } from 'sonner';
 
 export default function Collection() {
   const { projectId: projectIdOrSlug } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const externalLink = useExternalLink();
 
   const { data, isLoading, error } = useQuery({
@@ -103,6 +105,13 @@ export default function Collection() {
   
   // Fetch creator's other collections
   const { data: creatorCollections } = useCreatorCollections(data?.project.owner_id, data?.project.id);
+
+  // Redirect from UUID to slug URL for cleaner URLs
+  useEffect(() => {
+    if (data?.productPage?.slug && projectIdOrSlug && isUUID(projectIdOrSlug)) {
+      navigate(`/collection/${data.productPage.slug}`, { replace: true });
+    }
+  }, [data, projectIdOrSlug, navigate]);
 
   if (isLoading) {
     return (

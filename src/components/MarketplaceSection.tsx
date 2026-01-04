@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 interface LiveCollection {
   id: string;
   project_id: string;
+  slug: string | null;
   banner_url: string | null;
   logo_url: string | null;
   tagline: string | null;
@@ -35,6 +36,7 @@ const useMarketplaceCollections = (limit?: number) => {
         .select(`
           id,
           project_id,
+          slug,
           banner_url,
           logo_url,
           tagline,
@@ -67,7 +69,7 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
       className={cn("opacity-0", isVisible && "animate-slide-up")}
       style={{ animationDelay: `${index * 100}ms` }}
     >
-    <Link to={`/collection/${collection.project_id}`}>
+    <Link to={`/collection/${collection.slug || collection.project_id}`}>
       <Card className={cn(
         "group cursor-pointer overflow-hidden transition-all hover:shadow-lg",
         isFeatured 
