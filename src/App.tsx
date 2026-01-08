@@ -100,7 +100,7 @@ const App = () => (
                 <Route path="/collection/:projectId" element={<Collection />} />
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/documentation" element={<Documentation />} />
-                <Route path="/tutorial" element={<Tutorial />} />
+                <Route path="/creators" element={<Tutorial />} />
                 <Route
                   path="/admin"
                   element={
