@@ -174,7 +174,17 @@ export function PublishPanel({ projectId, projectName }: PublishPanelProps) {
           />
         </TabsContent>
 
-        <TabsContent value="pricing" className="mt-6">
+        <TabsContent value="pricing" className="mt-6 space-y-4">
+          {/* Workflow explanation */}
+          <div className="rounded-lg border border-border bg-muted/30 p-4">
+            <h4 className="text-sm font-medium mb-2">Publishing Workflow</h4>
+            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>Upload your NFTs in the Upload tab</li>
+              <li>Set your pricing tiers below (each quantity needs a separate price)</li>
+              <li>Generate a payment link for NMKR Pay</li>
+              <li>Create a Product Page (separate tab) for your public storefront</li>
+            </ol>
+          </div>
           <SaleConfigForm nmkrProject={nmkrProject} />
         </TabsContent>
 

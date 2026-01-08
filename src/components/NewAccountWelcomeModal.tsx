@@ -114,7 +114,7 @@ export function NewAccountWelcomeModal({ onClose }: NewAccountWelcomeModalProps)
   return (
     <>
       <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-        <DialogContent className="sm:max-w-lg overflow-hidden">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
           {/* Particle animation */}
           {open && (
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
