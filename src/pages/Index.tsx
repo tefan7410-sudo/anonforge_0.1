@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Sparkles, Palette, Store, Zap, Shield, Users, CreditCard, LayoutGrid, Rocket, Menu, BookOpen } from 'lucide-react';
+import { ArrowRight, Sparkles, Palette, Store, Zap, Shield, Users, CreditCard, LayoutGrid, Rocket, Menu, BookOpen, Play } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -257,6 +257,12 @@ export default function Index() {
                   <Link to="/marketplace">
                     <Store className="mr-2 h-4 w-4" aria-hidden="true" />
                     {t('hero.exploreMarketplace')}
+                  </Link>
+                </Button>
+                <Button size="lg" variant="ghost" asChild>
+                  <Link to="/tutorial">
+                    <Play className="mr-2 h-4 w-4" aria-hidden="true" />
+                    See How It Works
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild>

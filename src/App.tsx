@@ -27,6 +27,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Documentation from "./pages/Documentation";
 import Status from "./pages/Status";
+import Tutorial from "./pages/Tutorial";
 
 const queryClient = new QueryClient();
 
@@ -99,6 +100,7 @@ const App = () => (
                 <Route path="/collection/:projectId" element={<Collection />} />
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/documentation" element={<Documentation />} />
+                <Route path="/tutorial" element={<Tutorial />} />
                 <Route
                   path="/admin"
                   element={
