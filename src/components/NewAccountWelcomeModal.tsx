@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { 
-  Layers, 
   Wand2, 
   CreditCard, 
   Store, 
@@ -17,6 +16,7 @@ import {
   Sparkles,
   ArrowRight
 } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 import { TutorialOptInModal } from '@/components/tutorial/TutorialOptInModal';
 import { useTutorial } from '@/contexts/TutorialContext';
 
@@ -90,7 +90,7 @@ export function NewAccountWelcomeModal({ onClose }: NewAccountWelcomeModalProps)
 
   const features = [
     {
-      icon: Layers,
+      icon: Sparkles,
       title: 'Layer System',
       description: 'Upload and organize your artwork layers with rarity weights',
     },

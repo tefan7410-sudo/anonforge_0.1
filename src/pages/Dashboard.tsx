@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, Layers, User, Check, X, Coins, AlertTriangle, GraduationCap, Sparkles } from 'lucide-react';
+import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, User, Check, X, Coins, AlertTriangle, GraduationCap, Sparkles } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 import { formatDistanceToNow } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
@@ -219,8 +220,8 @@ export default function Dashboard() {
       <header className="border-b border-border/50">
         <div className="container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
           <Link to="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity">
-            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary">
-              <Layers className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary p-1.5">
+              <Logo className="h-full w-full" />
             </div>
             <span className="font-display text-lg sm:text-xl font-semibold">AnonForge</span>
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground border-muted-foreground/30">BETA</Badge>

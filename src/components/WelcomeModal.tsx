@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Layers, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 
 const STORAGE_KEY = 'anonforge-welcome-seen';
 
@@ -81,8 +82,8 @@ export function WelcomeModal() {
         )}
 
         <DialogHeader className="text-center sm:text-center relative z-10">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Layers className="h-8 w-8 text-primary" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 p-3">
+            <Logo className="h-full w-full" />
           </div>
           <DialogTitle className="text-2xl">Welcome to AnonForge</DialogTitle>
           <Badge variant="outline" className="mx-auto mt-2 w-fit">

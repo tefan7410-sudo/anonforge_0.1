@@ -26,7 +26,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Layers, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, BadgeCheck, Clock, X, Twitter, Coins, TrendingUp, GraduationCap, RotateCcw, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, BadgeCheck, Clock, X, Twitter, Coins, TrendingUp, GraduationCap, RotateCcw, RefreshCw } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
@@ -270,8 +271,8 @@ export default function Profile() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="hidden sm:flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                <Layers className="h-5 w-5 text-primary-foreground" />
+              <div className="hidden sm:flex h-10 w-10 items-center justify-center rounded-lg bg-primary p-2">
+                <Logo className="h-full w-full" />
               </div>
               <div>
                 <h1 className="font-display text-base sm:text-xl font-semibold">Profile</h1>

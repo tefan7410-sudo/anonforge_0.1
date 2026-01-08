@@ -13,9 +13,11 @@ AnonForge is a platform for creating, managing, and minting NFT collections on t
 - **Visual Connection Editor**: Create layer exclusions, effects, and switches with a drag-and-drop interface
 - **Rarity Configuration**: Set probability weights for each trait
 - **Batch Generation**: Generate collections with configurable uniqueness requirements
-- **NMKR Integration**: Direct minting through NMKR API with prepaid or on-demand minting
+- **NMKR Integration**: Direct minting through NMKR API with multi-tier pricing and royalty configuration
+- **Progressive Publishing Workflow**: Unlock tabs step-by-step (Publish → Product Page → Marketing) with milestone celebrations
+- **Schedule Launch**: Plan collection drops with a calendar interface (24-hour minimum advance notice)
 - **Product Pages**: Customizable collection pages with social links and founder info
-- **Marketing Spotlight**: Featured placement on the marketplace
+- **Marketing Spotlight**: Featured placement on the marketplace for verified creators
 
 ### For Collectors
 - **Marketplace**: Browse verified and community collections

@@ -7,7 +7,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Layers, Store, ExternalLink, ArrowLeft, Clock, Sparkles } from 'lucide-react';
+import { Store, ExternalLink, ArrowLeft, Clock, Sparkles } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useCollectionStatuses } from '@/hooks/use-collection-status';
 import { FeaturedSpotlight } from '@/components/FeaturedSpotlight';
@@ -252,8 +253,8 @@ export default function Marketplace() {
       <header className="border-b border-border/50">
         <nav className="container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
           <Link to="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity" aria-label="AnonForge home">
-            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary">
-              <Layers className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" aria-hidden="true" />
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary p-1.5">
+              <Logo className="h-full w-full" />
             </div>
             <span className="font-display text-lg sm:text-xl font-semibold">AnonForge</span>
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground border-muted-foreground/30">BETA</Badge>
@@ -393,7 +394,7 @@ export default function Marketplace() {
       <footer className="border-t border-border/50 mt-auto">
         <div className="container mx-auto flex items-center justify-between px-6 py-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Layers className="h-4 w-4" aria-hidden="true" />
+            <Logo size="sm" />
             <span>AnonForge</span>
           </div>
           <p className="text-sm text-muted-foreground">
