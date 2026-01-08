@@ -25,8 +25,8 @@ async function checkNmkrApi(): Promise<ServiceCheck> {
     
     const responseTime = Date.now() - startTime;
     
-    if (response.ok || response.status === 401) {
-      // 401 means API is up but needs auth - that's fine for a health check
+    if (response.ok || response.status === 401 || response.status === 404) {
+      // 401/404 means API is up but needs auth - that's fine for a health check
       return {
         service_name: 'nmkr_api',
         status: responseTime > 5000 ? 'degraded' : 'operational',
