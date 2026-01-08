@@ -4,9 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Logo } from '@/components/Logo';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { LanguageSelector } from '@/components/LanguageSelector';
 import { SEOHead } from '@/components/SEOHead';
 import { PageTransition } from '@/components/PageTransition';
 import { PROMO_TUTORIAL_STEPS, getTotalPromoSteps } from '@/lib/promo-tutorial-steps';
@@ -22,18 +19,10 @@ import {
   Rocket,
   ArrowRight,
   Store,
-  Menu,
   X,
   Layers,
   Check,
 } from 'lucide-react';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
 
 // Visual mockup components for each step
 function ProjectCreationVisual() {
@@ -310,10 +299,8 @@ const stepIcons: Record<string, React.FC<{ className?: string }>> = {
 export default function Tutorial() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const totalSteps = getTotalPromoSteps();
   const step = PROMO_TUTORIAL_STEPS[currentStep - 1];
-
   const goToNext = useCallback(() => {
     if (currentStep < totalSteps) {
       setCurrentStep(prev => prev + 1);
@@ -356,76 +343,16 @@ export default function Tutorial() {
         url="/tutorial"
         keywords={["NFT tutorial", "create NFT collection", "Cardano NFT guide", "NFT minting tutorial"]}
       />
-      <div className="min-h-screen bg-background flex flex-col">
-        {/* Header */}
-        <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
-          <nav className="container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
-            <Link to="/" className="flex items-center gap-2 sm:gap-3">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary p-1.5">
-                <Logo className="h-full w-full" />
-              </div>
-              <span className="font-display text-lg sm:text-xl font-bold">AnonForge</span>
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground border-muted-foreground/30">
-                BETA
-              </Badge>
+      <div className="min-h-screen bg-background flex flex-col relative">
+        {/* Exit Button */}
+        <div className="absolute top-4 right-4 z-50">
+          <Button variant="ghost" size="icon" asChild className="rounded-full bg-muted/50 hover:bg-muted">
+            <Link to="/">
+              <X className="h-5 w-5" />
+              <span className="sr-only">Exit tutorial</span>
             </Link>
-            
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-4">
-              <Button variant="ghost" asChild>
-                <Link to="/marketplace">Marketplace</Link>
-              </Button>
-              <LanguageSelector />
-              <ThemeToggle />
-              <Button variant="ghost" asChild>
-                <Link to="/login">Sign In</Link>
-              </Button>
-              <Button asChild>
-                <Link to="/register">Get Started</Link>
-              </Button>
-            </div>
-
-            {/* Mobile Navigation */}
-            <div className="flex items-center gap-2 md:hidden">
-              <LanguageSelector />
-              <ThemeToggle />
-              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-72">
-                  <SheetHeader>
-                    <SheetTitle>
-                      <Link to="/" className="flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1.5">
-                          <Logo className="h-full w-full" />
-                        </div>
-                        AnonForge
-                      </Link>
-                    </SheetTitle>
-                  </SheetHeader>
-                  <nav className="mt-8 flex flex-col gap-2">
-                    <Button variant="ghost" className="justify-start" asChild onClick={() => setMobileMenuOpen(false)}>
-                      <Link to="/marketplace">
-                        <Store className="mr-3 h-4 w-4" />
-                        Marketplace
-                      </Link>
-                    </Button>
-                    <div className="my-2 border-t border-border" />
-                    <Button variant="ghost" className="justify-start" asChild onClick={() => setMobileMenuOpen(false)}>
-                      <Link to="/login">Sign In</Link>
-                    </Button>
-                    <Button className="justify-start" asChild onClick={() => setMobileMenuOpen(false)}>
-                      <Link to="/register">Get Started</Link>
-                    </Button>
-                  </nav>
-                </SheetContent>
-              </Sheet>
-            </div>
-          </nav>
-        </header>
+          </Button>
+        </div>
 
         {/* Progress Bar */}
         <div className="w-full bg-muted/30">
@@ -512,17 +439,6 @@ export default function Tutorial() {
             )}
           </div>
         </main>
-
-        {/* Footer */}
-        <footer className="border-t border-border/50 py-4">
-          <div className="container mx-auto px-4 flex items-center justify-center gap-4 text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
-            <span>•</span>
-            <Link to="/marketplace" className="hover:text-foreground transition-colors">Marketplace</Link>
-            <span>•</span>
-            <Link to="/documentation" className="hover:text-foreground transition-colors">Documentation</Link>
-          </div>
-        </footer>
       </div>
     </PageTransition>
   );
