@@ -10,7 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Menu, LayoutDashboard, User, LogOut, Bell, Store, Settings, Home, HelpCircle, Coins } from 'lucide-react';
+import { Menu, LayoutDashboard, User, LogOut, Bell, Store, Settings, Home, HelpCircle, Coins, Heart, Zap } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { useState } from 'react';
 import { useUnreadCount } from '@/hooks/use-notifications';
@@ -160,6 +160,28 @@ export function MobileNav() {
             <Link to="/documentation">
               <HelpCircle className="mr-3 h-4 w-4" />
               Help & Docs
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            className="justify-start"
+            asChild
+            onClick={() => setOpen(false)}
+          >
+            <Link to="/artfund">
+              <Heart className="mr-3 h-4 w-4" />
+              Art Fund
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            className="justify-start"
+            asChild
+            onClick={() => setOpen(false)}
+          >
+            <Link to="/status">
+              <Zap className="mr-3 h-4 w-4" />
+              Status
             </Link>
           </Button>
 
