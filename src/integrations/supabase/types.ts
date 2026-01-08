@@ -111,6 +111,69 @@ export type Database = {
         }
         Relationships: []
       }
+      art_fund_settings: {
+        Row: {
+          description: string | null
+          id: string
+          updated_at: string | null
+          updated_by: string | null
+          wallet_address: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          wallet_address: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      art_fund_sources: {
+        Row: {
+          amount_ada: number
+          category: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          source_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount_ada?: number
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          source_date?: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount_ada?: number
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          source_date?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string

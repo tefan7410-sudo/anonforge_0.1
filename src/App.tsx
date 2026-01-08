@@ -28,6 +28,7 @@ import NotFound from "./pages/NotFound";
 import Documentation from "./pages/Documentation";
 import Status from "./pages/Status";
 import Tutorial from "./pages/Tutorial";
+import ArtFund from "./pages/ArtFund";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,7 @@ const App = () => (
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/documentation" element={<Documentation />} />
                 <Route path="/creators" element={<Tutorial />} />
+                <Route path="/artfund" element={<ArtFund />} />
                 <Route
                   path="/admin"
                   element={
