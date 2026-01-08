@@ -51,8 +51,8 @@ export const PROMO_TUTORIAL_STEPS: PromoTutorialStep[] = [
   },
   {
     id: 8,
-    title: "Ready to Launch Your Collection?",
-    description: "Join hundreds of creators who have launched successful NFT collections on AnonForge. Your journey starts now.",
+    title: "Ready to Launch on AnonForge?",
+    description: "Join hundreds of creators who have launched successful NFT collections on AnonForge. Start building your collection today.",
     visual: "cta",
     isFinal: true
   }

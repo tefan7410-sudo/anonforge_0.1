@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { SEOHead } from '@/components/SEOHead';
 import { PageTransition } from '@/components/PageTransition';
+import { Logo } from '@/components/Logo';
 import { PROMO_TUTORIAL_STEPS, getTotalPromoSteps } from '@/lib/promo-tutorial-steps';
 import { cn } from '@/lib/utils';
 import {
@@ -391,12 +392,22 @@ export default function Tutorial() {
   return (
     <PageTransition>
       <SEOHead
-        title="How It Works - Create NFTs in Minutes"
-        description="Learn how to create, generate, and publish your NFT collection on AnonForge in just a few simple steps."
-        url="/tutorial"
-        keywords={["NFT tutorial", "create NFT collection", "Cardano NFT guide", "NFT minting tutorial"]}
+        title="For Creators - Launch Your NFT Collection"
+        description="Create, generate, and publish your NFT collection on AnonForge. The easiest way to launch on Cardano."
+        url="/creators"
+        keywords={["AnonForge creators", "NFT creator platform", "Cardano NFT", "create NFT collection"]}
       />
       <div className="min-h-screen bg-background flex flex-col relative">
+        {/* Logo */}
+        <div className="absolute top-4 left-4 z-50">
+          <Link to="/" className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1.5">
+              <Logo className="h-full w-full" />
+            </div>
+            <span className="font-display text-sm font-semibold hidden sm:inline">AnonForge</span>
+          </Link>
+        </div>
+
         {/* Exit Button */}
         <div className="absolute top-4 right-4 z-50">
           <Button variant="ghost" size="icon" asChild className="rounded-full bg-muted/50 hover:bg-muted">
