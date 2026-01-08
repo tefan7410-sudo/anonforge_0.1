@@ -536,6 +536,10 @@ export default function Admin() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="system-status" className="gap-2">
+              <Activity className="h-4 w-4" />
+              System Status
+            </TabsTrigger>
           </TabsList>
 
           {/* Pending Launches Tab */}
@@ -1164,6 +1168,11 @@ export default function Admin() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* System Status Tab */}
+          <TabsContent value="system-status">
+            <SystemStatusTab />
           </TabsContent>
         </Tabs>
       </main>
