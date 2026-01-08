@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Sparkles, Palette, Store, Zap, Shield, Users, CreditCard, LayoutGrid, Rocket, Menu, BookOpen, Play } from 'lucide-react';
+import { ArrowRight, Sparkles, Palette, Store, Zap, Shield, Users, CreditCard, LayoutGrid, Rocket, Menu, BookOpen, Play, Heart } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -72,14 +72,6 @@ export default function Index() {
     return () => clearInterval(interval);
   }, [heroImageUrl]);
 
-  const scrollToSection = (e: React.MouseEvent, sectionId: string) => {
-    e.preventDefault();
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    setMobileMenuOpen(false);
-  };
 
   const creatorFeatures = [
     { icon: Palette, titleKey: 'creators.layerGeneration', descKey: 'creators.layerGenerationDesc' },
@@ -115,13 +107,15 @@ export default function Index() {
             <Button variant="ghost" asChild>
               <Link to="/marketplace">{t('nav.marketplace')}</Link>
             </Button>
-            <a 
-              href="#for-creators" 
-              onClick={(e) => scrollToSection(e, 'for-creators')}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {t('nav.forCreators')}
-            </a>
+            <Button variant="ghost" asChild>
+              <Link to="/creators">{t('nav.forCreators')}</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link to="/artfund">Art Fund</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link to="/status">Status</Link>
+            </Button>
             <LanguageSelector />
             <ThemeToggle />
             <Button variant="ghost" asChild>
@@ -173,10 +167,35 @@ export default function Index() {
                   <Button
                     variant="ghost"
                     className="justify-start"
-                    onClick={(e) => scrollToSection(e, 'for-creators')}
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Palette className="mr-3 h-4 w-4" />
-                    {t('nav.forCreators')}
+                    <Link to="/creators">
+                      <Palette className="mr-3 h-4 w-4" />
+                      {t('nav.forCreators')}
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/artfund">
+                      <Heart className="mr-3 h-4 w-4" />
+                      Art Fund
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/status">
+                      <Zap className="mr-3 h-4 w-4" />
+                      Status
+                    </Link>
                   </Button>
                   <div className="my-2 border-t border-border" />
                   <Button
@@ -410,7 +429,9 @@ export default function Index() {
               <Link to="/terms-of-service" className="transition-colors hover:text-foreground">{t('footer.terms')}</Link>
               <Link to="/documentation" className="transition-colors hover:text-foreground">{t('footer.documentation')}</Link>
               <Link to="/marketplace" className="transition-colors hover:text-foreground">{t('footer.marketplace')}</Link>
+              <Link to="/creators" className="transition-colors hover:text-foreground">{t('nav.forCreators')}</Link>
               <Link to="/artfund" className="transition-colors hover:text-foreground">Art Fund</Link>
+              <Link to="/status" className="transition-colors hover:text-foreground">Status</Link>
             </nav>
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} {t('footer.rights')}

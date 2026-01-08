@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { SEOHead } from "@/components/SEOHead";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,9 @@ import {
   Wrench,
   Info,
   AlertCircle,
-  Zap
+  Zap,
+  Store,
+  Home
 } from "lucide-react";
 import { 
   useServiceStatus, 
@@ -209,13 +212,27 @@ export default function Status() {
       
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
-              <Logo size="md" />
-              <span className="font-bold text-xl">AnonForge</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1.5">
+                <Logo className="h-full w-full" />
+              </div>
+              <span className="font-display text-lg font-semibold">AnonForge</span>
             </Link>
             <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" asChild className="hidden sm:flex">
+                <Link to="/">
+                  <Home className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button variant="ghost" asChild className="hidden sm:flex">
+                <Link to="/marketplace">
+                  <Store className="h-4 w-4 mr-2" />
+                  Marketplace
+                </Link>
+              </Button>
+              <ThemeToggle />
               <Button
                 variant="outline"
                 size="sm"
