@@ -14,6 +14,7 @@ import { useCreatorCollections } from '@/hooks/use-creator-collections';
 import { useIsVerifiedCreator, useMyVerificationRequest, useSubmitVerificationRequest } from '@/hooks/use-verification-request';
 import { ProductPagePreview } from './ProductPagePreview';
 import { MilestoneSuccessModal } from './MilestoneSuccessModal';
+import { ScheduleLaunchModal } from './ScheduleLaunchModal';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -367,16 +368,17 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
     }
   };
 
-  // Schedule launch handler (24h waitlist)
-  const handleScheduleLaunch = async () => {
+  // State for schedule modal
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+
+  // Schedule launch handler with selected date
+  const handleScheduleLaunch = async (scheduledDate: Date) => {
     if (!buyButtonLink && !nmkrProject?.price_in_lovelace) {
       toast.error('Generate a payment link in the Publish tab first');
       return;
     }
     
-    const launchTime = new Date();
-    launchTime.setHours(launchTime.getHours() + 24);
-    const launchTimeStr = launchTime.toISOString();
+    const launchTimeStr = scheduledDate.toISOString();
     
     setIsLive(true);
     setScheduledLaunchAt(launchTimeStr);
@@ -389,7 +391,9 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
         buy_button_link: buyButtonLink,
       },
     });
-    toast.success('Your collection is scheduled to launch in 24 hours!');
+    
+    const { format } = await import('date-fns');
+    toast.success(`Your collection is scheduled to launch on ${format(scheduledDate, 'PPP')} at ${format(scheduledDate, 'p')}!`);
   };
 
   // Cancel scheduled launch
@@ -594,7 +598,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
           ) : !isActuallyLive ? (
             <Button 
               size="sm" 
-              onClick={handleScheduleLaunch}
+              onClick={() => setShowScheduleModal(true)}
               disabled={!canGoLive || isSaving}
               title={!canGoLive ? 'Generate a payment link first' : undefined}
             >
@@ -1458,11 +1462,24 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
         description="Congratulations! You've set up your product page. You can now schedule your launch to get listed on our marketplace, or explore the Marketing tab for featured placement options."
         primaryAction={{
           label: 'Schedule Launch',
-          onClick: handleScheduleLaunch,
+          onClick: () => {
+            setShowSetupCompleteModal(false);
+            setShowScheduleModal(true);
+          },
         }}
         secondaryAction={{
           label: 'Explore Marketing',
           onClick: () => onSwitchTab?.('marketing'),
+        }}
+      />
+
+      {/* Schedule Launch Modal */}
+      <ScheduleLaunchModal
+        open={showScheduleModal}
+        onOpenChange={setShowScheduleModal}
+        onSchedule={(date) => {
+          handleScheduleLaunch(date);
+          setShowScheduleModal(false);
         }}
       />
     </div>
