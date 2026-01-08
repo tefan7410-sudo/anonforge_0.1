@@ -13,6 +13,7 @@ import { useNmkrProject, useGetNmkrPayLink } from '@/hooks/use-nmkr';
 import { useCreatorCollections } from '@/hooks/use-creator-collections';
 import { useIsVerifiedCreator, useMyVerificationRequest, useSubmitVerificationRequest } from '@/hooks/use-verification-request';
 import { ProductPagePreview } from './ProductPagePreview';
+import { MilestoneSuccessModal } from './MilestoneSuccessModal';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -61,9 +62,11 @@ import { isValidTwitterUrl, isValidDiscordUrl, isValidWebsiteUrl, isValidSeconda
 interface ProductPageTabProps {
   projectId: string;
   projectName?: string;
+  isLocked?: boolean;
+  onSwitchTab?: (tab: string) => void;
 }
 
-export function ProductPageTab({ projectId, projectName = 'Collection' }: ProductPageTabProps) {
+export function ProductPageTab({ projectId, projectName = 'Collection', isLocked, onSwitchTab }: ProductPageTabProps) {
   const { user } = useAuth();
   const { data: productPage, isLoading } = useProductPage(projectId);
   const { data: profile } = useProfile(user?.id);
@@ -114,6 +117,10 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
   // Preview state
   const [showPreview, setShowPreview] = useState(false);
   const [founderPrefilled, setFounderPrefilled] = useState(false);
+  const [showSetupCompleteModal, setShowSetupCompleteModal] = useState(false);
+  
+  // Track if this is a fresh setup (no previous banner or tagline)
+  const wasFreshSetup = !productPage?.banner_url && !productPage?.tagline && !productPage?.is_live;
   
   // Legacy founder verification status (collection-specific)
   const founderVerified = (productPage as { founder_verified?: boolean } | undefined)?.founder_verified ?? false;
@@ -353,6 +360,11 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
         slug: slug || null,
       },
     });
+
+    // Show success modal if this was a fresh setup and now has content
+    if (wasFreshSetup && (bannerUrl || tagline)) {
+      setShowSetupCompleteModal(true);
+    }
   };
 
   // Schedule launch handler (24h waitlist)
@@ -429,6 +441,58 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
         <Skeleton className="h-48 w-full" />
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-32 w-full" />
+      </div>
+    );
+  }
+
+  // Show locked state if pricing not set up
+  if (isLocked) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <Card className="max-w-lg w-full text-center">
+          <CardHeader>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <Store className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <CardTitle className="font-display">Set Up Your Minting First</CardTitle>
+            <CardDescription>
+              Before creating your Product Page, you need to configure your NFT pricing in the Publish tab.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-left rounded-lg border bg-muted/30 p-4">
+              <h4 className="text-sm font-medium mb-3">What you'll need for your Product Page:</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" />
+                  Banner image (recommended 1200x400)
+                </li>
+                <li className="flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" />
+                  Collection logo
+                </li>
+                <li className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Tagline/description
+                </li>
+                <li className="flex items-center gap-2">
+                  <Twitter className="h-4 w-4" />
+                  Social links (Twitter, Discord, Website)
+                </li>
+                <li className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Founder/team information
+                </li>
+              </ul>
+            </div>
+            <Button 
+              className="w-full" 
+              onClick={() => onSwitchTab?.('publish')}
+            >
+              Go to Publish Tab
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -1385,6 +1449,22 @@ export function ProductPageTab({ projectId, projectName = 'Collection' }: Produc
           onClose={() => setShowPreview(false)}
         />
       )}
+
+      {/* Product Page Setup Complete Modal */}
+      <MilestoneSuccessModal
+        open={showSetupCompleteModal}
+        onOpenChange={setShowSetupCompleteModal}
+        title="Product Page Ready!"
+        description="Congratulations! You've set up your product page. You can now schedule your launch to get listed on our marketplace, or explore the Marketing tab for featured placement options."
+        primaryAction={{
+          label: 'Schedule Launch',
+          onClick: handleScheduleLaunch,
+        }}
+        secondaryAction={{
+          label: 'Explore Marketing',
+          onClick: () => onSwitchTab?.('marketing'),
+        }}
+      />
     </div>
   );
 }

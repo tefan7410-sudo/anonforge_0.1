@@ -30,6 +30,7 @@ import {
   Eye,
   List,
   GitBranch,
+  Lock,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { LayerUploadZone } from '@/components/project/LayerUploadZone';
@@ -49,6 +50,10 @@ import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { PageTransition } from '@/components/PageTransition';
 import { isTutorialProject, TUTORIAL_PROJECT_ID } from '@/hooks/use-tutorial';
 import { useTutorial } from '@/contexts/TutorialContext';
+import { useNmkrProject } from '@/hooks/use-nmkr';
+import { useProductPage } from '@/hooks/use-product-page';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -71,9 +76,32 @@ export default function ProjectDetail() {
   const { data: generations } = useGenerations(id!);
   const { canEdit } = useCanEditProject(id!);
   const { isActive: isTutorialActive } = useTutorial();
+  const { data: nmkrProject } = useNmkrProject(id!);
+  const { data: productPage } = useProductPage(id!);
 
   const isTutorial = id ? isTutorialProject(id) : false;
   const isReadOnly = isTutorial;
+
+  // Tab unlocking logic
+  // Product Page unlocked when NMKR project exists and has price configured
+  const isProductPageUnlocked = !!(nmkrProject?.price_in_lovelace);
+  
+  // Marketing unlocked when product page has been set up (has banner, tagline, or is live)
+  const isMarketingUnlocked = !!(productPage?.is_live || productPage?.banner_url || productPage?.tagline);
+
+  // Handle tab switching callback for child components
+  const handleSwitchTab = (tab: string) => {
+    // Check if tab is locked
+    if (tab === 'product' && !isProductPageUnlocked) {
+      toast.error('Set up pricing in the Publish tab first');
+      return;
+    }
+    if (tab === 'marketing' && !isMarketingUnlocked) {
+      toast.error('Set up your Product Page first');
+      return;
+    }
+    setActiveTab(tab);
+  };
 
   // Handle deep-link to generation from notification
   useEffect(() => {
@@ -260,8 +288,32 @@ export default function ProjectDetail() {
                 <TabsTrigger value="history" data-tutorial="history-tab">History</TabsTrigger>
                 {!isTutorial && (
                   <>
-                    <TabsTrigger value="product" className="whitespace-nowrap">Product Page</TabsTrigger>
-                    <TabsTrigger value="marketing">Marketing</TabsTrigger>
+                    <TabsTrigger 
+                      value="product" 
+                      className={cn("whitespace-nowrap", !isProductPageUnlocked && "opacity-50")}
+                      onClick={(e) => {
+                        if (!isProductPageUnlocked) {
+                          e.preventDefault();
+                          toast.error('Set up pricing in the Publish tab first');
+                        }
+                      }}
+                    >
+                      {!isProductPageUnlocked && <Lock className="h-3 w-3 mr-1" />}
+                      Product Page
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="marketing"
+                      className={cn(!isMarketingUnlocked && "opacity-50")}
+                      onClick={(e) => {
+                        if (!isMarketingUnlocked) {
+                          e.preventDefault();
+                          toast.error('Set up your Product Page first');
+                        }
+                      }}
+                    >
+                      {!isMarketingUnlocked && <Lock className="h-3 w-3 mr-1" />}
+                      Marketing
+                    </TabsTrigger>
                     <TabsTrigger value="publish">Publish</TabsTrigger>
                   </>
                 )}
@@ -344,19 +396,32 @@ export default function ProjectDetail() {
             <>
               <TabsContent value="product">
                 <ErrorBoundary>
-                  <ProductPageTab projectId={id!} projectName={project.name} />
+                  <ProductPageTab 
+                    projectId={id!} 
+                    projectName={project.name} 
+                    isLocked={!isProductPageUnlocked}
+                    onSwitchTab={handleSwitchTab}
+                  />
                 </ErrorBoundary>
               </TabsContent>
 
               <TabsContent value="marketing">
                 <ErrorBoundary>
-                  <MarketingTab projectId={id!} />
+                  <MarketingTab 
+                    projectId={id!} 
+                    isLocked={!isMarketingUnlocked}
+                    onSwitchTab={handleSwitchTab}
+                  />
                 </ErrorBoundary>
               </TabsContent>
 
               <TabsContent value="publish">
                 <ErrorBoundary>
-                  <PublishPanel projectId={id!} projectName={project.name} />
+                  <PublishPanel 
+                    projectId={id!} 
+                    projectName={project.name} 
+                    onSwitchTab={handleSwitchTab}
+                  />
                 </ErrorBoundary>
               </TabsContent>
             </>

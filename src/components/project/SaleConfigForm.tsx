@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Save, ExternalLink, Copy, Check, RefreshCw, Plus, Trash2, Info, Store, Calendar } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Copy, Check, RefreshCw, Plus, Trash2, Sparkles, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { RoyaltyWarningModal } from './RoyaltyWarningModal';
+import { MilestoneSuccessModal } from './MilestoneSuccessModal';
 
 interface PriceTier {
   count: number;
@@ -16,9 +17,10 @@ interface PriceTier {
 
 interface SaleConfigFormProps {
   nmkrProject: NmkrProject;
+  onSwitchTab?: (tab: string) => void;
 }
 
-export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
+export function SaleConfigForm({ nmkrProject, onSwitchTab }: SaleConfigFormProps) {
   const settings = nmkrProject.settings as Record<string, unknown> || {};
   const isRoyaltyMinted = settings.royaltyMinted === true;
   const isRoyaltyWarningDismissed = settings.royaltyWarningDismissed === true;
@@ -27,6 +29,7 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
   const [payLink, setPayLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [showRoyaltyWarning, setShowRoyaltyWarning] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const updatePrice = useUpdateNmkrPrice();
   const getPayLink = useGetNmkrPayLink();
@@ -112,6 +115,8 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
         projectUid: nmkrProject.nmkr_project_uid,
       });
       setPayLink(result.href || result.paymentLink);
+      // Show success modal after generating payment link
+      setShowSuccessModal(true);
     } catch {
       // Error handled by hook
     }
@@ -334,57 +339,38 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
         </CardContent>
       </Card>
 
-      {/* Next Steps Card */}
-      <Card className="border-primary/20 bg-primary/5">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base font-display">
-            <Info className="h-4 w-4 text-primary" />
-            What's Next?
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">1</div>
-            <div>
-              <p className="text-sm font-medium">Share Your Payment Link</p>
-              <p className="text-xs text-muted-foreground">
-                Use the NMKR Pay link above for direct sales. Buyers can pay with ADA instantly.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">2</div>
-            <div>
-              <p className="text-sm font-medium flex items-center gap-2">
-                <Store className="h-3 w-3" />
-                Create a Product Page
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Go to the <span className="font-medium text-foreground">Product Page</span> tab to create a beautiful storefront for your collection.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">3</div>
-            <div>
-              <p className="text-sm font-medium flex items-center gap-2">
-                <Calendar className="h-3 w-3" />
-                Schedule a Launch (Optional)
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Use the <span className="font-medium text-foreground">Marketing</span> tab to schedule a public launch event.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Royalty Warning Modal */}
       <RoyaltyWarningModal
         open={showRoyaltyWarning}
         onOpenChange={setShowRoyaltyWarning}
         onConfirm={handleRoyaltyWarningConfirm}
         onCancel={() => setShowRoyaltyWarning(false)}
+      />
+
+      {/* Success Modal after Payment Link Generation */}
+      <MilestoneSuccessModal
+        open={showSuccessModal}
+        onOpenChange={setShowSuccessModal}
+        title="Minting Setup Complete!"
+        description="Congratulations! You've successfully configured your NFT minting. You can now share the NMKR payment link directly with buyers, or create a beautiful Product Page storefront."
+        icon={<Sparkles className="h-8 w-8 text-primary animate-pulse" />}
+        primaryAction={{
+          label: 'Set Up Product Page',
+          onClick: () => {
+            if (onSwitchTab) {
+              onSwitchTab('product');
+            }
+          },
+        }}
+        secondaryAction={{
+          label: 'Copy Link & Close',
+          onClick: () => {
+            if (payLink) {
+              navigator.clipboard.writeText(payLink);
+              toast.success('Payment link copied to clipboard');
+            }
+          },
+        }}
       />
     </div>
   );

@@ -45,6 +45,8 @@ import { cn } from '@/lib/utils';
 
 interface MarketingTabProps {
   projectId: string;
+  isLocked?: boolean;
+  onSwitchTab?: (tab: string) => void;
 }
 
 const COMING_SOON_OPTIONS = [
@@ -65,7 +67,7 @@ const COMING_SOON_OPTIONS = [
   },
 ];
 
-export function MarketingTab({ projectId }: MarketingTabProps) {
+export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabProps) {
   const { user } = useAuth();
   const { data: marketingRequest, isLoading } = useProjectMarketingRequest(projectId);
   const [showNewRequestForm, setShowNewRequestForm] = useState(false);
@@ -235,6 +237,50 @@ export function MarketingTab({ projectId }: MarketingTabProps) {
       <div className="space-y-6">
         <Skeleton className="h-48 w-full" />
         <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+
+  // Show locked state if product page not set up
+  if (isLocked) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <Card className="max-w-lg w-full text-center">
+          <CardHeader>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <Lock className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <CardTitle className="font-display">Set Up Your Product Page First</CardTitle>
+            <CardDescription>
+              Before exploring marketing options, complete your Product Page to create a storefront for your collection.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-left rounded-lg border bg-muted/30 p-4">
+              <h4 className="text-sm font-medium mb-3">What you'll unlock:</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Featured Spotlight on homepage
+                </li>
+                <li className="flex items-center gap-2">
+                  <Star className="h-4 w-4" />
+                  Priority placement in marketplace
+                </li>
+                <li className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Increased visibility for your collection
+                </li>
+              </ul>
+            </div>
+            <Button 
+              className="w-full" 
+              onClick={() => onSwitchTab?.('product')}
+            >
+              Go to Product Page
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

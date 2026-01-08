@@ -29,9 +29,10 @@ import {
 interface PublishPanelProps {
   projectId: string;
   projectName: string;
+  onSwitchTab?: (tab: string) => void;
 }
 
-export function PublishPanel({ projectId, projectName }: PublishPanelProps) {
+export function PublishPanel({ projectId, projectName, onSwitchTab }: PublishPanelProps) {
   const [activeSubTab, setActiveSubTab] = useState('upload');
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const { 
@@ -185,7 +186,7 @@ export function PublishPanel({ projectId, projectName }: PublishPanelProps) {
               <li>Create a Product Page (separate tab) for your public storefront</li>
             </ol>
           </div>
-          <SaleConfigForm nmkrProject={nmkrProject} />
+          <SaleConfigForm nmkrProject={nmkrProject} onSwitchTab={onSwitchTab} />
         </TabsContent>
 
         <TabsContent value="royalties" className="mt-6">
