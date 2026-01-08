@@ -410,6 +410,7 @@ export default function Index() {
               <Link to="/terms-of-service" className="transition-colors hover:text-foreground">{t('footer.terms')}</Link>
               <Link to="/documentation" className="transition-colors hover:text-foreground">{t('footer.documentation')}</Link>
               <Link to="/marketplace" className="transition-colors hover:text-foreground">{t('footer.marketplace')}</Link>
+              <Link to="/artfund" className="transition-colors hover:text-foreground">Art Fund</Link>
             </nav>
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} {t('footer.rights')}

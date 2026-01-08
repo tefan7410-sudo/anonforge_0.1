@@ -71,11 +71,13 @@ import {
   Sparkles,
   Image as ImageIcon,
   StopCircle,
+  Heart,
   Gift,
   Activity,
 } from 'lucide-react';
 import { CostsAnalyticsTab } from '@/components/admin/CostsAnalyticsTab';
 import { SystemStatusTab } from '@/components/admin/SystemStatusTab';
+import { ArtFundTab } from '@/components/admin/ArtFundTab';
 import { toast } from 'sonner';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -539,6 +541,10 @@ export default function Admin() {
             <TabsTrigger value="system-status" className="gap-2">
               <Activity className="h-4 w-4" />
               System Status
+            </TabsTrigger>
+            <TabsTrigger value="art-fund" className="gap-2">
+              <Heart className="h-4 w-4" />
+              Art Fund
             </TabsTrigger>
           </TabsList>
 
@@ -1173,6 +1179,11 @@ export default function Admin() {
           {/* System Status Tab */}
           <TabsContent value="system-status">
             <SystemStatusTab />
+          </TabsContent>
+
+          {/* Art Fund Tab */}
+          <TabsContent value="art-fund">
+            <ArtFundTab />
           </TabsContent>
         </Tabs>
       </main>
