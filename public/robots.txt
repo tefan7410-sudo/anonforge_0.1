@@ -42,6 +42,8 @@ Disallow: /project/
 Disallow: /profile
 Disallow: /admin
 Disallow: /credits
+Disallow: /settings
+Disallow: /new-project
 
 # Sitemap
 Sitemap: https://anonforge.app/sitemap.xml

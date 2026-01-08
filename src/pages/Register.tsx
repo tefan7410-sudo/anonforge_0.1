@@ -8,7 +8,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Layers, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 import { PageTransition } from '@/components/PageTransition';
 
 const GoogleIcon = () => (
@@ -110,8 +111,8 @@ export default function Register() {
       </Link>
 
       <Link to="/" className="mb-8 flex items-center gap-3 transition-opacity hover:opacity-80">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-          <Layers className="h-6 w-6 text-primary-foreground" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary p-2">
+          <Logo className="h-full w-full" />
         </div>
         <h1 className="font-display text-3xl font-bold">AnonForge</h1>
       </Link>

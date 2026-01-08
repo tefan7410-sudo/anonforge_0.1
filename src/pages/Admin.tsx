@@ -44,9 +44,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { CountdownTimer } from '@/components/CountdownTimer';
+import { Logo } from '@/components/Logo';
 import { 
-  Layers, 
-  ArrowLeft, 
+  ArrowLeft,
   Shield, 
   BadgeCheck, 
   Eye, 
@@ -456,8 +456,8 @@ export default function Admin() {
       <header className="border-b border-border/50">
         <nav className="container mx-auto flex items-center justify-between px-6 py-4">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <Layers className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary p-2">
+              <Logo className="h-full w-full" />
             </div>
             <span className="font-display text-xl font-semibold">AnonForge</span>
           </Link>

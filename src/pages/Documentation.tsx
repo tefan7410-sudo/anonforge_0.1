@@ -10,8 +10,8 @@ import {
 } from '@/components/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Logo } from '@/components/Logo';
 import {
-  Layers,
   ArrowLeft,
   Upload,
   Palette,
@@ -379,7 +379,7 @@ export default function Documentation() {
       id: 'nmkr-integration',
       title: 'NMKR Integration',
       icon: CreditCard,
-      keywords: ['nmkr', 'api', 'key', 'mint', 'cardano', 'upload', 'nft', 'blockchain', 'policy'],
+      keywords: ['nmkr', 'api', 'key', 'mint', 'cardano', 'upload', 'nft', 'blockchain', 'policy', 'tier', 'pricing', 'payment', 'link'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
@@ -430,9 +430,21 @@ export default function Documentation() {
                   <span className="text-sm font-bold text-primary">4</span>
                 </div>
                 <div>
-                  <p className="font-medium text-sm">Upload NFTs</p>
+                  <p className="font-medium text-sm">Configure Multi-Tier Pricing</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Select generations from your history and upload them to NMKR for minting.
+                    Set up multiple price tiers with different counts and prices. Each tier must be configured explicitly in NMKR.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 items-start">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                  <span className="text-sm font-bold text-primary">5</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Generate Payment Link</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Generate a payment link to enable the Product Page tab. This is required before you can schedule your launch.
                   </p>
                 </div>
               </div>
@@ -454,15 +466,118 @@ export default function Documentation() {
       ),
     },
     {
+      id: 'publishing-workflow',
+      title: 'Publishing Workflow',
+      icon: Zap,
+      keywords: ['publish', 'workflow', 'unlock', 'tab', 'milestone', 'progress', 'schedule', 'launch', 'calendar', 'live'],
+      content: (
+        <div className="space-y-6">
+          <p className="text-muted-foreground">
+            AnonForge uses a progressive tab system to guide you through publishing your collection. Complete each step to unlock the next.
+          </p>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold">Progressive Tab Unlocking</h4>
+            <div className="space-y-3">
+              <div className="flex gap-4 items-start">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary shrink-0">
+                  <span className="text-sm font-bold text-primary-foreground">1</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Publish Tab (Always Available)</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Set up your NMKR integration, configure pricing tiers, and generate a payment link.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex gap-4 items-start">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/50 shrink-0">
+                  <span className="text-sm font-bold text-primary-foreground">2</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Product Page (Unlocked after payment link)</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Create your collection's landing page with banner, logo, tagline, and social links. Schedule your launch date.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex gap-4 items-start">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/30 shrink-0">
+                  <span className="text-sm font-bold text-primary-foreground">3</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Marketing (Unlocked after Product Page setup)</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Apply for featured spotlight placement on the marketplace homepage.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold">Schedule Launch</h4>
+            <p className="text-sm text-muted-foreground">
+              Use the Schedule Launch feature to set a specific date and time for your collection to go live. Key details:
+            </p>
+            <ul className="space-y-2 text-sm text-muted-foreground ml-6">
+              <li className="flex items-start gap-2">
+                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                Minimum 24 hours advance notice required
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                Select date and time using the calendar picker
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                Scheduled collections show a countdown timer on the marketplace
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                Collections go live automatically at the scheduled time
+              </li>
+            </ul>
+          </div>
+
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <div className="flex gap-3">
+              <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Milestone Celebrations</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  You'll see celebration modals when completing key milestones, guiding you to the next step in the workflow.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
       id: 'product-page',
       title: 'Product Page',
       icon: LayoutGrid,
-      keywords: ['product', 'landing', 'page', 'banner', 'logo', 'tagline', 'social', 'twitter', 'discord', 'website', 'founder', 'portfolio'],
+      keywords: ['product', 'landing', 'page', 'banner', 'logo', 'tagline', 'social', 'twitter', 'discord', 'website', 'founder', 'portfolio', 'schedule', 'launch', 'unlock'],
       content: (
         <div className="space-y-6">
           <p className="text-muted-foreground">
             Create a stunning landing page for your NFT collection. Your product page is what collectors see when browsing your project.
           </p>
+
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 mb-4">
+            <div className="flex gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">How to Unlock</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  The Product Page tab is unlocked after generating a payment link in the Publish tab. Complete NMKR setup first.
+                </p>
+              </div>
+            </div>
+          </div>
 
           <div className="space-y-4">
             <h4 className="font-semibold">Customization Options</h4>
@@ -507,6 +622,14 @@ export default function Documentation() {
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold">Schedule Launch</h4>
+            <p className="text-sm text-muted-foreground">
+              Click "Schedule Launch" to open the calendar picker and select your launch date and time. 
+              The minimum scheduling window is 24 hours from now. Collectors will see a countdown timer until launch.
+            </p>
           </div>
 
           <div className="space-y-4">
@@ -1061,8 +1184,8 @@ export default function Documentation() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <Link to="/" className="flex items-center gap-2 sm:gap-3">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary">
-                <Layers className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary p-1.5">
+                <Logo className="h-full w-full" />
               </div>
               <span className="font-display text-lg sm:text-xl font-bold">AnonForge</span>
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground border-muted-foreground/30">BETA</Badge>
@@ -1190,7 +1313,7 @@ export default function Documentation() {
         <div className="container mx-auto px-6 py-6">
           <div className="flex flex-col items-center gap-4 text-center md:flex-row md:justify-between md:text-left">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Layers className="h-4 w-4" />
+              <Logo size="sm" />
               <span className="font-semibold">AnonForge</span>
             </div>
             <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">

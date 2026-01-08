@@ -10,7 +10,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Menu, LayoutDashboard, User, LogOut, Layers, Bell, Store, Settings, Home, HelpCircle, Coins } from 'lucide-react';
+import { Menu, LayoutDashboard, User, LogOut, Bell, Store, Settings, Home, HelpCircle, Coins } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 import { useState } from 'react';
 import { useUnreadCount } from '@/hooks/use-notifications';
 import { useProfile } from '@/hooks/use-profile';
@@ -52,8 +53,8 @@ export function MobileNav() {
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
               onClick={() => setOpen(false)}
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <Layers className="h-4 w-4 text-primary-foreground" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1.5">
+                <Logo className="h-full w-full" />
               </div>
               AnonForge
             </Link>

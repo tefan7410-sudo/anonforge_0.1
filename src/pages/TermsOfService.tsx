@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Layers } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 import { PageTransition } from '@/components/PageTransition';
 
 export default function TermsOfService() {
@@ -20,8 +21,8 @@ export default function TermsOfService() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <Layers className="h-4 w-4 text-primary-foreground" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1.5">
+                <Logo className="h-full w-full" />
               </div>
               <span className="font-display font-bold">AnonForge</span>
             </div>
