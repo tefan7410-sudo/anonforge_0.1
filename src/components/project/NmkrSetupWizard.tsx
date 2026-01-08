@@ -497,10 +497,15 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
             <div className="flex items-start gap-2">
               <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <p className="text-xs text-muted-foreground">
-                Royalties ensure you receive a percentage of every secondary sale on marketplaces 
-                like jpg.store. Highly recommended!
-              </p>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  Royalties ensure you receive a percentage of every secondary sale on marketplaces 
+                  like jpg.store. Highly recommended!
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">Note:</span> Creating the royalty token will use 1 mint credit in NMKR Studio.
+                </p>
+              </div>
             </div>
           </div>
 

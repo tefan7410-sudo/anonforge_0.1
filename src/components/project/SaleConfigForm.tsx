@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUpdateNmkrPrice, useGetNmkrPayLink, useGetPricelist, useUpdateRoyaltyWarningDismissed, NmkrProject } from '@/hooks/use-nmkr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, ExternalLink, Copy, Check, RefreshCw } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Loader2, Save, ExternalLink, Copy, Check, RefreshCw, Plus, Trash2, Info, Store, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { RoyaltyWarningModal } from './RoyaltyWarningModal';
+
+interface PriceTier {
+  count: number;
+  priceAda: string;
+}
 
 interface SaleConfigFormProps {
   nmkrProject: NmkrProject;
@@ -17,12 +23,7 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
   const isRoyaltyMinted = settings.royaltyMinted === true;
   const isRoyaltyWarningDismissed = settings.royaltyWarningDismissed === true;
 
-  const [priceAda, setPriceAda] = useState(
-    nmkrProject.price_in_lovelace 
-      ? (nmkrProject.price_in_lovelace / 1_000_000).toString() 
-      : ''
-  );
-  const [countNft, setCountNft] = useState('1');
+  const [priceTiers, setPriceTiers] = useState<PriceTier[]>([{ count: 1, priceAda: '' }]);
   const [payLink, setPayLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [showRoyaltyWarning, setShowRoyaltyWarning] = useState(false);
@@ -32,26 +33,63 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
   const updateRoyaltyWarningDismissed = useUpdateRoyaltyWarningDismissed();
   const { data: pricelist, refetch: refetchPricelist, isLoading: pricelistLoading } = useGetPricelist(nmkrProject.nmkr_project_uid);
 
-  const handleUpdatePrice = async () => {
-    const price = parseFloat(priceAda);
-    const count = parseInt(countNft, 10);
-    
-    if (isNaN(price) || price <= 0) {
-      toast.error('Please enter a valid price');
-      return;
+  // Initialize price tiers from existing pricelist
+  useEffect(() => {
+    if (pricelist && Array.isArray(pricelist) && pricelist.length > 0) {
+      const existingTiers = pricelist.map((tier: { countNft?: number; priceInLovelace?: number }) => ({
+        count: tier.countNft || 1,
+        priceAda: ((tier.priceInLovelace || 0) / 1_000_000).toString(),
+      }));
+      setPriceTiers(existingTiers);
     }
-    if (isNaN(count) || count < 1) {
-      toast.error('Please enter a valid NFT count (minimum 1)');
+  }, [pricelist]);
+
+  const addTier = () => {
+    const lastCount = priceTiers.length > 0 ? priceTiers[priceTiers.length - 1].count : 0;
+    setPriceTiers([...priceTiers, { count: lastCount + 1, priceAda: '' }]);
+  };
+
+  const removeTier = (index: number) => {
+    if (priceTiers.length > 1) {
+      setPriceTiers(priceTiers.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateTier = (index: number, field: 'count' | 'priceAda', value: string) => {
+    const newTiers = [...priceTiers];
+    if (field === 'count') {
+      newTiers[index].count = parseInt(value, 10) || 1;
+    } else {
+      newTiers[index].priceAda = value;
+    }
+    setPriceTiers(newTiers);
+  };
+
+  const handleSaveAllTiers = async () => {
+    // Validate all tiers
+    const invalidTiers = priceTiers.filter(tier => {
+      const price = parseFloat(tier.priceAda);
+      return isNaN(price) || price <= 0 || tier.count < 1;
+    });
+
+    if (invalidTiers.length > 0) {
+      toast.error('Please ensure all tiers have valid count (≥1) and price (>0)');
       return;
     }
 
-    const priceInLovelace = Math.round(price * 1_000_000);
+    // Convert to NMKR format
+    const tiersForNmkr = priceTiers.map(tier => ({
+      countNft: tier.count,
+      priceInLovelace: Math.round(parseFloat(tier.priceAda) * 1_000_000),
+      isActive: true,
+    }));
 
     await updatePrice.mutateAsync({
       nmkrProjectId: nmkrProject.id,
       nmkrProjectUid: nmkrProject.nmkr_project_uid,
-      priceInLovelace,
-      countNft: count,
+      priceInLovelace: tiersForNmkr[0].priceInLovelace,
+      countNft: tiersForNmkr[0].countNft,
+      priceTiers: tiersForNmkr,
     });
     
     // Refresh pricelist after update
@@ -105,66 +143,91 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
       {/* Pricing Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="font-display">Pricing</CardTitle>
+          <CardTitle className="font-display">Price Tiers</CardTitle>
           <CardDescription>
-            Set the price for your NFTs in ADA
+            Define separate prices for each quantity. Buyers can only purchase amounts you've explicitly configured.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="countNft">NFT Count</Label>
-              <Input
-                id="countNft"
-                type="number"
-                min="1"
-                value={countNft}
-                onChange={(e) => setCountNft(e.target.value)}
-                placeholder="1"
-              />
-              <p className="text-xs text-muted-foreground">
-                Number of NFTs for this price tier
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="price">Price (ADA)</Label>
-              <div className="relative">
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  value={priceAda}
-                  onChange={(e) => setPriceAda(e.target.value)}
-                  placeholder="10"
-                  className="pr-12"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  ADA
-                </span>
-              </div>
-            </div>
+          {/* Price Tiers Table */}
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px]">Count</TableHead>
+                  <TableHead>Price (ADA)</TableHead>
+                  <TableHead className="w-[60px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {priceTiers.map((tier, index) => (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={tier.count}
+                        onChange={(e) => updateTier(index, 'count', e.target.value)}
+                        className="w-20"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="relative max-w-[200px]">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={tier.priceAda}
+                          onChange={(e) => updateTier(index, 'priceAda', e.target.value)}
+                          placeholder="10"
+                          className="pr-12"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                          ADA
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {priceTiers.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeTier(index)}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-          
-          <Button 
-            onClick={handleUpdatePrice}
-            disabled={updatePrice.isPending || !priceAda || !countNft}
-            className="w-full"
-          >
-            {updatePrice.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Save Price Tier
-              </>
-            )}
-          </Button>
+
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={addTier} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Price Tier
+            </Button>
+            <Button 
+              onClick={handleSaveAllTiers}
+              disabled={updatePrice.isPending || priceTiers.some(t => !t.priceAda)}
+              className="gap-2"
+            >
+              {updatePrice.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Save All Tiers
+            </Button>
+          </div>
 
           {/* Current pricelist from NMKR */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Current Price Tiers</Label>
+              <Label>Saved Price Tiers (from NMKR)</Label>
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -193,17 +256,17 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
                 Local price: {(nmkrProject.price_in_lovelace / 1_000_000).toFixed(2)} ADA
               </p>
             ) : (
-              <p className="text-xs text-muted-foreground">No price tiers set yet</p>
+              <p className="text-xs text-muted-foreground">No price tiers saved yet</p>
             )}
           </div>
 
           <div className="rounded-lg border border-border bg-muted/30 p-4">
             <h4 className="mb-2 text-sm font-medium">Pricing Tips</h4>
             <ul className="space-y-1 text-xs text-muted-foreground">
-              <li>• Set count to 1 for single NFT purchases</li>
-              <li>• Use higher counts with discounted prices for bulk buys</li>
+              <li>• Each row defines a purchasable quantity (e.g., 1 NFT for 50 ADA, 2 NFTs for 90 ADA)</li>
+              <li>• Buyers can only purchase exact amounts you've configured</li>
+              <li>• Use bulk discounts to encourage larger purchases</li>
               <li>• NMKR charges fees on each sale (check their pricing)</li>
-              <li>• You can update the price at any time</li>
             </ul>
           </div>
         </CardContent>
@@ -218,9 +281,9 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!nmkrProject.price_in_lovelace ? (
+          {!nmkrProject.price_in_lovelace && (!pricelist || pricelist.length === 0) ? (
             <p className="text-sm text-muted-foreground">
-              Set a price first to generate payment links
+              Set and save at least one price tier first to generate payment links
             </p>
           ) : (
             <>
@@ -268,6 +331,51 @@ export function SaleConfigForm({ nmkrProject }: SaleConfigFormProps) {
               )}
             </>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Next Steps Card */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base font-display">
+            <Info className="h-4 w-4 text-primary" />
+            What's Next?
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">1</div>
+            <div>
+              <p className="text-sm font-medium">Share Your Payment Link</p>
+              <p className="text-xs text-muted-foreground">
+                Use the NMKR Pay link above for direct sales. Buyers can pay with ADA instantly.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">2</div>
+            <div>
+              <p className="text-sm font-medium flex items-center gap-2">
+                <Store className="h-3 w-3" />
+                Create a Product Page
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Go to the <span className="font-medium text-foreground">Product Page</span> tab to create a beautiful storefront for your collection.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">3</div>
+            <div>
+              <p className="text-sm font-medium flex items-center gap-2">
+                <Calendar className="h-3 w-3" />
+                Schedule a Launch (Optional)
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Use the <span className="font-medium text-foreground">Marketing</span> tab to schedule a public launch event.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

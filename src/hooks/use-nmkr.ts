@@ -409,15 +409,20 @@ export function useUpdateNmkrPrice() {
       nmkrProjectUid,
       priceInLovelace,
       countNft = 1,
+      priceTiers,
     }: {
       nmkrProjectId: string;
       nmkrProjectUid: string;
       priceInLovelace: number;
       countNft?: number;
+      priceTiers?: Array<{ countNft: number; priceInLovelace: number; isActive: boolean }>;
     }) => {
+      // Use provided priceTiers or build from single price
+      const tiersToSend = priceTiers || [{ countNft, priceInLovelace, isActive: true }];
+      
       await callNmkrProxy('update-pricelist', {
         projectUid: nmkrProjectUid,
-        priceTiers: [{ countNft, priceInLovelace, isActive: true }],
+        priceTiers: tiersToSend,
       });
 
       // Update local record

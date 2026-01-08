@@ -204,6 +204,8 @@ serve(async (req) => {
           payoutWalletaddress: params.payoutWalletAddress,
           // Storage provider: 0 = IPFS, 1 = Iagon (based on NMKR API enum)
           nftStorageProvider: storageProviderValue,
+          // Project type: 0 = NFT (Non-Fungible), 1 = FT (Fungible Token)
+          projectType: 0,
           enableFiat: params.enableFiat ?? false,
           enableDecentralPayments: params.enableDecentralPayments ?? true,
           enableCrossSaleOnPaymentgateway: false,
