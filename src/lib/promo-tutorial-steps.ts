@@ -2,7 +2,7 @@ export interface PromoTutorialStep {
   id: number;
   title: string;
   description: string;
-  visual: 'project-creation' | 'layer-upload' | 'rarity-weights' | 'generation' | 'preview' | 'publish' | 'cta';
+  visual: 'project-creation' | 'layer-upload' | 'rarity-weights' | 'generation' | 'preview' | 'publish' | 'marketing' | 'cta';
   isFinal?: boolean;
 }
 
@@ -45,6 +45,12 @@ export const PROMO_TUTORIAL_STEPS: PromoTutorialStep[] = [
   },
   {
     id: 7,
+    title: "Market Your Collection",
+    description: "Coming soon: Connect with other creators and put your project in front of new audiences. For now, market directly on AnonForge with featured spots and promotional tools.",
+    visual: "marketing"
+  },
+  {
+    id: 8,
     title: "Ready to Launch Your Collection?",
     description: "Join hundreds of creators who have launched successful NFT collections on AnonForge. Your journey starts now.",
     visual: "cta",

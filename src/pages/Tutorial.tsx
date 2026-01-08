@@ -22,6 +22,10 @@ import {
   X,
   Layers,
   Check,
+  Megaphone,
+  Star,
+  Users,
+  TrendingUp,
 } from 'lucide-react';
 
 // Visual mockup components for each step
@@ -244,6 +248,53 @@ function PublishVisual() {
   );
 }
 
+function MarketingVisual() {
+  return (
+    <Card className="p-6 bg-card/50 backdrop-blur border-border/50 max-w-md mx-auto">
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+          <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+            <Megaphone className="h-5 w-5 text-amber-500" />
+          </div>
+          <div>
+            <p className="font-medium text-amber-500">Marketing Tools</p>
+            <p className="text-xs text-muted-foreground">Boost your collection visibility</p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded bg-primary/20 flex items-center justify-center">
+                <Star className="h-4 w-4 text-primary" />
+              </div>
+              <span className="text-sm">Featured Spotlight</span>
+            </div>
+            <Badge variant="outline">Available</Badge>
+          </div>
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded bg-purple-500/20 flex items-center justify-center">
+                <Users className="h-4 w-4 text-purple-500" />
+              </div>
+              <span className="text-sm">Creator Network</span>
+            </div>
+            <Badge variant="secondary">Coming Soon</Badge>
+          </div>
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded bg-green-500/20 flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-green-500" />
+              </div>
+              <span className="text-sm">Audience Analytics</span>
+            </div>
+            <Badge variant="secondary">Coming Soon</Badge>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function CTAVisual() {
   return (
     <div className="text-center space-y-6 max-w-md mx-auto">
@@ -282,6 +333,7 @@ const visualComponents: Record<string, React.FC> = {
   'generation': GenerationVisual,
   'preview': PreviewVisual,
   'publish': PublishVisual,
+  'marketing': MarketingVisual,
   'cta': CTAVisual,
 };
 
@@ -293,6 +345,7 @@ const stepIcons: Record<string, React.FC<{ className?: string }>> = {
   'generation': Sparkles,
   'preview': Image,
   'publish': Rocket,
+  'marketing': Megaphone,
   'cta': ArrowRight,
 };
 
