@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { TutorialProvider } from "@/components/tutorial/TutorialProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 import { CookieBanner } from "@/components/CookieBanner";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -25,6 +26,7 @@ import Marketplace from "./pages/Marketplace";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Documentation from "./pages/Documentation";
+import Status from "./pages/Status";
 
 const queryClient = new QueryClient();
 
@@ -39,7 +41,9 @@ const App = () => (
           <BrowserRouter>
             <AuthProvider>
               <TutorialProvider>
+              <MaintenanceGuard>
               <Routes>
+                <Route path="/status" element={<Status />} />
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
@@ -106,6 +110,7 @@ const App = () => (
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </MaintenanceGuard>
               <CookieBanner />
               </TutorialProvider>
             </AuthProvider>
