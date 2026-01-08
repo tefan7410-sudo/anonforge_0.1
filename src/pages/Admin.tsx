@@ -72,8 +72,10 @@ import {
   Image as ImageIcon,
   StopCircle,
   Gift,
+  Activity,
 } from 'lucide-react';
 import { CostsAnalyticsTab } from '@/components/admin/CostsAnalyticsTab';
+import { SystemStatusTab } from '@/components/admin/SystemStatusTab';
 import { toast } from 'sonner';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { formatDistanceToNow, format } from 'date-fns';

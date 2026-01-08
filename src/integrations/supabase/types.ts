@@ -1177,6 +1177,114 @@ export type Database = {
           },
         ]
       }
+      service_status: {
+        Row: {
+          created_at: string
+          display_name: string
+          error_message: string | null
+          id: string
+          last_check_at: string | null
+          response_time_ms: number | null
+          service_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          error_message?: string | null
+          id?: string
+          last_check_at?: string | null
+          response_time_ms?: number | null
+          service_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          error_message?: string | null
+          id?: string
+          last_check_at?: string | null
+          response_time_ms?: number | null
+          service_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
+      status_incidents: {
+        Row: {
+          affected_services: string[] | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          is_maintenance: boolean
+          maintenance_end: string | null
+          maintenance_start: string | null
+          message: string
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          affected_services?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_maintenance?: boolean
+          maintenance_end?: string | null
+          maintenance_start?: string | null
+          message: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title: string
+        }
+        Update: {
+          affected_services?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_maintenance?: boolean
+          maintenance_end?: string | null
+          maintenance_start?: string | null
+          message?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
       tutorial_progress: {
         Row: {
           completed_at: string | null
