@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Wallet, Users, Award, Sparkles, ExternalLink, Store, Zap, Menu } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Heart, Wallet, Users, Award, Sparkles, ExternalLink, Store, Zap, Menu, LayoutGrid } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,6 +98,7 @@ function WalletBalanceDisplay({ balance, isLoading, adaPrice }: {
 }
 
 export default function ArtFund() {
+  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: settings, isLoading: settingsLoading } = useArtFundSettings();
   const { data: sources, isLoading: sourcesLoading } = useArtFundSources();
@@ -170,12 +172,20 @@ export default function ArtFund() {
               </Button>
               <LanguageSelector />
               <ThemeToggle />
-              <Button variant="ghost" asChild>
-                <Link to="/login">Sign in</Link>
-              </Button>
-              <Button asChild>
-                <Link to="/register">Get started</Link>
-              </Button>
+              {user ? (
+                <Button asChild>
+                  <Link to="/dashboard">Dashboard</Link>
+                </Button>
+              ) : (
+                <>
+                  <Button variant="ghost" asChild>
+                    <Link to="/login">Sign in</Link>
+                  </Button>
+                  <Button asChild>
+                    <Link to="/register">Get started</Link>
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Mobile Navigation */}
@@ -239,21 +249,36 @@ export default function ArtFund() {
                       </Link>
                     </Button>
                     <div className="my-2 border-t border-border" />
-                    <Button
-                      variant="ghost"
-                      className="justify-start"
-                      asChild
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Link to="/login">Sign in</Link>
-                    </Button>
-                    <Button
-                      className="justify-start"
-                      asChild
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Link to="/register">Get started</Link>
-                    </Button>
+                    {user ? (
+                      <Button
+                        className="justify-start"
+                        asChild
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Link to="/dashboard">
+                          <LayoutGrid className="mr-3 h-4 w-4" />
+                          Dashboard
+                        </Link>
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          className="justify-start"
+                          asChild
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Link to="/login">Sign in</Link>
+                        </Button>
+                        <Button
+                          className="justify-start"
+                          asChild
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Link to="/register">Get started</Link>
+                        </Button>
+                      </>
+                    )}
                   </nav>
                 </SheetContent>
               </Sheet>
