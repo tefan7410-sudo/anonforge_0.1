@@ -327,9 +327,15 @@ export function LayerNodeEditor({ projectId }: LayerNodeEditorProps) {
   if (!categories || categories.length === 0) {
     return (
       <div className="flex h-[600px] items-center justify-center rounded-lg border border-dashed border-border bg-muted/20">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <p className="text-muted-foreground">No categories yet</p>
           <p className="text-sm text-muted-foreground/70">Upload layers to get started</p>
+          <div className="mt-6 rounded-lg bg-muted/50 p-4">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Note:</span> The layer system is designed for creating unique, generative collections with randomized traits. For non-unique collections, you can skip to the{' '}
+              <span className="font-medium text-primary">Publish</span> tab and upload your images + metadata directly.
+            </p>
+          </div>
         </div>
       </div>
     );

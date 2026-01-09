@@ -608,6 +608,12 @@ export function CategoryList({ projectId }: CategoryListProps) {
         <ImageIcon className="mb-4 h-12 w-12 text-muted-foreground/50" />
         <h3 className="mb-1 font-display text-lg font-medium">No layers yet</h3>
         <p className="text-sm text-muted-foreground">Upload layers to get started</p>
+        <div className="mt-6 max-w-md rounded-lg bg-muted/50 p-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">Note:</span> The layer system is designed for creating unique, generative collections with randomized traits. For non-unique collections, you can skip to the{' '}
+            <span className="font-medium text-primary">Publish</span> tab and upload your images + metadata directly.
+          </p>
+        </div>
       </div>
     );
   }
