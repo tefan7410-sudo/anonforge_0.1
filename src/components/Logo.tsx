@@ -16,7 +16,7 @@ export function Logo({ className, size = 'md' }: LogoProps) {
     <img 
       src="/images/logo_anonforge.png" 
       alt="AnonForge" 
-      className={cn('object-contain', className || sizeClasses[size])}
+      className={cn('object-contain rounded-lg shadow-sm', className || sizeClasses[size])}
       style={{ imageRendering: 'auto' }}
     />
   );
