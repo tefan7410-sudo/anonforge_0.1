@@ -19,8 +19,7 @@ import {
   Info,
   AlertCircle,
   Zap,
-  Store,
-  Home
+  ArrowLeft
 } from "lucide-react";
 import { 
   useServiceStatus, 
@@ -221,17 +220,6 @@ export default function Status() {
               <span className="font-display text-lg font-semibold">AnonForge</span>
             </Link>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" asChild className="hidden sm:flex">
-                <Link to="/">
-                  <Home className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button variant="ghost" asChild className="hidden sm:flex">
-                <Link to="/marketplace">
-                  <Store className="h-4 w-4 mr-2" />
-                  Marketplace
-                </Link>
-              </Button>
               <ThemeToggle />
               <Button
                 variant="outline"
@@ -248,6 +236,17 @@ export default function Status() {
 
         {/* Main Content */}
         <main className="container py-8 max-w-4xl">
+          {/* Back to Home */}
+          <div className="mb-6 sm:mb-8">
+            <Button variant="ghost" size="sm" asChild className="gap-2">
+              <Link to="/">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Back to Home</span>
+                <span className="sm:hidden">Back</span>
+              </Link>
+            </Button>
+          </div>
+
           <div className="space-y-8">
             {/* Title */}
             <div className="text-center">
