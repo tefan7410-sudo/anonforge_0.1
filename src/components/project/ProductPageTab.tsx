@@ -468,7 +468,8 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
   }
 
   const isSaving = updateProductPage.isPending || uploadImage.isPending;
-  const canGoLive = buyButtonLink || nmkrProject?.price_in_lovelace;
+  // Require payment link to be saved to enable scheduling
+  const canGoLive = !!productPage?.buy_button_link;
 
   // Build preview product page object
   const previewProductPage = {
@@ -575,7 +576,8 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
               size="sm" 
               onClick={() => setShowScheduleModal(true)}
               disabled={!canGoLive || isSaving}
-              title={!canGoLive ? 'Generate a payment link first' : undefined}
+              className={cn(!canGoLive && "opacity-50")}
+              title={!canGoLive ? 'Generate a payment link and save first' : undefined}
             >
               <Calendar className="mr-2 h-4 w-4" />
               Schedule Launch
@@ -583,6 +585,16 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
           ) : null}
         </div>
       </div>
+
+      {/* Schedule Requirements Info */}
+      {!canGoLive && !isScheduled && !isActuallyLive && (
+        <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
+          <AlertCircle className="h-4 w-4 text-amber-500" />
+          <AlertDescription>
+            <strong>To schedule your launch:</strong> Enable the Buy Button in Collection Settings below, generate a payment link, and save your product page.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Scheduled Launch Info */}
       {isScheduled && (
