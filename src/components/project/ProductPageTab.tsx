@@ -5,7 +5,6 @@ import {
   useUpdateProductPage, 
   useUploadProductImage, 
   useDeleteProductImage,
-  type PortfolioItem 
 } from '@/hooks/use-product-page';
 import { useProfile, useUpdateProfile } from '@/hooks/use-profile';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,21 +29,17 @@ import {
   Image as ImageIcon, 
   Upload, 
   X, 
-  Plus, 
-  Trash2, 
   Save, 
   Loader2,
   Globe,
   Twitter,
   MessageCircle,
   User,
-  Briefcase,
   ExternalLink,
   Eye,
   Rocket,
   ShoppingCart,
   Sparkles,
-  Info,
   BadgeCheck,
   AlertCircle,
   Hash,
@@ -97,7 +92,6 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
   const [founderPfpUrl, setFounderPfpUrl] = useState<string | null>(null);
   const [founderBio, setFounderBio] = useState('');
   const [founderTwitter, setFounderTwitter] = useState('');
-  const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [secondaryMarketUrl, setSecondaryMarketUrl] = useState('');
   const [maxSupply, setMaxSupply] = useState<number | null>(null);
   
@@ -146,7 +140,6 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
       setFounderPfpUrl(productPage.founder_pfp_url);
       setFounderBio(productPage.founder_bio || '');
       setFounderTwitter(productPage.founder_twitter || '');
-      setPortfolio(productPage.portfolio || []);
       setBuyButtonEnabled(productPage.buy_button_enabled || false);
       setBuyButtonText(productPage.buy_button_text || 'Mint Now');
       setBuyButtonLink(productPage.buy_button_link);
@@ -236,33 +229,6 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
     maxFiles: 1,
   });
 
-  // Portfolio item management
-  const addPortfolioItem = () => {
-    setPortfolio([
-      ...portfolio,
-      { id: Date.now().toString(), title: '', description: '', image_url: '', link: '' },
-    ]);
-  };
-
-  const updatePortfolioItem = (id: string, field: keyof PortfolioItem, value: string) => {
-    setPortfolio(portfolio.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  };
-
-  const removePortfolioItem = (id: string) => {
-    const item = portfolio.find(p => p.id === id);
-    if (item?.image_url) {
-      deleteImage.mutate(item.image_url);
-    }
-    setPortfolio(portfolio.filter(item => item.id !== id));
-  };
-
-  const uploadPortfolioImage = async (id: string, file: File) => {
-    const url = await uploadImage.mutateAsync({ projectId, file, type: 'portfolio' });
-    updatePortfolioItem(id, 'image_url', url);
-  };
-
   // Generate payment link
   const handleGeneratePayLink = async () => {
     if (!nmkrProject) {
@@ -349,7 +315,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
         founder_pfp_url: founderPfpUrl,
         founder_bio: founderBio || null,
         founder_twitter: finalFounderTwitter || null,
-        portfolio,
+        portfolio: [], // Keep empty portfolio for backwards compatibility
         buy_button_enabled: buyButtonEnabled,
         buy_button_text: buyButtonText || 'Mint Now',
         buy_button_link: buyButtonLink,
@@ -518,7 +484,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
     founder_pfp_url: founderPfpUrl,
     founder_bio: founderBio,
     founder_twitter: founderTwitter,
-    portfolio,
+    portfolio: [],
     buy_button_enabled: buyButtonEnabled,
     buy_button_text: buyButtonText,
     buy_button_link: buyButtonLink,
@@ -537,7 +503,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
 
   return (
     <div className="space-y-6">
-      {/* Action Bar */}
+      {/* Action Bar with Save Button */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-muted/30 p-4">
         <div className="flex items-center gap-2 flex-wrap">
           {isScheduled ? (
@@ -581,6 +547,15 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* Save Button - Primary action */}
+          <Button onClick={handleSave} disabled={isSaving} size="sm">
+            {isSaving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            {isSaving ? 'Saving...' : 'Save'}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
             <Eye className="mr-2 h-4 w-4" />
             Preview
@@ -652,350 +627,195 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
           </CardContent>
         </Card>
       )}
+
+      {/* Section 1: Branding & Identity (consolidated) */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-display">
             <ImageIcon className="h-5 w-5 text-primary" />
-            Banner Image
+            Branding & Identity
           </CardTitle>
           <CardDescription>
-            Recommended size: 1200x400px. This will be displayed at the top of your product page.
+            Your collection's visual identity and social presence
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          {bannerUrl ? (
-            <div className="relative">
-              <img 
-                src={bannerUrl} 
-                alt="Banner preview" 
-                className="h-48 w-full rounded-lg border object-cover"
-              />
-              <Button 
-                variant="destructive" 
-                size="icon" 
-                className="absolute right-2 top-2"
-                onClick={clearBanner}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div
-              {...getBannerRootProps()}
-              className={cn(
-                "flex h-48 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
-                isBannerDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
-              )}
-            >
-              <input {...getBannerInputProps()} />
-              <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                {isBannerDragActive ? "Drop banner here" : "Drag & drop banner or click to select"}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Branding Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-display">Branding</CardTitle>
-          <CardDescription>
-            Your collection logo and tagline
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
-          {/* Logo */}
+        <CardContent className="space-y-6">
+          {/* Banner - Compact */}
           <div className="space-y-2">
-            <Label>Collection Logo</Label>
-            {logoUrl ? (
-              <div className="flex items-start gap-4">
-                <div className="relative">
-                  <img 
-                    src={logoUrl} 
-                    alt="Logo preview" 
-                    className="h-24 w-24 rounded-lg border object-cover"
-                  />
-                  <Button 
-                    variant="destructive" 
-                    size="icon" 
-                    className="absolute -right-2 -top-2 h-6 w-6"
-                    onClick={clearLogo}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
+            <Label>Banner Image</Label>
+            <p className="text-xs text-muted-foreground">Recommended: 1200x400px</p>
+            {bannerUrl ? (
+              <div className="relative">
+                <img 
+                  src={bannerUrl} 
+                  alt="Banner preview" 
+                  className="h-32 w-full rounded-lg border object-cover"
+                />
+                <Button 
+                  variant="destructive" 
+                  size="icon" 
+                  className="absolute right-2 top-2"
+                  onClick={clearBanner}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             ) : (
               <div
-                {...getLogoRootProps()}
+                {...getBannerRootProps()}
                 className={cn(
-                  "flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
-                  isLogoDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                  "flex h-32 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
+                  isBannerDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
                 )}
               >
-                <input {...getLogoInputProps()} />
-                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                <input {...getBannerInputProps()} />
+                <Upload className="mb-2 h-6 w-6 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  {isBannerDragActive ? "Drop banner here" : "Drag & drop or click to select"}
+                </p>
               </div>
             )}
           </div>
 
-          {/* Tagline */}
-          <div className="space-y-2">
-            <Label htmlFor="tagline">Tagline</Label>
-            <Input
-              id="tagline"
-              value={tagline}
-              onChange={(e) => setTagline(e.target.value)}
-              placeholder="A short catchy tagline for your collection"
-              maxLength={100}
-            />
-            <p className="text-xs text-muted-foreground">
-              {tagline.length}/100 characters
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          <Separator />
 
-      {/* Buy Now Button Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <ShoppingCart className="h-5 w-5 text-primary" />
-            Buy Now Button
-          </CardTitle>
-          <CardDescription>
-            Add a call-to-action button for collectors to mint your NFTs
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="buy-button-enabled">Enable Buy Button</Label>
-              <p className="text-xs text-muted-foreground">
-                Show a prominent mint button on your product page
-              </p>
-            </div>
-            <Switch
-              id="buy-button-enabled"
-              checked={buyButtonEnabled}
-              onCheckedChange={setBuyButtonEnabled}
-            />
-          </div>
-
-          {buyButtonEnabled && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="buy-button-text">Button Text</Label>
-                <Input
-                  id="buy-button-text"
-                  value={buyButtonText}
-                  onChange={(e) => setBuyButtonText(e.target.value)}
-                  placeholder="Mint Now"
-                  maxLength={30}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Payment Link</Label>
-                {buyButtonLink ? (
-                  <div className="flex items-center gap-2">
-                    <Input value={buyButtonLink} readOnly className="font-mono text-xs" />
+          {/* Logo + Tagline side by side */}
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Collection Logo</Label>
+              {logoUrl ? (
+                <div className="flex items-start gap-4">
+                  <div className="relative">
+                    <img 
+                      src={logoUrl} 
+                      alt="Logo preview" 
+                      className="h-24 w-24 rounded-lg border object-cover"
+                    />
                     <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => setBuyButtonLink(null)}
+                      variant="destructive" 
+                      size="icon" 
+                      className="absolute -right-2 -top-2 h-6 w-6"
+                      onClick={clearLogo}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3 w-3" />
                     </Button>
                   </div>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    onClick={handleGeneratePayLink}
-                    disabled={!nmkrProject || getPayLink.isPending}
-                  >
-                    {getPayLink.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="mr-2 h-4 w-4" />
-                    )}
-                    Generate Payment Link
-                  </Button>
-                )}
-                {!nmkrProject && (
-                  <p className="text-xs text-muted-foreground">
-                    Set up NMKR project and pricing in the Publish tab first
+                </div>
+              ) : (
+                <div
+                  {...getLogoRootProps()}
+                  className={cn(
+                    "flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
+                    isLogoDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                  )}
+                >
+                  <input {...getLogoInputProps()} />
+                  <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tagline">Tagline</Label>
+              <Input
+                id="tagline"
+                value={tagline}
+                onChange={(e) => setTagline(e.target.value)}
+                placeholder="A short catchy tagline for your collection"
+                maxLength={100}
+              />
+              <p className="text-xs text-muted-foreground">
+                {tagline.length}/100 characters
+              </p>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Social Links - inline grid */}
+          <div className="space-y-4">
+            <Label className="flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              Social Links
+            </Label>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Twitter className="h-3 w-3" /> Twitter/X
+                </Label>
+                <Input
+                  type="url"
+                  value={twitterUrl}
+                  onChange={(e) => {
+                    setTwitterUrl(e.target.value);
+                    if (twitterError) validateTwitterUrl(e.target.value);
+                  }}
+                  onBlur={() => validateTwitterUrl(twitterUrl)}
+                  placeholder="https://twitter.com/..."
+                  className={cn(twitterError && "border-destructive")}
+                />
+                {twitterError && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {twitterError}
                   </p>
                 )}
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Collection Details */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <Hash className="h-5 w-5 text-primary" />
-            Collection Details
-          </CardTitle>
-          <CardDescription>
-            Supply and marketplace information
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="max-supply">Max Supply</Label>
-              <Input
-                id="max-supply"
-                type="number"
-                min="1"
-                value={maxSupply ?? ''}
-                onChange={(e) => setMaxSupply(e.target.value ? parseInt(e.target.value) : null)}
-                placeholder="e.g., 10000"
-              />
-              <p className="text-xs text-muted-foreground">
-                Total number of NFTs in this collection
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="secondary-market" className="flex items-center gap-2">
-                <Store className="h-4 w-4" />
-                Secondary Market
-              </Label>
-              <Input
-                id="secondary-market"
-                type="url"
-                value={secondaryMarketUrl}
-                onChange={(e) => {
-                  setSecondaryMarketUrl(e.target.value);
-                  if (secondaryMarketError) validateSecondaryMarketUrl(e.target.value);
-                }}
-                onBlur={() => validateSecondaryMarketUrl(secondaryMarketUrl)}
-                placeholder="https://jpg.store/collection/..."
-                className={cn(secondaryMarketError && "border-destructive")}
-              />
-              {secondaryMarketError ? (
-                <p className="text-xs text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {secondaryMarketError}
-                </p>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Link to jpg.store or wayup.io collection page
-                </p>
-              )}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                  <MessageCircle className="h-3 w-3" /> Discord
+                </Label>
+                <Input
+                  type="url"
+                  value={discordUrl}
+                  onChange={(e) => {
+                    setDiscordUrl(e.target.value);
+                    if (discordError) validateDiscordUrl(e.target.value);
+                  }}
+                  onBlur={() => validateDiscordUrl(discordUrl)}
+                  placeholder="https://discord.gg/..."
+                  className={cn(discordError && "border-destructive")}
+                />
+                {discordError && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {discordError}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Globe className="h-3 w-3" /> Website
+                </Label>
+                <Input
+                  type="url"
+                  value={websiteUrl}
+                  onChange={(e) => {
+                    setWebsiteUrl(e.target.value);
+                    if (websiteError) validateWebsiteUrl(e.target.value);
+                  }}
+                  onBlur={() => validateWebsiteUrl(websiteUrl)}
+                  placeholder="https://..."
+                  className={cn(websiteError && "border-destructive")}
+                />
+                {websiteError && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {websiteError}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Social Links */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <Globe className="h-5 w-5 text-primary" />
-            Social Links
-          </CardTitle>
-          <CardDescription>
-            Connect your social media and website
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="twitter-url" className="flex items-center gap-2">
-              <Twitter className="h-4 w-4" />
-              Twitter/X
-            </Label>
-            <Input
-              id="twitter-url"
-              type="url"
-              value={twitterUrl}
-              onChange={(e) => {
-                setTwitterUrl(e.target.value);
-                if (twitterError) validateTwitterUrl(e.target.value);
-              }}
-              onBlur={() => validateTwitterUrl(twitterUrl)}
-              placeholder="https://twitter.com/yourhandle"
-              className={cn(twitterError && "border-destructive")}
-            />
-            {twitterError && (
-              <p className="text-xs text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {twitterError}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="discord-url" className="flex items-center gap-2">
-              <MessageCircle className="h-4 w-4" />
-              Discord
-            </Label>
-            <Input
-              id="discord-url"
-              type="url"
-              value={discordUrl}
-              onChange={(e) => {
-                setDiscordUrl(e.target.value);
-                if (discordError) validateDiscordUrl(e.target.value);
-              }}
-              onBlur={() => validateDiscordUrl(discordUrl)}
-              placeholder="https://discord.gg/yourserver"
-              className={cn(discordError && "border-destructive")}
-            />
-            {discordError && (
-              <p className="text-xs text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {discordError}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="website-url" className="flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              Website
-            </Label>
-            <Input
-              id="website-url"
-              type="url"
-              value={websiteUrl}
-              onChange={(e) => {
-                setWebsiteUrl(e.target.value);
-                if (websiteError) validateWebsiteUrl(e.target.value);
-              }}
-              onBlur={() => validateWebsiteUrl(websiteUrl)}
-              placeholder="https://yourwebsite.com"
-              className={cn(websiteError && "border-destructive")}
-            />
-            {websiteError && (
-              <p className="text-xs text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {websiteError}
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Founder Info */}
+      {/* Section 2: Founder/Creator Info */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-display">
             <User className="h-5 w-5 text-primary" />
-            Founder / Creator
-            {(isVerifiedCreator || founderVerified) && (
-              <Badge variant="default" className="gap-1 bg-primary">
-                <BadgeCheck className="h-3 w-3" />
-                Verified
-              </Badge>
-            )}
+            Founder / Creator Info
           </CardTitle>
           <CardDescription>
             Introduce yourself to potential collectors
@@ -1160,109 +980,244 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
           )}
 
           <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-4">
-            {/* Founder PFP */}
-            <div className="space-y-2">
-              <Label>Profile Picture</Label>
-              {founderPfpUrl ? (
-                <div className="flex items-start gap-4">
-                  <div className="relative">
-                    <img 
-                      src={founderPfpUrl} 
-                      alt="Founder PFP" 
-                      className="h-20 w-20 rounded-full border object-cover"
-                    />
-                    <Button 
-                      variant="destructive" 
-                      size="icon" 
-                      className="absolute -right-1 -top-1 h-5 w-5"
-                      onClick={clearFounderPfp}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
+            <div className="space-y-4">
+              {/* Founder PFP */}
+              <div className="space-y-2">
+                <Label>Profile Picture</Label>
+                {founderPfpUrl ? (
+                  <div className="flex items-start gap-4">
+                    <div className="relative">
+                      <img 
+                        src={founderPfpUrl} 
+                        alt="Founder PFP" 
+                        className="h-20 w-20 rounded-full border object-cover"
+                      />
+                      <Button 
+                        variant="destructive" 
+                        size="icon" 
+                        className="absolute -right-1 -top-1 h-5 w-5"
+                        onClick={clearFounderPfp}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div
-                  {...getFounderPfpRootProps()}
-                  className={cn(
-                    "flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-full border-2 border-dashed transition-colors",
-                    isFounderPfpDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
-                  )}
-                >
-                  <input {...getFounderPfpInputProps()} />
-                  <User className="h-6 w-6 text-muted-foreground" />
-                </div>
-              )}
-            </div>
-
-            {/* Founder Name */}
-            <div className="space-y-2">
-              <Label htmlFor="founder-name" className="flex items-center gap-2">
-                Name
-                {isVerifiedCreator && (
-                  <Badge variant="outline" className="text-xs">Locked</Badge>
+                ) : (
+                  <div
+                    {...getFounderPfpRootProps()}
+                    className={cn(
+                      "flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-full border-2 border-dashed transition-colors",
+                      isFounderPfpDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                    )}
+                  >
+                    <input {...getFounderPfpInputProps()} />
+                    <User className="h-6 w-6 text-muted-foreground" />
+                  </div>
                 )}
-              </Label>
-              <Input
-                id="founder-name"
-                value={isVerifiedCreator ? (profile?.display_name || founderName) : founderName}
-                onChange={(e) => !isVerifiedCreator && setFounderName(e.target.value)}
-                placeholder="Your name or alias"
-                disabled={isVerifiedCreator}
-                className={isVerifiedCreator ? "bg-muted cursor-not-allowed" : ""}
-              />
-              {isVerifiedCreator && (
-                <p className="text-xs text-muted-foreground">From your verified profile</p>
-              )}
-            </div>
-
-            {/* Founder Twitter */}
-            <div className="space-y-2">
-              <Label htmlFor="founder-twitter" className="flex items-center gap-2">
-                <Twitter className="h-3 w-3" />
-                Twitter Handle
-                {isVerifiedCreator && (
-                  <Badge variant="outline" className="text-xs">Locked</Badge>
-                )}
-              </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
-                <Input
-                  id="founder-twitter"
-                  value={isVerifiedCreator ? (profile?.twitter_handle || founderTwitter) : founderTwitter}
-                  onChange={(e) => !isVerifiedCreator && setFounderTwitter(e.target.value.replace('@', ''))}
-                  placeholder="yourhandle"
-                  className={cn("pl-7", isVerifiedCreator && "bg-muted cursor-not-allowed")}
-                  disabled={isVerifiedCreator}
-                />
               </div>
-              {isVerifiedCreator && (
-                <p className="text-xs text-muted-foreground">From your verified profile</p>
-              )}
-            </div>
-          </div>
 
-          {/* Founder Bio */}
-          <div className="space-y-2">
-            <Label htmlFor="founder-bio">Bio</Label>
-            <Textarea
-              id="founder-bio"
-              value={founderBio}
-              onChange={(e) => setFounderBio(e.target.value)}
-              placeholder="Tell collectors about yourself, your background, and your vision for this collection..."
-              rows={8}
-              maxLength={500}
-            />
-            <p className="text-xs text-muted-foreground">
-              {founderBio.length}/500 characters
-            </p>
-          </div>
+              {/* Founder Name */}
+              <div className="space-y-2">
+                <Label htmlFor="founder-name" className="flex items-center gap-2">
+                  Name
+                  {isVerifiedCreator && (
+                    <Badge variant="outline" className="text-xs">Locked</Badge>
+                  )}
+                </Label>
+                <Input
+                  id="founder-name"
+                  value={isVerifiedCreator ? (profile?.display_name || founderName) : founderName}
+                  onChange={(e) => !isVerifiedCreator && setFounderName(e.target.value)}
+                  placeholder="Your name or alias"
+                  disabled={isVerifiedCreator}
+                  className={isVerifiedCreator ? "bg-muted cursor-not-allowed" : ""}
+                />
+                {isVerifiedCreator && (
+                  <p className="text-xs text-muted-foreground">From your verified profile</p>
+                )}
+              </div>
+
+              {/* Founder Twitter */}
+              <div className="space-y-2">
+                <Label htmlFor="founder-twitter" className="flex items-center gap-2">
+                  <Twitter className="h-3 w-3" />
+                  Twitter Handle
+                  {isVerifiedCreator && (
+                    <Badge variant="outline" className="text-xs">Locked</Badge>
+                  )}
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+                  <Input
+                    id="founder-twitter"
+                    value={isVerifiedCreator ? (profile?.twitter_handle || founderTwitter) : founderTwitter}
+                    onChange={(e) => !isVerifiedCreator && setFounderTwitter(e.target.value.replace('@', ''))}
+                    placeholder="yourhandle"
+                    className={cn("pl-7", isVerifiedCreator && "bg-muted cursor-not-allowed")}
+                    disabled={isVerifiedCreator}
+                  />
+                </div>
+                {isVerifiedCreator && (
+                  <p className="text-xs text-muted-foreground">From your verified profile</p>
+                )}
+              </div>
+            </div>
+
+            {/* Founder Bio */}
+            <div className="space-y-2">
+              <Label htmlFor="founder-bio">Bio</Label>
+              <Textarea
+                id="founder-bio"
+                value={founderBio}
+                onChange={(e) => setFounderBio(e.target.value)}
+                placeholder="Tell collectors about yourself, your background, and your vision for this collection..."
+                rows={8}
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground">
+                {founderBio.length}/500 characters
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Your AnonForge Collections (Auto-populated) */}
+      {/* Section 3: Collection Settings (combined) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display">
+            <Hash className="h-5 w-5 text-primary" />
+            Collection Settings
+          </CardTitle>
+          <CardDescription>
+            Supply, marketplace, and purchase settings
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Max Supply + Secondary Market */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="max-supply">Max Supply</Label>
+              <Input
+                id="max-supply"
+                type="number"
+                min="1"
+                value={maxSupply ?? ''}
+                onChange={(e) => setMaxSupply(e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="e.g., 10000"
+              />
+              <p className="text-xs text-muted-foreground">
+                Total number of NFTs in this collection
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="secondary-market" className="flex items-center gap-2">
+                <Store className="h-4 w-4" />
+                Secondary Market
+              </Label>
+              <Input
+                id="secondary-market"
+                type="url"
+                value={secondaryMarketUrl}
+                onChange={(e) => {
+                  setSecondaryMarketUrl(e.target.value);
+                  if (secondaryMarketError) validateSecondaryMarketUrl(e.target.value);
+                }}
+                onBlur={() => validateSecondaryMarketUrl(secondaryMarketUrl)}
+                placeholder="https://jpg.store/collection/..."
+                className={cn(secondaryMarketError && "border-destructive")}
+              />
+              {secondaryMarketError ? (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {secondaryMarketError}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Link to jpg.store or wayup.io collection page
+                </p>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Buy Now Button section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="buy-button-enabled" className="flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4" />
+                  Enable Buy Button
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Show a prominent mint button on your product page
+                </p>
+              </div>
+              <Switch
+                id="buy-button-enabled"
+                checked={buyButtonEnabled}
+                onCheckedChange={setBuyButtonEnabled}
+              />
+            </div>
+
+            {buyButtonEnabled && (
+              <div className="grid gap-4 md:grid-cols-2 pl-6 border-l-2 border-primary/20">
+                <div className="space-y-2">
+                  <Label htmlFor="buy-button-text">Button Text</Label>
+                  <Input
+                    id="buy-button-text"
+                    value={buyButtonText}
+                    onChange={(e) => setBuyButtonText(e.target.value)}
+                    placeholder="Mint Now"
+                    maxLength={30}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Payment Link</Label>
+                  {buyButtonLink ? (
+                    <div className="flex items-center gap-2">
+                      <Input value={buyButtonLink} readOnly className="font-mono text-xs" />
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setBuyButtonLink(null)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleGeneratePayLink}
+                        disabled={!nmkrProject || getPayLink.isPending}
+                        className="w-full"
+                      >
+                        {getPayLink.isPending ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-2 h-4 w-4" />
+                        )}
+                        Generate Payment Link
+                      </Button>
+                      {!nmkrProject && (
+                        <p className="text-xs text-muted-foreground">
+                          Set up NMKR project and pricing in the Publish tab first
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Section 4: Your AnonForge Collections (Auto-populated) */}
       {creatorCollections && creatorCollections.length > 0 && (
         <Card>
           <CardHeader>
@@ -1309,135 +1264,6 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
           </CardContent>
         </Card>
       )}
-
-      {/* Portfolio Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <Briefcase className="h-5 w-5 text-primary" />
-            Other Work / Portfolio
-          </CardTitle>
-          <CardDescription>
-            Showcase your previous projects or artwork from outside AnonForge
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {portfolio.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
-              <Briefcase className="mb-2 h-8 w-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">No portfolio items yet</p>
-              <Button variant="outline" size="sm" className="mt-4" onClick={addPortfolioItem}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Portfolio Item
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {portfolio.map((item, index) => (
-                <div key={item.id} className="rounded-lg border p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-sm font-medium">Item {index + 1}</span>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => removePortfolioItem(item.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {/* Image */}
-                    <div className="space-y-2">
-                      <Label>Image</Label>
-                      {item.image_url ? (
-                        <div className="relative">
-                          <img 
-                            src={item.image_url} 
-                            alt={item.title || 'Portfolio item'} 
-                            className="h-24 w-full rounded-lg border object-cover"
-                          />
-                          <Button 
-                            variant="destructive" 
-                            size="icon" 
-                            className="absolute right-1 top-1 h-5 w-5"
-                            onClick={() => {
-                              if (item.image_url) deleteImage.mutate(item.image_url);
-                              updatePortfolioItem(item.id, 'image_url', '');
-                            }}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <label className="flex h-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors hover:border-primary/50">
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) uploadPortfolioImage(item.id, file);
-                            }}
-                          />
-                          <Upload className="h-5 w-5 text-muted-foreground" />
-                        </label>
-                      )}
-                    </div>
-
-                    {/* Title & Description */}
-                    <div className="space-y-2 md:col-span-2">
-                      <Input
-                        value={item.title}
-                        onChange={(e) => updatePortfolioItem(item.id, 'title', e.target.value)}
-                        placeholder="Project title"
-                      />
-                      <Input
-                        value={item.description || ''}
-                        onChange={(e) => updatePortfolioItem(item.id, 'description', e.target.value)}
-                        placeholder="Brief description"
-                      />
-                      <div className="relative">
-                        <ExternalLink className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          type="url"
-                          value={item.link || ''}
-                          onChange={(e) => updatePortfolioItem(item.id, 'link', e.target.value)}
-                          placeholder="https://..."
-                          className="pl-9"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              <Button variant="outline" className="w-full" onClick={addPortfolioItem}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Another Item
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={isSaving} size="lg">
-          {isSaving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              Save Product Page
-            </>
-          )}
-        </Button>
-      </div>
 
       {/* Preview Modal */}
       {showPreview && (
