@@ -197,7 +197,7 @@ export function useRejectAmbassadorRequest() {
         .from('ambassador_requests' as any)
         .select('user_id')
         .eq('id', requestId)
-        .single());
+        .single()) as unknown as { data: { user_id: string } | null };
 
       const { error } = await (supabase
         .from('ambassador_requests' as any)
