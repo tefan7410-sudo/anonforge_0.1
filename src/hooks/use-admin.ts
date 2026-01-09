@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { fetchProfilesForUserIds, type ProfileData } from '@/lib/admin-helpers';
 
 // Helper function to log admin actions
 async function logAdminAction({
@@ -157,24 +158,43 @@ interface UserWithRoles {
   user_roles: { role: string }[];
 }
 
-// Get all users with their roles
+// Get all users with their roles (two-step fetch to avoid FK join issues)
 export function useAllUserRoles() {
   return useQuery({
     queryKey: ['admin-user-roles'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Step 1: Fetch all profiles
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          display_name,
-          email,
-          avatar_url,
-          user_roles(role)
-        `)
+        .select('id, display_name, email, avatar_url')
         .order('email');
 
-      if (error) throw error;
-      return data as unknown as UserWithRoles[];
+      if (profilesError) throw profilesError;
+      if (!profiles || profiles.length === 0) return [];
+
+      // Step 2: Fetch all user_roles
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (rolesError) throw rolesError;
+
+      // Build a map of user_id -> roles
+      const rolesMap = new Map<string, { role: string }[]>();
+      for (const r of roles || []) {
+        const existing = rolesMap.get(r.user_id) || [];
+        existing.push({ role: r.role });
+        rolesMap.set(r.user_id, existing);
+      }
+
+      // Merge profiles with their roles
+      return profiles.map(profile => ({
+        id: profile.id,
+        display_name: profile.display_name,
+        email: profile.email,
+        avatar_url: profile.avatar_url,
+        user_roles: rolesMap.get(profile.id) || [],
+      })) as UserWithRoles[];
     },
   });
 }
@@ -311,32 +331,30 @@ export function usePendingCollections() {
   });
 }
 
-// Get pending verification requests
+// Get pending verification requests (two-step fetch)
 export function usePendingVerificationRequests() {
   return useQuery({
     queryKey: ['pending-verification-requests'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Step 1: Fetch verification requests
+      const { data: requests, error } = await supabase
         .from('creator_verification_requests')
-        .select(`
-          *,
-          profile:profiles!creator_verification_requests_user_id_fkey(id, display_name, email, avatar_url)
-        `)
+        .select('*')
         .eq('status', 'pending')
         .order('created_at', { ascending: true });
 
-      if (error) {
-        // Fallback without join if the FK doesn't exist
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('creator_verification_requests')
-          .select('*')
-          .eq('status', 'pending')
-          .order('created_at', { ascending: true });
-        
-        if (fallbackError) throw fallbackError;
-        return fallbackData as unknown as VerificationRequest[];
-      }
-      return data as unknown as VerificationRequest[];
+      if (error) throw error;
+      if (!requests || requests.length === 0) return [];
+
+      // Step 2: Fetch profiles for user_ids
+      const userIds = requests.map(r => r.user_id);
+      const profileMap = await fetchProfilesForUserIds(userIds);
+
+      // Merge profiles into requests
+      return requests.map(request => ({
+        ...request,
+        profile: profileMap.get(request.user_id) || undefined,
+      })) as VerificationRequest[];
     },
   });
 }
@@ -605,30 +623,29 @@ export async function checkTwitterHandleAvailable(handle: string, currentUserId:
   };
 }
 
-// Get all user credits for admin dashboard
+// Get all user credits for admin dashboard (two-step fetch)
 export function useAllUserCredits() {
   return useQuery({
     queryKey: ['admin-user-credits'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Step 1: Fetch all user credits
+      const { data: credits, error } = await supabase
         .from('user_credits')
-        .select(`
-          *,
-          profile:profiles!user_credits_user_id_fkey(id, display_name, email, avatar_url)
-        `)
+        .select('*')
         .order('updated_at', { ascending: false });
 
-      if (error) {
-        // Fallback without join
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('user_credits')
-          .select('*')
-          .order('updated_at', { ascending: false });
-        
-        if (fallbackError) throw fallbackError;
-        return fallbackData as unknown as AdminUserCredit[];
-      }
-      return data as unknown as AdminUserCredit[];
+      if (error) throw error;
+      if (!credits || credits.length === 0) return [];
+
+      // Step 2: Fetch profiles for user_ids
+      const userIds = credits.map(c => c.user_id);
+      const profileMap = await fetchProfilesForUserIds(userIds);
+
+      // Merge profiles into credits
+      return credits.map(credit => ({
+        ...credit,
+        profile: profileMap.get(credit.user_id) || undefined,
+      })) as AdminUserCredit[];
     },
   });
 }
