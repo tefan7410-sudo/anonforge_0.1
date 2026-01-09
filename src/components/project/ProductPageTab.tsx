@@ -729,40 +729,37 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
         </Card>
       )}
 
-      {/* Collection Type Selector */}
+      {/* Collection Settings - Type & Content */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-display">
             <Palette className="h-5 w-5 text-primary" />
-            Collection Type
+            Collection Settings
           </CardTitle>
           <CardDescription>
-            Choose how your collection should be displayed
+            Choose your collection type and configure display settings
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2">
+        <CardContent className="space-y-4">
+          {/* Collection Type Toggle */}
+          <div className="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => setCollectionType('generative')}
               className={cn(
-                "relative flex flex-col items-start gap-2 rounded-lg border-2 p-4 text-left transition-all hover:bg-accent/50",
+                "relative flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-all hover:bg-accent/50",
                 collectionType === 'generative' 
                   ? "border-primary bg-primary/5" 
                   : "border-muted"
               )}
             >
-              <div className="flex items-center gap-2">
-                <Layers className="h-5 w-5 text-primary" />
-                <span className="font-semibold">Generative Collection</span>
+              <Layers className="h-5 w-5 text-primary shrink-0" />
+              <div className="min-w-0">
+                <span className="font-semibold text-sm">Generative Collection</span>
+                <p className="text-xs text-muted-foreground truncate">Unique NFTs from layers</p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Unique NFTs generated from layer combinations. Perfect for PFP collections with traits.
-              </p>
               {collectionType === 'generative' && (
-                <div className="absolute right-2 top-2">
-                  <CheckCircle className="h-5 w-5 text-primary" />
-                </div>
+                <CheckCircle className="h-4 w-4 text-primary shrink-0 ml-auto" />
               )}
             </button>
             
@@ -770,263 +767,251 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
               type="button"
               onClick={() => setCollectionType('art_collection')}
               className={cn(
-                "relative flex flex-col items-start gap-2 rounded-lg border-2 p-4 text-left transition-all hover:bg-accent/50",
+                "relative flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-all hover:bg-accent/50",
                 collectionType === 'art_collection' 
                   ? "border-primary bg-primary/5" 
                   : "border-muted"
               )}
             >
-              <div className="flex items-center gap-2">
-                <Palette className="h-5 w-5 text-primary" />
-                <span className="font-semibold">Art Collection</span>
+              <Palette className="h-5 w-5 text-primary shrink-0" />
+              <div className="min-w-0">
+                <span className="font-semibold text-sm">Art Collection</span>
+                <p className="text-xs text-muted-foreground truncate">Artworks with editions</p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                One or more artworks with multiple editions each. Perfect for 1/1s or limited editions.
-              </p>
               {collectionType === 'art_collection' && (
-                <div className="absolute right-2 top-2">
-                  <CheckCircle className="h-5 w-5 text-primary" />
-                </div>
+                <CheckCircle className="h-4 w-4 text-primary shrink-0 ml-auto" />
               )}
             </button>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Preview Characters (for Generative Collections) */}
-      {collectionType === 'generative' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display">
-              <Eye className="h-5 w-5 text-primary" />
-              Preview Characters
-            </CardTitle>
-            <CardDescription>
-              Upload up to 3 example images to showcase what your generated NFTs look like
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {[0, 1, 2].map((index) => {
-                const previewImage = previewImages[index];
-                return (
-                  <div key={index} className="space-y-2">
-                    {previewImage?.image_url ? (
-                      <div className="relative aspect-square rounded-lg border overflow-hidden">
-                        <img 
-                          src={previewImage.image_url} 
-                          alt={`Preview ${index + 1}`}
-                          className="h-full w-full object-cover"
-                        />
-                        <Button 
-                          variant="destructive" 
-                          size="icon" 
-                          className="absolute right-2 top-2 h-6 w-6"
-                          onClick={() => {
-                            const newImages = [...previewImages];
-                            newImages.splice(index, 1);
-                            setPreviewImages(newImages);
+          <Separator />
+
+          {/* Preview Characters (for Generative Collections) - Compact */}
+          {collectionType === 'generative' && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Preview Characters <span className="text-muted-foreground font-normal">(up to 3 examples)</span>
+              </Label>
+              <div className="flex gap-3">
+                {[0, 1, 2].map((index) => {
+                  const previewImage = previewImages[index];
+                  return (
+                    <div key={index} className="relative">
+                      {previewImage?.image_url ? (
+                        <div className="relative h-20 w-20 rounded-lg border overflow-hidden">
+                          <img 
+                            src={previewImage.image_url} 
+                            alt={`Preview ${index + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                          <Button 
+                            variant="destructive" 
+                            size="icon" 
+                            className="absolute right-1 top-1 h-5 w-5"
+                            onClick={() => {
+                              const newImages = [...previewImages];
+                              newImages.splice(index, 1);
+                              setPreviewImages(newImages);
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div
+                          className={cn(
+                            "flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors hover:border-primary/50",
+                            "border-muted-foreground/25"
+                          )}
+                          onClick={async () => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = async (e) => {
+                              const file = (e.target as HTMLInputElement).files?.[0];
+                              if (file) {
+                                const url = await uploadImage.mutateAsync({ 
+                                  projectId, 
+                                  file, 
+                                  type: 'preview' as 'banner' | 'logo' | 'founder' | 'portfolio'
+                                });
+                                const newImages = [...previewImages];
+                                newImages[index] = {
+                                  id: crypto.randomUUID(),
+                                  image_url: url,
+                                };
+                                setPreviewImages(newImages);
+                              }
+                            };
+                            input.click();
                           }}
                         >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <PreviewImageDropzone
-                        onUpload={async (file) => {
-                          const url = await uploadImage.mutateAsync({ 
-                            projectId, 
-                            file, 
-                            type: 'preview' as 'banner' | 'logo' | 'founder' | 'portfolio'
-                          });
-                          const newImages = [...previewImages];
-                          newImages[index] = {
-                            id: crypto.randomUUID(),
-                            image_url: url,
-                          };
-                          setPreviewImages(newImages);
-                        }}
-                        isUploading={uploadImage.isPending}
-                      />
-                    )}
-                    <Input
-                      placeholder="Caption (optional)"
-                      value={previewImage?.caption || ''}
-                      onChange={(e) => {
-                        const newImages = [...previewImages];
-                        if (newImages[index]) {
-                          newImages[index] = { ...newImages[index], caption: e.target.value };
-                          setPreviewImages(newImages);
-                        }
-                      }}
-                      disabled={!previewImage?.image_url}
-                      className="text-sm"
-                    />
-                  </div>
-                );
-              })}
+                          {uploadImage.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          ) : (
+                            <Upload className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
 
-      {/* Artworks Management (for Art Collections) */}
-      {collectionType === 'art_collection' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display">
-              <Palette className="h-5 w-5 text-primary" />
-              Your Artworks
-            </CardTitle>
-            <CardDescription>
-              Add your artworks with edition counts. Each artwork can have multiple NFTs.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {artworks.map((artwork, index) => (
-              <div key={artwork.id} className="relative rounded-lg border p-4">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute right-2 top-2 h-6 w-6 text-destructive hover:text-destructive"
-                  onClick={() => {
-                    const newArtworks = artworks.filter((_, i) => i !== index);
-                    setArtworks(newArtworks);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-                
-                <div className="grid gap-4 sm:grid-cols-[150px_1fr]">
-                  {/* Artwork Image */}
-                  <div className="space-y-2">
-                    {artwork.image_url ? (
-                      <div className="relative aspect-square rounded-lg border overflow-hidden">
-                        <img 
-                          src={artwork.image_url} 
-                          alt={artwork.title || 'Artwork'}
-                          className="h-full w-full object-cover"
-                        />
-                        <Button 
-                          variant="destructive" 
-                          size="icon" 
-                          className="absolute right-1 top-1 h-5 w-5"
-                          onClick={() => {
-                            const newArtworks = [...artworks];
-                            newArtworks[index] = { ...artwork, image_url: '' };
-                            setArtworks(newArtworks);
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <ArtworkImageDropzone
-                        onUpload={async (file) => {
-                          const url = await uploadImage.mutateAsync({ 
-                            projectId, 
-                            file, 
-                            type: 'portfolio' as 'banner' | 'logo' | 'founder' | 'portfolio'
-                          });
-                          const newArtworks = [...artworks];
-                          newArtworks[index] = { ...artwork, image_url: url };
-                          setArtworks(newArtworks);
-                        }}
-                        isUploading={uploadImage.isPending}
-                      />
-                    )}
-                  </div>
+          {/* Artworks Management (for Art Collections) */}
+          {collectionType === 'art_collection' && (
+            <div className="space-y-4">
+              <Label className="text-sm font-medium">
+                Your Artworks <span className="text-muted-foreground font-normal">(add artworks with edition counts)</span>
+              </Label>
+              
+              {artworks.map((artwork, index) => (
+                <div key={artwork.id} className="relative rounded-lg border p-4">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-2 top-2 h-6 w-6 text-destructive hover:text-destructive"
+                    onClick={() => {
+                      const newArtworks = artworks.filter((_, i) => i !== index);
+                      setArtworks(newArtworks);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                   
-                  {/* Artwork Details */}
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <Label className="text-sm">Title *</Label>
-                      <Input
-                        value={artwork.title}
-                        onChange={(e) => {
-                          const newArtworks = [...artworks];
-                          newArtworks[index] = { ...artwork, title: e.target.value };
-                          setArtworks(newArtworks);
-                        }}
-                        placeholder="Artwork title"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-sm">Description</Label>
-                      <Textarea
-                        value={artwork.description || ''}
-                        onChange={(e) => {
-                          const newArtworks = [...artworks];
-                          newArtworks[index] = { ...artwork, description: e.target.value };
-                          setArtworks(newArtworks);
-                        }}
-                        placeholder="Brief description"
-                        rows={2}
-                      />
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="space-y-1">
-                        <Label className="text-sm">Edition Count *</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={artwork.edition_count}
-                          onChange={(e) => {
+                  <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
+                    {/* Artwork Image */}
+                    <div>
+                      {artwork.image_url ? (
+                        <div className="relative aspect-square rounded-lg border overflow-hidden">
+                          <img 
+                            src={artwork.image_url} 
+                            alt={artwork.title || 'Artwork'}
+                            className="h-full w-full object-cover"
+                          />
+                          <Button 
+                            variant="destructive" 
+                            size="icon" 
+                            className="absolute right-1 top-1 h-5 w-5"
+                            onClick={() => {
+                              const newArtworks = [...artworks];
+                              newArtworks[index] = { ...artwork, image_url: '' };
+                              setArtworks(newArtworks);
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <ArtworkImageDropzone
+                          onUpload={async (file) => {
+                            const url = await uploadImage.mutateAsync({ 
+                              projectId, 
+                              file, 
+                              type: 'portfolio' as 'banner' | 'logo' | 'founder' | 'portfolio'
+                            });
                             const newArtworks = [...artworks];
-                            newArtworks[index] = { 
-                              ...artwork, 
-                              edition_count: parseInt(e.target.value) || 1 
-                            };
+                            newArtworks[index] = { ...artwork, image_url: url };
                             setArtworks(newArtworks);
                           }}
-                          placeholder="e.g., 20"
+                          isUploading={uploadImage.isPending}
+                        />
+                      )}
+                    </div>
+                    
+                    {/* Artwork Details */}
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label className="text-sm">Title *</Label>
+                        <Input
+                          value={artwork.title}
+                          onChange={(e) => {
+                            const newArtworks = [...artworks];
+                            newArtworks[index] = { ...artwork, title: e.target.value };
+                            setArtworks(newArtworks);
+                          }}
+                          placeholder="Artwork title"
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-sm">Price (ADA, optional)</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={artwork.price_in_lovelace ? artwork.price_in_lovelace / 1_000_000 : ''}
+                        <Label className="text-sm">Description</Label>
+                        <Textarea
+                          value={artwork.description || ''}
                           onChange={(e) => {
                             const newArtworks = [...artworks];
-                            newArtworks[index] = { 
-                              ...artwork, 
-                              price_in_lovelace: e.target.value ? parseFloat(e.target.value) * 1_000_000 : undefined 
-                            };
+                            newArtworks[index] = { ...artwork, description: e.target.value };
                             setArtworks(newArtworks);
                           }}
-                          placeholder="Uses collection price"
+                          placeholder="Brief description"
+                          rows={2}
                         />
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label className="text-sm">Edition Count *</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={artwork.edition_count}
+                            onChange={(e) => {
+                              const newArtworks = [...artworks];
+                              newArtworks[index] = { 
+                                ...artwork, 
+                                edition_count: parseInt(e.target.value) || 1 
+                              };
+                              setArtworks(newArtworks);
+                            }}
+                            placeholder="e.g., 20"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-sm">Price (ADA, optional)</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={artwork.price_in_lovelace ? artwork.price_in_lovelace / 1_000_000 : ''}
+                            onChange={(e) => {
+                              const newArtworks = [...artworks];
+                              newArtworks[index] = { 
+                                ...artwork, 
+                                price_in_lovelace: e.target.value ? parseFloat(e.target.value) * 1_000_000 : undefined 
+                              };
+                              setArtworks(newArtworks);
+                            }}
+                            placeholder="Uses collection price"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                setArtworks([
-                  ...artworks,
-                  {
-                    id: crypto.randomUUID(),
-                    image_url: '',
-                    title: '',
-                    edition_count: 1,
-                  },
-                ]);
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Artwork
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+              ))}
+              
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setArtworks([
+                    ...artworks,
+                    {
+                      id: crypto.randomUUID(),
+                      image_url: '',
+                      title: '',
+                      edition_count: 1,
+                    },
+                  ]);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Artwork
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
