@@ -1641,7 +1641,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_promoter: { Args: { _user_id: string }; Returns: boolean }
+      is_ambassador: { Args: { _user_id: string }; Returns: boolean }
       process_ada_payment: {
         Args: { p_expected_amount_lovelace: number; p_tx_hash: string }
         Returns: {

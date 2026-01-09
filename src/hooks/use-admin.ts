@@ -207,7 +207,7 @@ export function useAdminSetUserRole() {
         .from('user_roles')
         .delete()
         .eq('user_id', userId)
-        .in('role', ['ambassador', 'admin', 'moderator', 'user', 'promoter']);
+        .in('role', ['ambassador', 'admin', 'moderator', 'user']);
 
       if (deleteError) throw deleteError;
 
