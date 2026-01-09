@@ -12,6 +12,7 @@ import {
   Store,
   Copy,
   Clock,
+  Palette,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -131,6 +132,73 @@ export function ProductPagePreview({
             )}
           </div>
         </div>
+
+        {/* Preview Characters (for Generative Collections) */}
+        {productPage.collection_type === 'generative' && productPage.preview_images && productPage.preview_images.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-display font-semibold mb-4">Preview Characters</h2>
+            <div className="grid grid-cols-3 gap-4">
+              {productPage.preview_images.map((preview, index) => (
+                <div key={preview.id || index} className="space-y-2">
+                  <div className="aspect-square rounded-xl border overflow-hidden bg-muted">
+                    <img
+                      src={preview.image_url}
+                      alt={preview.caption || `Preview ${index + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  {preview.caption && (
+                    <p className="text-sm text-center text-muted-foreground">{preview.caption}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Artworks Gallery (for Art Collections) */}
+        {productPage.collection_type === 'art_collection' && productPage.artworks && productPage.artworks.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-display font-semibold mb-4">
+              <Palette className="inline-block h-5 w-5 mr-2 text-primary" />
+              Artworks in this Collection
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {productPage.artworks.map((artwork, index) => (
+                <div 
+                  key={artwork.id || index} 
+                  className="group rounded-xl border bg-card overflow-hidden transition-all hover:shadow-lg"
+                >
+                  {artwork.image_url && (
+                    <div className="aspect-square overflow-hidden">
+                      <img
+                        src={artwork.image_url}
+                        alt={artwork.title}
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      />
+                    </div>
+                  )}
+                  <div className="p-4 space-y-2">
+                    <h3 className="font-semibold">{artwork.title}</h3>
+                    {artwork.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">{artwork.description}</p>
+                    )}
+                    <div className="flex items-center justify-between pt-2">
+                      <Badge variant="secondary">
+                        {artwork.edition_count} editions
+                      </Badge>
+                      {artwork.price_in_lovelace && (
+                        <span className="text-sm font-medium text-primary">
+                          {(artwork.price_in_lovelace / 1_000_000).toLocaleString()} ₳
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Hero Action Card - Price & Mint Button */}
         {(priceInLovelace || (productPage.buy_button_enabled && paymentLink)) && !isScheduled && (

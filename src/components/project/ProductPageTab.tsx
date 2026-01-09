@@ -5,6 +5,9 @@ import {
   useUpdateProductPage, 
   useUploadProductImage, 
   useDeleteProductImage,
+  type CollectionType,
+  type PreviewImage,
+  type ArtworkItem,
 } from '@/hooks/use-product-page';
 import { useProfile, useUpdateProfile } from '@/hooks/use-profile';
 import { useAuth } from '@/contexts/AuthContext';
@@ -50,6 +53,10 @@ import {
   CheckCircle,
   XCircle,
   Send,
+  Palette,
+  Layers,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { cn, generateSlug } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -60,6 +67,74 @@ interface ProductPageTabProps {
   projectName?: string;
   isLocked?: boolean;
   onSwitchTab?: (tab: string) => void;
+}
+
+// Helper dropzone component for preview images
+function PreviewImageDropzone({ onUpload, isUploading }: { onUpload: (file: File) => Promise<void>; isUploading: boolean }) {
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: async (files) => {
+      const file = files[0];
+      if (file) await onUpload(file);
+    },
+    accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] },
+    maxFiles: 1,
+    disabled: isUploading,
+  });
+
+  return (
+    <div
+      {...getRootProps()}
+      className={cn(
+        "flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
+        isDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50",
+        isUploading && "opacity-50 cursor-not-allowed"
+      )}
+    >
+      <input {...getInputProps()} />
+      {isUploading ? (
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      ) : (
+        <>
+          <Upload className="h-6 w-6 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground mt-1">Drop image</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Helper dropzone component for artwork images
+function ArtworkImageDropzone({ onUpload, isUploading }: { onUpload: (file: File) => Promise<void>; isUploading: boolean }) {
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: async (files) => {
+      const file = files[0];
+      if (file) await onUpload(file);
+    },
+    accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] },
+    maxFiles: 1,
+    disabled: isUploading,
+  });
+
+  return (
+    <div
+      {...getRootProps()}
+      className={cn(
+        "flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
+        isDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50",
+        isUploading && "opacity-50 cursor-not-allowed"
+      )}
+    >
+      <input {...getInputProps()} />
+      {isUploading ? (
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      ) : (
+        <>
+          <ImageIcon className="h-6 w-6 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground mt-1">Upload</p>
+        </>
+      )}
+    </div>
+  );
 }
 
 export function ProductPageTab({ projectId, projectName = 'Collection', isLocked, onSwitchTab }: ProductPageTabProps) {
@@ -94,6 +169,11 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
   const [founderTwitter, setFounderTwitter] = useState('');
   const [secondaryMarketUrl, setSecondaryMarketUrl] = useState('');
   const [maxSupply, setMaxSupply] = useState<number | null>(null);
+  
+  // Collection type and template-specific state
+  const [collectionType, setCollectionType] = useState<CollectionType>('generative');
+  const [previewImages, setPreviewImages] = useState<PreviewImage[]>([]);
+  const [artworks, setArtworks] = useState<ArtworkItem[]>([]);
   
   // Buy button state
   const [buyButtonEnabled, setBuyButtonEnabled] = useState(false);
@@ -148,6 +228,9 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
       setMaxSupply(productPage.max_supply ?? null);
       setScheduledLaunchAt(productPage.scheduled_launch_at);
       setIsHidden(productPage.is_hidden || false);
+      setCollectionType(productPage.collection_type || 'generative');
+      setPreviewImages(productPage.preview_images || []);
+      setArtworks(productPage.artworks || []);
     }
   }, [productPage]);
 
@@ -325,6 +408,9 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
         scheduled_launch_at: scheduledLaunchAt,
         is_hidden: isHidden,
         slug: slug || null,
+        collection_type: collectionType,
+        preview_images: previewImages,
+        artworks: artworks,
       },
     });
 
@@ -494,6 +580,9 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
     max_supply: maxSupply,
     scheduled_launch_at: scheduledLaunchAt,
     is_hidden: isHidden,
+    collection_type: collectionType,
+    preview_images: previewImages,
+    artworks: artworks,
     created_at: productPage?.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -640,7 +729,305 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
         </Card>
       )}
 
-      {/* Section 1: Branding & Identity (consolidated) */}
+      {/* Collection Type Selector */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display">
+            <Palette className="h-5 w-5 text-primary" />
+            Collection Type
+          </CardTitle>
+          <CardDescription>
+            Choose how your collection should be displayed
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setCollectionType('generative')}
+              className={cn(
+                "relative flex flex-col items-start gap-2 rounded-lg border-2 p-4 text-left transition-all hover:bg-accent/50",
+                collectionType === 'generative' 
+                  ? "border-primary bg-primary/5" 
+                  : "border-muted"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Layers className="h-5 w-5 text-primary" />
+                <span className="font-semibold">Generative Collection</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Unique NFTs generated from layer combinations. Perfect for PFP collections with traits.
+              </p>
+              {collectionType === 'generative' && (
+                <div className="absolute right-2 top-2">
+                  <CheckCircle className="h-5 w-5 text-primary" />
+                </div>
+              )}
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => setCollectionType('art_collection')}
+              className={cn(
+                "relative flex flex-col items-start gap-2 rounded-lg border-2 p-4 text-left transition-all hover:bg-accent/50",
+                collectionType === 'art_collection' 
+                  ? "border-primary bg-primary/5" 
+                  : "border-muted"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Palette className="h-5 w-5 text-primary" />
+                <span className="font-semibold">Art Collection</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                One or more artworks with multiple editions each. Perfect for 1/1s or limited editions.
+              </p>
+              {collectionType === 'art_collection' && (
+                <div className="absolute right-2 top-2">
+                  <CheckCircle className="h-5 w-5 text-primary" />
+                </div>
+              )}
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Preview Characters (for Generative Collections) */}
+      {collectionType === 'generative' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display">
+              <Eye className="h-5 w-5 text-primary" />
+              Preview Characters
+            </CardTitle>
+            <CardDescription>
+              Upload up to 3 example images to showcase what your generated NFTs look like
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[0, 1, 2].map((index) => {
+                const previewImage = previewImages[index];
+                return (
+                  <div key={index} className="space-y-2">
+                    {previewImage?.image_url ? (
+                      <div className="relative aspect-square rounded-lg border overflow-hidden">
+                        <img 
+                          src={previewImage.image_url} 
+                          alt={`Preview ${index + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          className="absolute right-2 top-2 h-6 w-6"
+                          onClick={() => {
+                            const newImages = [...previewImages];
+                            newImages.splice(index, 1);
+                            setPreviewImages(newImages);
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <PreviewImageDropzone
+                        onUpload={async (file) => {
+                          const url = await uploadImage.mutateAsync({ 
+                            projectId, 
+                            file, 
+                            type: 'preview' as 'banner' | 'logo' | 'founder' | 'portfolio'
+                          });
+                          const newImages = [...previewImages];
+                          newImages[index] = {
+                            id: crypto.randomUUID(),
+                            image_url: url,
+                          };
+                          setPreviewImages(newImages);
+                        }}
+                        isUploading={uploadImage.isPending}
+                      />
+                    )}
+                    <Input
+                      placeholder="Caption (optional)"
+                      value={previewImage?.caption || ''}
+                      onChange={(e) => {
+                        const newImages = [...previewImages];
+                        if (newImages[index]) {
+                          newImages[index] = { ...newImages[index], caption: e.target.value };
+                          setPreviewImages(newImages);
+                        }
+                      }}
+                      disabled={!previewImage?.image_url}
+                      className="text-sm"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Artworks Management (for Art Collections) */}
+      {collectionType === 'art_collection' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display">
+              <Palette className="h-5 w-5 text-primary" />
+              Your Artworks
+            </CardTitle>
+            <CardDescription>
+              Add your artworks with edition counts. Each artwork can have multiple NFTs.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {artworks.map((artwork, index) => (
+              <div key={artwork.id} className="relative rounded-lg border p-4">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-2 top-2 h-6 w-6 text-destructive hover:text-destructive"
+                  onClick={() => {
+                    const newArtworks = artworks.filter((_, i) => i !== index);
+                    setArtworks(newArtworks);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                
+                <div className="grid gap-4 sm:grid-cols-[150px_1fr]">
+                  {/* Artwork Image */}
+                  <div className="space-y-2">
+                    {artwork.image_url ? (
+                      <div className="relative aspect-square rounded-lg border overflow-hidden">
+                        <img 
+                          src={artwork.image_url} 
+                          alt={artwork.title || 'Artwork'}
+                          className="h-full w-full object-cover"
+                        />
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          className="absolute right-1 top-1 h-5 w-5"
+                          onClick={() => {
+                            const newArtworks = [...artworks];
+                            newArtworks[index] = { ...artwork, image_url: '' };
+                            setArtworks(newArtworks);
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <ArtworkImageDropzone
+                        onUpload={async (file) => {
+                          const url = await uploadImage.mutateAsync({ 
+                            projectId, 
+                            file, 
+                            type: 'portfolio' as 'banner' | 'logo' | 'founder' | 'portfolio'
+                          });
+                          const newArtworks = [...artworks];
+                          newArtworks[index] = { ...artwork, image_url: url };
+                          setArtworks(newArtworks);
+                        }}
+                        isUploading={uploadImage.isPending}
+                      />
+                    )}
+                  </div>
+                  
+                  {/* Artwork Details */}
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-sm">Title *</Label>
+                      <Input
+                        value={artwork.title}
+                        onChange={(e) => {
+                          const newArtworks = [...artworks];
+                          newArtworks[index] = { ...artwork, title: e.target.value };
+                          setArtworks(newArtworks);
+                        }}
+                        placeholder="Artwork title"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm">Description</Label>
+                      <Textarea
+                        value={artwork.description || ''}
+                        onChange={(e) => {
+                          const newArtworks = [...artworks];
+                          newArtworks[index] = { ...artwork, description: e.target.value };
+                          setArtworks(newArtworks);
+                        }}
+                        placeholder="Brief description"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label className="text-sm">Edition Count *</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={artwork.edition_count}
+                          onChange={(e) => {
+                            const newArtworks = [...artworks];
+                            newArtworks[index] = { 
+                              ...artwork, 
+                              edition_count: parseInt(e.target.value) || 1 
+                            };
+                            setArtworks(newArtworks);
+                          }}
+                          placeholder="e.g., 20"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-sm">Price (ADA, optional)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={artwork.price_in_lovelace ? artwork.price_in_lovelace / 1_000_000 : ''}
+                          onChange={(e) => {
+                            const newArtworks = [...artworks];
+                            newArtworks[index] = { 
+                              ...artwork, 
+                              price_in_lovelace: e.target.value ? parseFloat(e.target.value) * 1_000_000 : undefined 
+                            };
+                            setArtworks(newArtworks);
+                          }}
+                          placeholder="Uses collection price"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setArtworks([
+                  ...artworks,
+                  {
+                    id: crypto.randomUUID(),
+                    image_url: '',
+                    title: '',
+                    edition_count: 1,
+                  },
+                ]);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Artwork
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-display">

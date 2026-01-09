@@ -942,10 +942,12 @@ export type Database = {
       product_pages: {
         Row: {
           admin_approved: boolean | null
+          artworks: Json | null
           banner_url: string | null
           buy_button_enabled: boolean | null
           buy_button_link: string | null
           buy_button_text: string | null
+          collection_type: string | null
           created_at: string
           discord_url: string | null
           featured_until: string | null
@@ -961,6 +963,7 @@ export type Database = {
           logo_url: string | null
           max_supply: number | null
           portfolio: Json | null
+          preview_images: Json | null
           project_id: string
           rejection_reason: string | null
           scheduled_launch_at: string | null
@@ -973,10 +976,12 @@ export type Database = {
         }
         Insert: {
           admin_approved?: boolean | null
+          artworks?: Json | null
           banner_url?: string | null
           buy_button_enabled?: boolean | null
           buy_button_link?: string | null
           buy_button_text?: string | null
+          collection_type?: string | null
           created_at?: string
           discord_url?: string | null
           featured_until?: string | null
@@ -992,6 +997,7 @@ export type Database = {
           logo_url?: string | null
           max_supply?: number | null
           portfolio?: Json | null
+          preview_images?: Json | null
           project_id: string
           rejection_reason?: string | null
           scheduled_launch_at?: string | null
@@ -1004,10 +1010,12 @@ export type Database = {
         }
         Update: {
           admin_approved?: boolean | null
+          artworks?: Json | null
           banner_url?: string | null
           buy_button_enabled?: boolean | null
           buy_button_link?: string | null
           buy_button_text?: string | null
+          collection_type?: string | null
           created_at?: string
           discord_url?: string | null
           featured_until?: string | null
@@ -1023,6 +1031,7 @@ export type Database = {
           logo_url?: string | null
           max_supply?: number | null
           portfolio?: Json | null
+          preview_images?: Json | null
           project_id?: string
           rejection_reason?: string | null
           scheduled_launch_at?: string | null
