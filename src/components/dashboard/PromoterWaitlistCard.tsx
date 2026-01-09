@@ -3,38 +3,38 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useMyPromoterRequest, useSubmitPromoterRequest } from '@/hooks/use-promoter';
-import { Megaphone, Clock, X, Send, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Megaphone, Clock, X, Send, Loader2, Twitter } from 'lucide-react';
+import { isValidTwitterUrl } from '@/lib/url-validation';
 
 export function PromoterWaitlistCard() {
   const { data: existingRequest, isLoading } = useMyPromoterRequest();
   const submitRequest = useSubmitPromoterRequest();
   
-  const [reason, setReason] = useState('');
-  const [portfolioLinks, setPortfolioLinks] = useState<string[]>(['']);
+  const [twitterLink, setTwitterLink] = useState('');
+  const [twitterError, setTwitterError] = useState('');
 
-  const handleAddLink = () => {
-    setPortfolioLinks([...portfolioLinks, '']);
-  };
-
-  const handleRemoveLink = (index: number) => {
-    setPortfolioLinks(portfolioLinks.filter((_, i) => i !== index));
-  };
-
-  const handleLinkChange = (index: number, value: string) => {
-    const newLinks = [...portfolioLinks];
-    newLinks[index] = value;
-    setPortfolioLinks(newLinks);
+  const validateTwitterLink = (value: string) => {
+    if (!value.trim()) {
+      setTwitterError('Twitter/X link is required');
+      return false;
+    }
+    const result = isValidTwitterUrl(value);
+    if (!result.isValid) {
+      setTwitterError(result.error || 'Invalid Twitter/X URL');
+      return false;
+    }
+    setTwitterError('');
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const validLinks = portfolioLinks.filter(link => link.trim() !== '');
-    await submitRequest.mutateAsync({ reason, portfolioLinks: validLinks });
-    setReason('');
-    setPortfolioLinks(['']);
+    if (!validateTwitterLink(twitterLink)) return;
+    
+    await submitRequest.mutateAsync({ twitterLink: twitterLink.trim() });
+    setTwitterLink('');
   };
 
   if (isLoading) {
@@ -66,9 +66,20 @@ export function PromoterWaitlistCard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="bg-muted/50 rounded-lg p-4">
-              <p className="text-sm text-muted-foreground">
-                <strong>Your reason:</strong> {existingRequest.reason || 'No reason provided'}
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              {existingRequest.twitter_link && (
+                <a 
+                  href={existingRequest.twitter_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <Twitter className="h-4 w-4" />
+                  {existingRequest.twitter_link}
+                </a>
+              )}
+              <p className="text-xs text-muted-foreground">
+                We'll reach out on Twitter/X to verify your identity.
               </p>
               <p className="text-xs text-muted-foreground mt-2">
                 Submitted {new Date(existingRequest.created_at).toLocaleDateString()}
@@ -105,17 +116,29 @@ export function PromoterWaitlistCard() {
             )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="reason">Reapply with a new reason</Label>
-                <Textarea
-                  id="reason"
-                  placeholder="Explain why you'd like to become a promoter..."
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  required
-                  minLength={20}
-                />
+                <Label htmlFor="twitter-reapply">Reapply with your Twitter/X link</Label>
+                <div className="relative">
+                  <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="twitter-reapply"
+                    placeholder="https://twitter.com/yourhandle"
+                    value={twitterLink}
+                    onChange={(e) => {
+                      setTwitterLink(e.target.value);
+                      if (twitterError) validateTwitterLink(e.target.value);
+                    }}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+                {twitterError && (
+                  <p className="text-xs text-destructive">{twitterError}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  You will be messaged on Twitter/X to confirm your identity
+                </p>
               </div>
-              <Button type="submit" disabled={submitRequest.isPending || reason.length < 20}>
+              <Button type="submit" disabled={submitRequest.isPending || !twitterLink.trim()}>
                 {submitRequest.isPending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
@@ -141,7 +164,7 @@ export function PromoterWaitlistCard() {
           <div>
             <CardTitle className="font-display text-lg">Become a Promoter</CardTitle>
             <CardDescription>
-              Help promote collections and earn rewards. Join our promoter program!
+              Help independent artists get in front of your audience
             </CardDescription>
           </div>
         </div>
@@ -149,69 +172,45 @@ export function PromoterWaitlistCard() {
       <CardContent>
         <div className="mb-6">
           <div className="flex flex-wrap gap-2 mb-4">
-            <Badge variant="secondary">Promote Collections</Badge>
-            <Badge variant="secondary">Earn Rewards</Badge>
+            <Badge variant="secondary">Promote Indie Artists</Badge>
+            <Badge variant="secondary">Monetize Your Reach</Badge>
             <Badge variant="secondary">Early Access</Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            As a promoter, you'll help spread the word about collections on our platform. 
-            This feature is currently in limited access - submit your request to join the waitlist.
+            As a promoter, you help independent artists get in front of your audience. 
+            This feature is currently in limited access - submit your Twitter/X profile to join the waitlist.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="reason">Why do you want to become a promoter?</Label>
-            <Textarea
-              id="reason"
-              placeholder="Tell us about your experience with marketing, your audience, or why you'd be a great promoter..."
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              required
-              minLength={20}
-              className="min-h-[100px]"
-            />
-            <p className="text-xs text-muted-foreground">Minimum 20 characters</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Portfolio / Social Links (optional)</Label>
-            {portfolioLinks.map((link, index) => (
-              <div key={index} className="flex gap-2">
-                <Input
-                  placeholder="https://twitter.com/yourhandle"
-                  value={link}
-                  onChange={(e) => handleLinkChange(index, e.target.value)}
-                />
-                {portfolioLinks.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemoveLink(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-            {portfolioLinks.length < 5 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddLink}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Link
-              </Button>
+            <Label htmlFor="twitter-link">Twitter / X Profile Link *</Label>
+            <div className="relative">
+              <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="twitter-link"
+                placeholder="https://twitter.com/yourhandle"
+                value={twitterLink}
+                onChange={(e) => {
+                  setTwitterLink(e.target.value);
+                  if (twitterError) validateTwitterLink(e.target.value);
+                }}
+                className="pl-10"
+                required
+              />
+            </div>
+            {twitterError && (
+              <p className="text-xs text-destructive">{twitterError}</p>
             )}
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              ℹ️ You will be messaged on Twitter/X to confirm your identity
+            </p>
           </div>
 
           <Button 
             type="submit" 
             className="w-full"
-            disabled={submitRequest.isPending || reason.length < 20}
+            disabled={submitRequest.isPending || !twitterLink.trim()}
           >
             {submitRequest.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

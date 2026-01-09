@@ -7,6 +7,7 @@ interface PromoterRequest {
   user_id: string;
   reason: string | null;
   portfolio_links: string[];
+  twitter_link: string | null;
   status: 'pending' | 'approved' | 'rejected';
   rejection_reason: string | null;
   reviewed_by: string | null;
@@ -69,7 +70,7 @@ export function useSubmitPromoterRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ reason, portfolioLinks }: { reason: string; portfolioLinks?: string[] }) => {
+    mutationFn: async ({ twitterLink }: { twitterLink: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
@@ -77,8 +78,7 @@ export function useSubmitPromoterRequest() {
         .from('promoter_requests')
         .upsert({
           user_id: user.id,
-          reason,
-          portfolio_links: portfolioLinks || [],
+          twitter_link: twitterLink,
           status: 'pending',
           rejection_reason: null,
           reviewed_by: null,

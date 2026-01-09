@@ -1233,12 +1233,11 @@ export default function Admin() {
                     </div>
                   ) : pendingPromoters && pendingPromoters.length > 0 ? (
                     <div className="overflow-x-auto">
-                      <Table>
+                    <Table>
                         <TableHeader>
                           <TableRow>
                             <TableHead>User</TableHead>
-                            <TableHead>Reason</TableHead>
-                            <TableHead>Links</TableHead>
+                            <TableHead>Twitter/X</TableHead>
                             <TableHead>Requested</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
@@ -1262,22 +1261,16 @@ export default function Admin() {
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  <p className="text-sm text-muted-foreground line-clamp-2 max-w-[300px]">
-                                    {request.reason || 'No reason provided'}
-                                  </p>
-                                </TableCell>
-                                <TableCell>
-                                  {request.portfolio_links && request.portfolio_links.length > 0 ? (
-                                    <div className="flex gap-1">
-                                      {request.portfolio_links.slice(0, 2).map((link, i) => (
-                                        <a key={i} href={link} target="_blank" rel="noopener noreferrer">
-                                          <Badge variant="outline" className="text-xs cursor-pointer hover:bg-muted">
-                                            <ExternalLink className="h-3 w-3 mr-1" />
-                                            Link {i + 1}
-                                          </Badge>
-                                        </a>
-                                      ))}
-                                    </div>
+                                  {request.twitter_link ? (
+                                    <a 
+                                      href={request.twitter_link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-1 text-sm text-primary hover:underline"
+                                    >
+                                      <Twitter className="h-4 w-4" />
+                                      {request.twitter_link.replace(/https?:\/\/(twitter\.com|x\.com)\//, '@')}
+                                    </a>
                                   ) : (
                                     <span className="text-xs text-muted-foreground">-</span>
                                   )}
