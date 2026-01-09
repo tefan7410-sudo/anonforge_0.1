@@ -23,8 +23,8 @@ import { NewAccountWelcomeModal } from '@/components/NewAccountWelcomeModal';
 import { PageTransition } from '@/components/PageTransition';
 import { useTutorial } from '@/contexts/TutorialContext';
 import { useTutorialProject, TUTORIAL_PROJECT_ID } from '@/hooks/use-tutorial';
-import { useIsPromoter } from '@/hooks/use-promoter';
-import { PromoterWaitlistCard } from '@/components/dashboard/PromoterWaitlistCard';
+import { useIsAmbassador } from '@/hooks/use-ambassador';
+import { AmbassadorWaitlistCard } from '@/components/dashboard/AmbassadorWaitlistCard';
 interface Project {
   id: string;
   name: string;
@@ -55,14 +55,14 @@ export default function Dashboard() {
   const [sharedProjects, setSharedProjects] = useState<Project[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dashboardMode, setDashboardMode] = useState<'creator' | 'promoter'>('creator');
+  const [dashboardMode, setDashboardMode] = useState<'creator' | 'ambassador'>('creator');
   
   const acceptInvitation = useAcceptInvitation();
   const declineInvitation = useDeclineInvitation();
   const { totalCredits, isLowCredits } = useCreditBalance();
   const { isActive: isTutorialActive, currentStep } = useTutorial();
   const { project: tutorialProject } = useTutorialProject();
-  const { data: isPromoter } = useIsPromoter(user?.id);
+  const { data: isAmbassador } = useIsAmbassador(user?.id);
 
   useEffect(() => {
     if (user) {
@@ -273,20 +273,20 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            {/* Creator / Promoter Toggle */}
+            {/* Creator / Ambassador Toggle */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border/50 bg-muted/30">
               <Palette className={`h-4 w-4 ${dashboardMode === 'creator' ? 'text-primary' : 'text-muted-foreground'}`} />
               <span className={`text-sm ${dashboardMode === 'creator' ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
                 Creator
               </span>
               <Switch
-                checked={dashboardMode === 'promoter'}
-                onCheckedChange={(checked) => setDashboardMode(checked ? 'promoter' : 'creator')}
+                checked={dashboardMode === 'ambassador'}
+                onCheckedChange={(checked) => setDashboardMode(checked ? 'ambassador' : 'creator')}
               />
-              <span className={`text-sm ${dashboardMode === 'promoter' ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
-                Promoter
+              <span className={`text-sm ${dashboardMode === 'ambassador' ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                Ambassador
               </span>
-              <Megaphone className={`h-4 w-4 ${dashboardMode === 'promoter' ? 'text-primary' : 'text-muted-foreground'}`} />
+              <Megaphone className={`h-4 w-4 ${dashboardMode === 'ambassador' ? 'text-primary' : 'text-muted-foreground'}`} />
             </div>
             
             {dashboardMode === 'creator' && (
@@ -473,35 +473,35 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* Promoter Mode Content */}
-        {dashboardMode === 'promoter' && (
+        {/* Ambassador Mode Content */}
+        {dashboardMode === 'ambassador' && (
           <>
-            {isPromoter ? (
-              // Approved promoter dashboard
+            {isAmbassador ? (
+              // Approved ambassador dashboard
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 font-display">
                     <Megaphone className="h-5 w-5 text-primary" />
-                    Promoter Dashboard
+                    Ambassador Dashboard
                   </CardTitle>
                   <CardDescription>
-                    Welcome to the promoter program! This feature is coming soon.
+                    Welcome to the ambassador program! This feature is coming soon.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <Badge variant="secondary" className="mb-4">Coming Soon</Badge>
                     <p className="text-muted-foreground max-w-md">
-                      The promoter dashboard is under development. You'll be able to browse collections 
+                      The ambassador dashboard is under development. You'll be able to browse collections 
                       to promote, track your performance, and earn rewards here.
                     </p>
                   </div>
                 </CardContent>
               </Card>
             ) : (
-              // Not a promoter - show waitlist card
+              // Not an ambassador - show waitlist card
               <div className="max-w-2xl mx-auto">
-                <PromoterWaitlistCard />
+                <AmbassadorWaitlistCard />
               </div>
             )}
           </>

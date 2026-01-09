@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface PromoterRequest {
+interface AmbassadorRequest {
   id: string;
   user_id: string;
   reason: string | null;
@@ -16,10 +16,10 @@ interface PromoterRequest {
   updated_at: string;
 }
 
-// Check if user has promoter role
-export function useIsPromoter(userId?: string) {
+// Check if user has ambassador role
+export function useIsAmbassador(userId?: string) {
   return useQuery({
-    queryKey: ['is-promoter', userId],
+    queryKey: ['is-ambassador', userId],
     queryFn: async () => {
       if (!userId) return false;
 
@@ -27,11 +27,11 @@ export function useIsPromoter(userId?: string) {
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .eq('role', 'promoter')
+        .eq('role', 'ambassador')
         .maybeSingle();
 
       if (error) {
-        console.error('Error checking promoter status:', error);
+        console.error('Error checking ambassador status:', error);
         return false;
       }
 
@@ -41,32 +41,32 @@ export function useIsPromoter(userId?: string) {
   });
 }
 
-// Get current user's promoter request
-export function useMyPromoterRequest() {
+// Get current user's ambassador request
+export function useMyAmbassadorRequest() {
   return useQuery({
-    queryKey: ['my-promoter-request'],
+    queryKey: ['my-ambassador-request'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
-      const { data, error } = await supabase
-        .from('promoter_requests')
+      const { data, error } = await (supabase
+        .from('ambassador_requests' as any)
         .select('*')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .maybeSingle());
 
       if (error) {
-        console.error('Error fetching promoter request:', error);
+        console.error('Error fetching ambassador request:', error);
         return null;
       }
 
-      return data as PromoterRequest | null;
+      return data as unknown as AmbassadorRequest | null;
     },
   });
 }
 
-// Submit a new promoter request
-export function useSubmitPromoterRequest() {
+// Submit a new ambassador request
+export function useSubmitAmbassadorRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -74,8 +74,8 @@ export function useSubmitPromoterRequest() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase
-        .from('promoter_requests')
+      const { error } = await (supabase
+        .from('ambassador_requests' as any)
         .upsert({
           user_id: user.id,
           twitter_link: twitterLink,
@@ -85,13 +85,13 @@ export function useSubmitPromoterRequest() {
           reviewed_at: null,
         }, {
           onConflict: 'user_id'
-        });
+        }));
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-promoter-request'] });
-      toast.success('Promoter request submitted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['my-ambassador-request'] });
+      toast.success('Ambassador request submitted successfully!');
     },
     onError: (error: Error) => {
       toast.error(`Failed to submit request: ${error.message}`);

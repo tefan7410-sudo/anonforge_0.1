@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface PromoterRequest {
+interface AmbassadorRequest {
   id: string;
   user_id: string;
   reason: string | null;
@@ -22,7 +22,7 @@ interface PromoterRequest {
   };
 }
 
-interface PromoterWithProfile {
+interface AmbassadorWithProfile {
   id: string;
   user_id: string;
   role: string;
@@ -71,40 +71,40 @@ async function logAdminAction({
   }
 }
 
-// Get pending promoter requests
-export function usePendingPromoterRequests() {
+// Get pending ambassador requests
+export function usePendingAmbassadorRequests() {
   return useQuery({
-    queryKey: ['pending-promoter-requests'],
+    queryKey: ['pending-ambassador-requests'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('promoter_requests')
+      const { data, error } = await (supabase
+        .from('ambassador_requests' as any)
         .select(`
           *,
-          profile:profiles!promoter_requests_user_id_fkey(id, display_name, email, avatar_url)
+          profile:profiles!ambassador_requests_user_id_fkey(id, display_name, email, avatar_url)
         `)
         .eq('status', 'pending')
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true }));
 
       if (error) {
         // Fallback without join if the FK doesn't exist
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('promoter_requests')
+        const { data: fallbackData, error: fallbackError } = await (supabase
+          .from('ambassador_requests' as any)
           .select('*')
           .eq('status', 'pending')
-          .order('created_at', { ascending: true });
+          .order('created_at', { ascending: true }));
         
         if (fallbackError) throw fallbackError;
-        return fallbackData as unknown as PromoterRequest[];
+        return fallbackData as unknown as AmbassadorRequest[];
       }
-      return data as unknown as PromoterRequest[];
+      return data as unknown as AmbassadorRequest[];
     },
   });
 }
 
-// Get all users with promoter role
-export function useAllPromoters() {
+// Get all users with ambassador role
+export function useAllAmbassadors() {
   return useQuery({
-    queryKey: ['all-promoters'],
+    queryKey: ['all-ambassadors'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_roles')
@@ -114,25 +114,25 @@ export function useAllPromoters() {
           role,
           profile:profiles!user_roles_user_id_fkey(id, display_name, email, avatar_url)
         `)
-        .eq('role', 'promoter');
+        .eq('role', 'ambassador');
 
       if (error) {
         // Fallback without join
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('user_roles')
           .select('*')
-          .eq('role', 'promoter');
+          .eq('role', 'ambassador');
         
         if (fallbackError) throw fallbackError;
-        return fallbackData as unknown as PromoterWithProfile[];
+        return fallbackData as unknown as AmbassadorWithProfile[];
       }
-      return data as unknown as PromoterWithProfile[];
+      return data as unknown as AmbassadorWithProfile[];
     },
   });
 }
 
-// Approve a promoter request
-export function useApprovePromoterRequest() {
+// Approve an ambassador request
+export function useApproveAmbassadorRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -141,41 +141,41 @@ export function useApprovePromoterRequest() {
       if (!user) throw new Error('Not authenticated');
 
       // Update the request status
-      const { error: requestError } = await supabase
-        .from('promoter_requests')
+      const { error: requestError } = await (supabase
+        .from('ambassador_requests' as any)
         .update({ 
           status: 'approved',
           reviewed_by: user.id,
           reviewed_at: new Date().toISOString(),
         })
-        .eq('id', requestId);
+        .eq('id', requestId));
 
       if (requestError) throw requestError;
 
-      // Add promoter role to user_roles
+      // Add ambassador role to user_roles
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({ 
           user_id: userId,
-          role: 'promoter'
+          role: 'ambassador'
         });
 
       if (roleError && !roleError.message.includes('duplicate')) throw roleError;
 
       // Log admin action
       await logAdminAction({
-        actionType: 'approve_promoter',
-        targetTable: 'promoter_requests',
+        actionType: 'approve_ambassador',
+        targetTable: 'ambassador_requests',
         targetId: requestId,
         targetUserId: userId,
-        newValues: { status: 'approved', role: 'promoter' },
+        newValues: { status: 'approved', role: 'ambassador' },
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pending-promoter-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['all-promoters'] });
-      queryClient.invalidateQueries({ queryKey: ['is-promoter'] });
-      toast.success('Promoter approved!');
+      queryClient.invalidateQueries({ queryKey: ['pending-ambassador-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['all-ambassadors'] });
+      queryClient.invalidateQueries({ queryKey: ['is-ambassador'] });
+      toast.success('Ambassador approved!');
     },
     onError: (error: Error) => {
       toast.error(`Failed to approve: ${error.message}`);
@@ -183,8 +183,8 @@ export function useApprovePromoterRequest() {
   });
 }
 
-// Reject a promoter request
-export function useRejectPromoterRequest() {
+// Reject an ambassador request
+export function useRejectAmbassadorRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -193,37 +193,37 @@ export function useRejectPromoterRequest() {
       if (!user) throw new Error('Not authenticated');
 
       // Get user_id for audit log
-      const { data: request } = await supabase
-        .from('promoter_requests')
+      const { data: request } = await (supabase
+        .from('ambassador_requests' as any)
         .select('user_id')
         .eq('id', requestId)
-        .single();
+        .single());
 
-      const { error } = await supabase
-        .from('promoter_requests')
+      const { error } = await (supabase
+        .from('ambassador_requests' as any)
         .update({ 
           status: 'rejected',
           rejection_reason: reason,
           reviewed_by: user.id,
           reviewed_at: new Date().toISOString(),
         })
-        .eq('id', requestId);
+        .eq('id', requestId));
 
       if (error) throw error;
 
       // Log admin action
       await logAdminAction({
-        actionType: 'reject_promoter',
-        targetTable: 'promoter_requests',
+        actionType: 'reject_ambassador',
+        targetTable: 'ambassador_requests',
         targetId: requestId,
         targetUserId: request?.user_id,
         newValues: { status: 'rejected', rejection_reason: reason },
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pending-promoter-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['my-promoter-request'] });
-      toast.success('Promoter request rejected');
+      queryClient.invalidateQueries({ queryKey: ['pending-ambassador-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['my-ambassador-request'] });
+      toast.success('Ambassador request rejected');
     },
     onError: (error: Error) => {
       toast.error(`Failed to reject: ${error.message}`);
@@ -231,8 +231,8 @@ export function useRejectPromoterRequest() {
   });
 }
 
-// Remove promoter role from a user
-export function useRemovePromoterRole() {
+// Remove ambassador role from a user
+export function useRemoveAmbassadorRole() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -241,23 +241,23 @@ export function useRemovePromoterRole() {
         .from('user_roles')
         .delete()
         .eq('user_id', userId)
-        .eq('role', 'promoter');
+        .eq('role', 'ambassador');
 
       if (error) throw error;
 
       // Log admin action
       await logAdminAction({
-        actionType: 'remove_promoter_role',
+        actionType: 'remove_ambassador_role',
         targetTable: 'user_roles',
         targetUserId: userId,
-        oldValues: { role: 'promoter' },
+        oldValues: { role: 'ambassador' },
         newValues: { role: null },
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['all-promoters'] });
-      queryClient.invalidateQueries({ queryKey: ['is-promoter'] });
-      toast.success('Promoter role removed');
+      queryClient.invalidateQueries({ queryKey: ['all-ambassadors'] });
+      queryClient.invalidateQueries({ queryKey: ['is-ambassador'] });
+      toast.success('Ambassador role removed');
     },
     onError: (error: Error) => {
       toast.error(`Failed to remove role: ${error.message}`);
