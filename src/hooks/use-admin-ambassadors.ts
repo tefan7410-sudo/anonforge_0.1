@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { fetchProfilesForUserIds } from '@/lib/admin-helpers';
 
 interface AmbassadorRequest {
   id: string;
@@ -71,62 +72,62 @@ async function logAdminAction({
   }
 }
 
-// Get pending ambassador requests
+// Get pending ambassador requests (two-step fetch)
 export function usePendingAmbassadorRequests() {
   return useQuery({
     queryKey: ['pending-ambassador-requests'],
     queryFn: async () => {
-      const { data, error } = await (supabase
+      // Step 1: Fetch ambassador requests
+      const { data: requests, error } = await (supabase
         .from('ambassador_requests' as any)
-        .select(`
-          *,
-          profile:profiles!ambassador_requests_user_id_fkey(id, display_name, email, avatar_url)
-        `)
+        .select('*')
         .eq('status', 'pending')
         .order('created_at', { ascending: true }));
 
-      if (error) {
-        // Fallback without join if the FK doesn't exist
-        const { data: fallbackData, error: fallbackError } = await (supabase
-          .from('ambassador_requests' as any)
-          .select('*')
-          .eq('status', 'pending')
-          .order('created_at', { ascending: true }));
-        
-        if (fallbackError) throw fallbackError;
-        return fallbackData as unknown as AmbassadorRequest[];
-      }
-      return data as unknown as AmbassadorRequest[];
+      if (error) throw error;
+      if (!requests || requests.length === 0) return [];
+
+      // Cast to unknown first to avoid TS errors with dynamic table
+      const typedRequests = requests as unknown as AmbassadorRequest[];
+
+      // Step 2: Fetch profiles for user_ids
+      const userIds = typedRequests.map(r => r.user_id);
+      const profileMap = await fetchProfilesForUserIds(userIds);
+
+      // Merge profiles into requests
+      return typedRequests.map(request => ({
+        ...request,
+        profile: profileMap.get(request.user_id) || undefined,
+      })) as AmbassadorRequest[];
     },
   });
 }
 
-// Get all users with ambassador role
+// Get all users with ambassador role (two-step fetch)
 export function useAllAmbassadors() {
   return useQuery({
     queryKey: ['all-ambassadors'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Step 1: Fetch user_roles with ambassador role
+      const { data: roles, error } = await supabase
         .from('user_roles')
-        .select(`
-          id,
-          user_id,
-          role,
-          profile:profiles!user_roles_user_id_fkey(id, display_name, email, avatar_url)
-        `)
+        .select('id, user_id, role')
         .eq('role', 'ambassador');
 
-      if (error) {
-        // Fallback without join
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('role', 'ambassador');
-        
-        if (fallbackError) throw fallbackError;
-        return fallbackData as unknown as AmbassadorWithProfile[];
-      }
-      return data as unknown as AmbassadorWithProfile[];
+      if (error) throw error;
+      if (!roles || roles.length === 0) return [];
+
+      // Step 2: Fetch profiles for user_ids
+      const userIds = roles.map(r => r.user_id);
+      const profileMap = await fetchProfilesForUserIds(userIds);
+
+      // Merge profiles into roles
+      return roles.map(role => ({
+        id: role.id,
+        user_id: role.user_id,
+        role: role.role,
+        profile: profileMap.get(role.user_id) || undefined,
+      })) as AmbassadorWithProfile[];
     },
   });
 }
