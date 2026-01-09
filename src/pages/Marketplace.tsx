@@ -271,6 +271,9 @@ export default function Marketplace() {
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-4">
+            <Button variant="ghost" className="text-primary" asChild>
+              <Link to="/marketplace">Marketplace</Link>
+            </Button>
             <Button variant="ghost" asChild>
               <Link to="/artfund">Art Fund</Link>
             </Button>
@@ -316,7 +319,7 @@ export default function Marketplace() {
                 <nav className="mt-8 flex flex-col gap-2">
                   <Button
                     variant="ghost"
-                    className="justify-start bg-muted"
+                    className="justify-start bg-muted text-primary"
                     asChild
                     onClick={() => setMobileMenuOpen(false)}
                   >

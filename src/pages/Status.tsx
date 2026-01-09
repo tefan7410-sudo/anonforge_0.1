@@ -240,6 +240,9 @@ export default function Status() {
               <Button variant="ghost" asChild>
                 <Link to="/artfund">Art Fund</Link>
               </Button>
+              <Button variant="ghost" className="text-primary" asChild>
+                <Link to="/status">Status</Link>
+              </Button>
               <LanguageSelector />
               <ThemeToggle />
               <Button
@@ -318,7 +321,7 @@ export default function Status() {
                     </Button>
                     <Button
                       variant="ghost"
-                      className="justify-start bg-muted"
+                      className="justify-start bg-muted text-primary"
                       asChild
                       onClick={() => setMobileMenuOpen(false)}
                     >
