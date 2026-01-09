@@ -288,6 +288,7 @@ export default function ProjectDetail() {
                 <TabsTrigger value="history" data-tutorial="history-tab">History</TabsTrigger>
                 {!isTutorial && (
                   <>
+                    <TabsTrigger value="publish">Publish</TabsTrigger>
                     <TabsTrigger 
                       value="product" 
                       className={cn("whitespace-nowrap", !isProductPageUnlocked && "opacity-50")}
@@ -314,7 +315,6 @@ export default function ProjectDetail() {
                       {!isMarketingUnlocked && <Lock className="h-3 w-3 mr-1" />}
                       Marketing
                     </TabsTrigger>
-                    <TabsTrigger value="publish">Publish</TabsTrigger>
                   </>
                 )}
               </TabsList>
