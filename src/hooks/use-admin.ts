@@ -99,7 +99,7 @@ interface AdminUserCredit {
   };
 }
 
-// Check if current user is an admin
+// Check if current user is an admin (admin or owner role)
 export function useIsAdmin() {
   return useQuery({
     queryKey: ['is-admin'],
@@ -111,15 +111,132 @@ export function useIsAdmin() {
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
+        .in('role', ['admin', 'owner']);
 
       if (error) {
         console.error('Error checking admin status:', error);
         return false;
       }
 
+      return data && data.length > 0;
+    },
+  });
+}
+
+// Check if current user is the owner (only tefan7410@gmail.com)
+export function useIsOwner() {
+  return useQuery({
+    queryKey: ['is-owner'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'owner')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking owner status:', error);
+        return false;
+      }
+
       return !!data;
+    },
+  });
+}
+
+// User with roles interface
+interface UserWithRoles {
+  id: string;
+  display_name: string | null;
+  email: string;
+  avatar_url: string | null;
+  user_roles: { role: string }[];
+}
+
+// Get all users with their roles
+export function useAllUserRoles() {
+  return useQuery({
+    queryKey: ['admin-user-roles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          display_name,
+          email,
+          avatar_url,
+          user_roles(role)
+        `)
+        .order('email');
+
+      if (error) throw error;
+      return data as unknown as UserWithRoles[];
+    },
+  });
+}
+
+// Set a user's role (admin can set ambassador/admin, cannot set owner)
+export function useAdminSetUserRole() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      userId, 
+      role 
+    }: { 
+      userId: string; 
+      role: 'ambassador' | 'admin' | null;
+    }) => {
+      // CRITICAL: Never allow setting owner role
+      if ((role as string) === 'owner') {
+        throw new Error('Owner role cannot be assigned');
+      }
+
+      // Get current roles for audit log
+      const { data: currentRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      // Delete existing non-owner roles
+      const { error: deleteError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId)
+        .in('role', ['ambassador', 'admin', 'moderator', 'user', 'promoter']);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new role if provided
+      if (role) {
+        const { error: insertError } = await supabase
+          .from('user_roles')
+          .insert({ user_id: userId, role });
+
+        if (insertError) throw insertError;
+      }
+
+      // Log admin action
+      await logAdminAction({
+        actionType: 'set_user_role',
+        targetTable: 'user_roles',
+        targetUserId: userId,
+        oldValues: { roles: currentRoles?.map(r => r.role) || [] },
+        newValues: { role: role || 'creator (no role)' },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-user-roles'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-ambassadors'] });
+      queryClient.invalidateQueries({ queryKey: ['all-ambassadors'] });
+      toast.success('User role updated');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update role: ${error.message}`);
     },
   });
 }

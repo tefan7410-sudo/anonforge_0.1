@@ -3,6 +3,7 @@ import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   useIsAdmin, 
+  useIsOwner,
   useAdminCollections, 
   usePendingCollections,
   usePendingVerificationRequests,
@@ -14,6 +15,8 @@ import {
   useAllUserCredits,
   useUserCreditTransactions,
   useAdminAdjustCredits,
+  useAllUserRoles,
+  useAdminSetUserRole,
 } from '@/hooks/use-admin';
 import {
   usePendingAmbassadorRequests,
@@ -85,6 +88,8 @@ import {
   Users,
   Wallet,
   Settings,
+  Crown,
+  ShieldCheck,
 } from 'lucide-react';
 import { CostsAnalyticsTab } from '@/components/admin/CostsAnalyticsTab';
 import { SystemStatusTab } from '@/components/admin/SystemStatusTab';
@@ -97,6 +102,7 @@ import { formatCredits } from '@/lib/credit-constants';
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
   const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
+  const { data: isOwner, isLoading: ownerLoading } = useIsOwner();
   const { data: collections, isLoading: collectionsLoading } = useAdminCollections();
   const { data: pendingCollections, isLoading: pendingLoading } = usePendingCollections();
   const { data: pendingVerifications, isLoading: verificationsLoading } = usePendingVerificationRequests();
@@ -105,6 +111,7 @@ export default function Admin() {
   const { data: userCredits, isLoading: creditsLoading } = useAllUserCredits();
   const { data: actionableMarketing, isLoading: marketingLoading } = useActionableMarketingRequests();
   const { data: allMarketing } = useAllMarketingRequests();
+  const { data: allUserRoles, isLoading: rolesLoading } = useAllUserRoles();
   const toggleHidden = useToggleCollectionHidden();
   const approveCollection = useApproveCollection();
   const rejectCollection = useRejectCollection();
@@ -114,6 +121,7 @@ export default function Admin() {
   const rejectAmbassador = useRejectAmbassadorRequest();
   const removeAmbassadorRole = useRemoveAmbassadorRole();
   const adjustCredits = useAdminAdjustCredits();
+  const setUserRole = useAdminSetUserRole();
   const approveMarketing = useApproveMarketingRequest();
   const approveFreeMarketing = useApproveFreeMarketingRequest();
   const rejectMarketing = useRejectMarketingRequest();
@@ -138,6 +146,9 @@ export default function Admin() {
   const [creditSortField, setCreditSortField] = useState<'total' | 'purchased' | 'free' | null>(null);
   const [creditSortOrder, setCreditSortOrder] = useState<'asc' | 'desc'>('desc');
   
+  // Role management state
+  const [roleSearchQuery, setRoleSearchQuery] = useState('');
+
   const { data: userTransactions, isLoading: transactionsLoading } = useUserCreditTransactions(transactionUserId);
 
   // Calculate total pending count for Approvals tab badge (includes marketing)
@@ -251,7 +262,7 @@ export default function Admin() {
     setRejectReason('');
   };
 
-  if (authLoading || adminLoading) {
+  if (authLoading || adminLoading || ownerLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="space-y-4 text-center">
@@ -261,6 +272,24 @@ export default function Admin() {
       </div>
     );
   }
+
+  // Helper function to get user's current role display
+  const getUserRole = (userRoles: { role: string }[]) => {
+    const roles = userRoles.map(r => r.role);
+    if (roles.includes('owner')) return 'owner';
+    if (roles.includes('admin')) return 'admin';
+    if (roles.includes('ambassador')) return 'ambassador';
+    return 'creator';
+  };
+
+  // Filter users for role management
+  const filteredUserRoles = allUserRoles?.filter(user => {
+    if (!roleSearchQuery) return true;
+    const query = roleSearchQuery.toLowerCase();
+    const email = user.email?.toLowerCase() || '';
+    const name = user.display_name?.toLowerCase() || '';
+    return email.includes(query) || name.includes(query);
+  });
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -533,18 +562,22 @@ export default function Admin() {
               <Store className="h-4 w-4" />
               Collections
             </TabsTrigger>
-            <TabsTrigger value="users" className="gap-2">
-              <Users className="h-4 w-4" />
-              Users
-            </TabsTrigger>
-            <TabsTrigger value="treasury" className="gap-2">
-              <Wallet className="h-4 w-4" />
-              Treasury
-            </TabsTrigger>
-            <TabsTrigger value="operations" className="gap-2">
-              <Activity className="h-4 w-4" />
-              Status
-            </TabsTrigger>
+            {isOwner && (
+              <>
+                <TabsTrigger value="users" className="gap-2">
+                  <Users className="h-4 w-4" />
+                  Users
+                </TabsTrigger>
+                <TabsTrigger value="treasury" className="gap-2">
+                  <Wallet className="h-4 w-4" />
+                  Treasury
+                </TabsTrigger>
+                <TabsTrigger value="operations" className="gap-2">
+                  <Activity className="h-4 w-4" />
+                  Status
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           {/* Approvals Tab - Combines Pending Launches, Verification Requests, Ambassadors */}
@@ -1182,7 +1215,145 @@ export default function Admin() {
           </TabsContent>
 
           {/* Users Tab */}
-          <TabsContent value="users">
+          <TabsContent value="users" className="space-y-6">
+            {/* Role Management Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5" />
+                  Role Management
+                </CardTitle>
+                <CardDescription>
+                  Manually assign or remove user roles for moderation purposes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4">
+                  <Input
+                    placeholder="Search by email or name..."
+                    value={roleSearchQuery}
+                    onChange={(e) => setRoleSearchQuery(e.target.value)}
+                    className="max-w-sm"
+                  />
+                </div>
+                {rolesLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : filteredUserRoles && filteredUserRoles.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>User</TableHead>
+                          <TableHead>Current Role</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredUserRoles.map((userRole) => {
+                          const displayName = userRole.display_name || userRole.email || 'Unknown';
+                          const currentRole = getUserRole(userRole.user_roles || []);
+                          const isOwnerUser = currentRole === 'owner';
+                          
+                          return (
+                            <TableRow key={userRole.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarImage src={userRole.avatar_url || undefined} />
+                                    <AvatarFallback className="text-xs">{displayName.charAt(0).toUpperCase()}</AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-medium text-sm">{displayName}</p>
+                                    <p className="text-xs text-muted-foreground">{userRole.email}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant={
+                                    currentRole === 'owner' ? 'default' :
+                                    currentRole === 'admin' ? 'secondary' :
+                                    currentRole === 'ambassador' ? 'outline' :
+                                    'secondary'
+                                  }
+                                  className={
+                                    currentRole === 'owner' ? 'bg-amber-500 text-white gap-1' :
+                                    currentRole === 'admin' ? 'bg-primary/80 text-primary-foreground gap-1' :
+                                    currentRole === 'ambassador' ? 'text-green-600 border-green-600/50 gap-1' :
+                                    'text-muted-foreground gap-1'
+                                  }
+                                >
+                                  {currentRole === 'owner' && <Crown className="h-3 w-3" />}
+                                  {currentRole === 'admin' && <Shield className="h-3 w-3" />}
+                                  {currentRole === 'ambassador' && <Megaphone className="h-3 w-3" />}
+                                  {currentRole === 'creator' && <Users className="h-3 w-3" />}
+                                  {currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {isOwnerUser ? (
+                                  <span className="text-xs text-muted-foreground italic">Protected</span>
+                                ) : (
+                                  <div className="flex items-center justify-end gap-1">
+                                    {currentRole !== 'creator' && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-muted-foreground hover:text-foreground"
+                                        onClick={() => setUserRole.mutate({ userId: userRole.id, role: null })}
+                                        disabled={setUserRole.isPending}
+                                      >
+                                        <X className="h-4 w-4 mr-1" />
+                                        Remove Role
+                                      </Button>
+                                    )}
+                                    {currentRole !== 'ambassador' && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-green-600 hover:text-green-700 hover:bg-green-100"
+                                        onClick={() => setUserRole.mutate({ userId: userRole.id, role: 'ambassador' })}
+                                        disabled={setUserRole.isPending}
+                                      >
+                                        <Megaphone className="h-4 w-4 mr-1" />
+                                        Set Ambassador
+                                      </Button>
+                                    )}
+                                    {currentRole !== 'admin' && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-primary hover:text-primary hover:bg-primary/10"
+                                        onClick={() => setUserRole.mutate({ userId: userRole.id, role: 'admin' })}
+                                        disabled={setUserRole.isPending}
+                                      >
+                                        <Shield className="h-4 w-4 mr-1" />
+                                        Set Admin
+                                      </Button>
+                                    )}
+                                  </div>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Users className="h-12 w-12 mx-auto text-muted-foreground/30" />
+                    <p className="mt-4 text-muted-foreground">No users found</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* User Credits Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
