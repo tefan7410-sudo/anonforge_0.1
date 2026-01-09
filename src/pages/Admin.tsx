@@ -16,6 +16,13 @@ import {
   useAdminAdjustCredits,
 } from '@/hooks/use-admin';
 import {
+  usePendingPromoterRequests,
+  useAllPromoters,
+  useApprovePromoterRequest,
+  useRejectPromoterRequest,
+  useRemovePromoterRole,
+} from '@/hooks/use-admin-promoters';
+import {
   useActionableMarketingRequests,
   useAllMarketingRequests,
   useApproveMarketingRequest,
@@ -74,6 +81,7 @@ import {
   Heart,
   Gift,
   Activity,
+  UserX,
 } from 'lucide-react';
 import { CostsAnalyticsTab } from '@/components/admin/CostsAnalyticsTab';
 import { SystemStatusTab } from '@/components/admin/SystemStatusTab';
@@ -89,6 +97,8 @@ export default function Admin() {
   const { data: collections, isLoading: collectionsLoading } = useAdminCollections();
   const { data: pendingCollections, isLoading: pendingLoading } = usePendingCollections();
   const { data: pendingVerifications, isLoading: verificationsLoading } = usePendingVerificationRequests();
+  const { data: pendingPromoters, isLoading: promotersLoading } = usePendingPromoterRequests();
+  const { data: allPromoters } = useAllPromoters();
   const { data: userCredits, isLoading: creditsLoading } = useAllUserCredits();
   const { data: actionableMarketing, isLoading: marketingLoading } = useActionableMarketingRequests();
   const { data: allMarketing } = useAllMarketingRequests();
@@ -97,6 +107,9 @@ export default function Admin() {
   const rejectCollection = useRejectCollection();
   const approveVerification = useApproveVerification();
   const rejectVerification = useRejectVerification();
+  const approvePromoter = useApprovePromoterRequest();
+  const rejectPromoter = useRejectPromoterRequest();
+  const removePromoterRole = useRemovePromoterRole();
   const adjustCredits = useAdminAdjustCredits();
   const approveMarketing = useApproveMarketingRequest();
   const approveFreeMarketing = useApproveFreeMarketingRequest();
@@ -107,7 +120,7 @@ export default function Admin() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [rejectType, setRejectType] = useState<'collection' | 'verification' | 'marketing'>('collection');
+  const [rejectType, setRejectType] = useState<'collection' | 'verification' | 'marketing' | 'promoter'>('collection');
   
   // Credit management state
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
@@ -207,7 +220,7 @@ export default function Admin() {
     return creditSortOrder === 'asc' ? aVal - bVal : bVal - aVal;
   });
 
-  const handleRejectClick = (id: string, type: 'collection' | 'verification' | 'marketing') => {
+  const handleRejectClick = (id: string, type: 'collection' | 'verification' | 'marketing' | 'promoter') => {
     setRejectingId(id);
     setRejectType(type);
     setRejectReason('');
@@ -223,6 +236,8 @@ export default function Admin() {
       await rejectVerification.mutateAsync({ requestId: rejectingId, reason: rejectReason });
     } else if (rejectType === 'marketing') {
       await rejectMarketing.mutateAsync({ requestId: rejectingId, reason: rejectReason });
+    } else if (rejectType === 'promoter') {
+      await rejectPromoter.mutateAsync({ requestId: rejectingId, reason: rejectReason });
     }
     
     setRejectDialogOpen(false);
@@ -545,6 +560,15 @@ export default function Admin() {
             <TabsTrigger value="art-fund" className="gap-2">
               <Heart className="h-4 w-4" />
               Art Fund
+            </TabsTrigger>
+            <TabsTrigger value="promoters" className="gap-2">
+              <Megaphone className="h-4 w-4" />
+              Promoters
+              {pendingPromoters && pendingPromoters.length > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 justify-center">
+                  {pendingPromoters.length}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -1185,6 +1209,190 @@ export default function Admin() {
           <TabsContent value="art-fund">
             <ArtFundTab />
           </TabsContent>
+
+          {/* Promoters Tab */}
+          <TabsContent value="promoters">
+            <div className="space-y-6">
+              {/* Pending Promoter Requests */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Megaphone className="h-5 w-5 text-primary" />
+                    Pending Promoter Requests
+                  </CardTitle>
+                  <CardDescription>
+                    Users requesting to become promoters
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {promotersLoading ? (
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-16 w-full" />
+                      ))}
+                    </div>
+                  ) : pendingPromoters && pendingPromoters.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>User</TableHead>
+                            <TableHead>Reason</TableHead>
+                            <TableHead>Links</TableHead>
+                            <TableHead>Requested</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {pendingPromoters.map((request) => {
+                            const profile = request.profile;
+                            const displayName = profile?.display_name || profile?.email || 'Unknown';
+                            return (
+                              <TableRow key={request.id}>
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <Avatar className="h-10 w-10">
+                                      <AvatarImage src={profile?.avatar_url || undefined} />
+                                      <AvatarFallback>{displayName.charAt(0).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                      <p className="font-medium">{displayName}</p>
+                                      <p className="text-xs text-muted-foreground">{profile?.email}</p>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <p className="text-sm text-muted-foreground line-clamp-2 max-w-[300px]">
+                                    {request.reason || 'No reason provided'}
+                                  </p>
+                                </TableCell>
+                                <TableCell>
+                                  {request.portfolio_links && request.portfolio_links.length > 0 ? (
+                                    <div className="flex gap-1">
+                                      {request.portfolio_links.slice(0, 2).map((link, i) => (
+                                        <a key={i} href={link} target="_blank" rel="noopener noreferrer">
+                                          <Badge variant="outline" className="text-xs cursor-pointer hover:bg-muted">
+                                            <ExternalLink className="h-3 w-3 mr-1" />
+                                            Link {i + 1}
+                                          </Badge>
+                                        </a>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(request.created_at).toLocaleDateString()}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      className="text-green-600 hover:text-green-700 hover:bg-green-100"
+                                      onClick={() => approvePromoter.mutate({ requestId: request.id, userId: request.user_id })}
+                                      disabled={approvePromoter.isPending}
+                                    >
+                                      <Check className="h-4 w-4 mr-1" />
+                                      Approve
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      onClick={() => handleRejectClick(request.id, 'promoter')}
+                                      disabled={rejectPromoter.isPending}
+                                    >
+                                      <X className="h-4 w-4 mr-1" />
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/30" />
+                      <p className="mt-4 text-muted-foreground">No pending promoter requests</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Active Promoters */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <UserCheck className="h-5 w-5 text-green-600" />
+                    Active Promoters
+                  </CardTitle>
+                  <CardDescription>
+                    Users with promoter role
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {allPromoters && allPromoters.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>User</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allPromoters.map((promoter) => {
+                            const profile = promoter.profile;
+                            const displayName = profile?.display_name || profile?.email || 'Unknown';
+                            return (
+                              <TableRow key={promoter.id}>
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <Avatar className="h-10 w-10">
+                                      <AvatarImage src={profile?.avatar_url || undefined} />
+                                      <AvatarFallback>{displayName.charAt(0).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                      <p className="font-medium">{displayName}</p>
+                                      <p className="text-xs text-muted-foreground">{profile?.email}</p>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => removePromoterRole.mutate({ userId: promoter.user_id })}
+                                    disabled={removePromoterRole.isPending}
+                                  >
+                                    <UserX className="h-4 w-4 mr-1" />
+                                    Remove Role
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <UserCheck className="h-12 w-12 mx-auto text-muted-foreground/30" />
+                      <p className="mt-4 text-muted-foreground">No active promoters</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -1197,7 +1405,9 @@ export default function Admin() {
                 ? 'Reject Collection' 
                 : rejectType === 'verification' 
                   ? 'Reject Verification Request'
-                  : 'Reject Marketing Request'}
+                  : rejectType === 'promoter'
+                    ? 'Reject Promoter Request'
+                    : 'Reject Marketing Request'}
             </DialogTitle>
             <DialogDescription>
               Please provide a reason for rejection. This will be shown to the creator.
@@ -1215,7 +1425,7 @@ export default function Admin() {
             <Button 
               variant="destructive" 
               onClick={handleRejectConfirm}
-              disabled={!rejectReason.trim() || rejectCollection.isPending || rejectVerification.isPending}
+              disabled={!rejectReason.trim() || rejectCollection.isPending || rejectVerification.isPending || rejectPromoter.isPending}
             >
               Reject
             </Button>
