@@ -33,12 +33,22 @@ import {
   GitBranch,
   Ban,
   ArrowLeftRight,
+  Heart,
+  Menu
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 export default function Documentation() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   
   // Scroll to top on mount
@@ -1179,25 +1189,114 @@ export default function Documentation() {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <nav className="container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <Link to="/" className="flex items-center gap-2 sm:gap-3">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary p-1.5">
-                <Logo className="h-full w-full" />
-              </div>
-              <span className="font-display text-lg sm:text-xl font-bold">AnonForge</span>
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground border-muted-foreground/30">BETA</Badge>
-            </Link>
-          </div>
+          <Link to="/" className="flex items-center gap-2 sm:gap-3">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary p-1.5">
+              <Logo className="h-full w-full" />
+            </div>
+            <span className="font-display text-lg sm:text-xl font-bold">AnonForge</span>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground border-muted-foreground/30">BETA</Badge>
+          </Link>
           
-          <div className="flex items-center gap-2 sm:gap-4">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-4">
+            <Button variant="ghost" asChild>
+              <Link to="/marketplace">Marketplace</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link to="/artfund">Art Fund</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link to="/status">Status</Link>
+            </Button>
             <LanguageSelector />
             <ThemeToggle />
-            <Button variant="outline" asChild className="hidden sm:inline-flex">
-              <Link to="/register">Get Started</Link>
+            <Button variant="ghost" asChild>
+              <Link to="/login">Sign in</Link>
             </Button>
+            <Button asChild>
+              <Link to="/register">Get started</Link>
+            </Button>
+          </div>
+
+          {/* Mobile Navigation */}
+          <div className="flex items-center gap-2 md:hidden">
+            <LanguageSelector />
+            <ThemeToggle />
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72">
+                <SheetHeader>
+                  <SheetTitle>
+                    <Link 
+                      to="/" 
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1.5">
+                        <Logo className="h-full w-full" />
+                      </div>
+                      AnonForge
+                    </Link>
+                  </SheetTitle>
+                </SheetHeader>
+                <nav className="mt-8 flex flex-col gap-2">
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/marketplace">
+                      <Store className="mr-3 h-4 w-4" />
+                      Marketplace
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/artfund">
+                      <Heart className="mr-3 h-4 w-4" />
+                      Art Fund
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/status">
+                      <Zap className="mr-3 h-4 w-4" />
+                      Status
+                    </Link>
+                  </Button>
+                  <div className="my-2 border-t border-border" />
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/login">Sign in</Link>
+                  </Button>
+                  <Button
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/register">Get started</Link>
+                  </Button>
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </nav>
       </header>

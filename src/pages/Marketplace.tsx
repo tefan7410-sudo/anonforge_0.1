@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Store, ExternalLink, ArrowLeft, Clock, Sparkles } from 'lucide-react';
+import { Store, ExternalLink, Clock, Sparkles, Heart, Zap, Menu } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useCollectionStatuses } from '@/hooks/use-collection-status';
@@ -17,6 +17,13 @@ import { PageTransition } from '@/components/PageTransition';
 import { SEOHead } from '@/components/SEOHead';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { cn } from '@/lib/utils';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import {
   Pagination,
   PaginationContent,
@@ -183,6 +190,7 @@ export default function Marketplace() {
   const { data: collections, isLoading } = useMarketplaceData();
   const [filter, setFilter] = useState<'all' | 'live' | 'upcoming' | 'sold-out'>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Get project IDs for status fetching
   const projectIds = useMemo(() => 
@@ -251,49 +259,120 @@ export default function Marketplace() {
     />
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border/50">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <nav className="container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
           <Link to="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity" aria-label="AnonForge home">
             <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary p-1.5">
               <Logo className="h-full w-full" />
             </div>
-            <span className="font-display text-lg sm:text-xl font-semibold">AnonForge</span>
+            <span className="font-display text-lg sm:text-xl font-bold">AnonForge</span>
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground border-muted-foreground/30">BETA</Badge>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-4">
-            {/* Desktop nav links */}
-            <div className="hidden md:flex items-center gap-2">
-              <Button variant="ghost" asChild>
-                <Link to="/artfund">Art Fund</Link>
-              </Button>
-              <Button variant="ghost" asChild>
-                <Link to="/status">Status</Link>
-              </Button>
-            </div>
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-4">
+            <Button variant="ghost" asChild>
+              <Link to="/artfund">Art Fund</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link to="/status">Status</Link>
+            </Button>
             <LanguageSelector />
             <ThemeToggle />
-            <Button variant="ghost" asChild className="hidden sm:inline-flex">
+            <Button variant="ghost" asChild>
               <Link to="/login">Sign in</Link>
             </Button>
             <Button asChild>
               <Link to="/register">Get started</Link>
             </Button>
           </div>
+
+          {/* Mobile Navigation */}
+          <div className="flex items-center gap-2 md:hidden">
+            <LanguageSelector />
+            <ThemeToggle />
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72">
+                <SheetHeader>
+                  <SheetTitle>
+                    <Link 
+                      to="/" 
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1.5">
+                        <Logo className="h-full w-full" />
+                      </div>
+                      AnonForge
+                    </Link>
+                  </SheetTitle>
+                </SheetHeader>
+                <nav className="mt-8 flex flex-col gap-2">
+                  <Button
+                    variant="ghost"
+                    className="justify-start bg-muted"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/marketplace">
+                      <Store className="mr-3 h-4 w-4" />
+                      Marketplace
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/artfund">
+                      <Heart className="mr-3 h-4 w-4" />
+                      Art Fund
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/status">
+                      <Zap className="mr-3 h-4 w-4" />
+                      Status
+                    </Link>
+                  </Button>
+                  <div className="my-2 border-t border-border" />
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/login">Sign in</Link>
+                  </Button>
+                  <Button
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to="/register">Get started</Link>
+                  </Button>
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
         </nav>
       </header>
-        <main className="container mx-auto px-4 py-8 sm:px-6 sm:py-12">
+
+      <main className="container mx-auto px-4 py-8 sm:px-6 sm:py-12">
         {/* Featured Spotlight */}
         <FeaturedSpotlight className="mb-8" />
-        {/* Breadcrumb */}
-        <div className="mb-6 sm:mb-8">
-          <Button variant="ghost" size="sm" asChild className="gap-2">
-            <Link to="/">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Back to Home</span>
-              <span className="sm:hidden">Back</span>
-            </Link>
-          </Button>
-        </div>
 
         {/* Header */}
         <div className="mb-6 sm:mb-8 text-center">
