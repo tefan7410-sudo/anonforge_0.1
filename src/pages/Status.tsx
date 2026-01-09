@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from "@/components/Logo";
 import { SEOHead } from "@/components/SEOHead";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -29,7 +30,8 @@ import {
   Zap,
   Store,
   Heart,
-  Menu
+  Menu,
+  LayoutGrid
 } from "lucide-react";
 import { 
   useServiceStatus, 
@@ -203,6 +205,7 @@ function OverallStatusBanner({ services, maintenanceMode }: {
 }
 
 export default function Status() {
+  const { user } = useAuth();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -245,12 +248,20 @@ export default function Status() {
               </Button>
               <LanguageSelector />
               <ThemeToggle />
-              <Button variant="ghost" asChild>
-                <Link to="/login">Sign in</Link>
-              </Button>
-              <Button asChild>
-                <Link to="/register">Get started</Link>
-              </Button>
+              {user ? (
+                <Button asChild>
+                  <Link to="/dashboard">Dashboard</Link>
+                </Button>
+              ) : (
+                <>
+                  <Button variant="ghost" asChild>
+                    <Link to="/login">Sign in</Link>
+                  </Button>
+                  <Button asChild>
+                    <Link to="/register">Get started</Link>
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Mobile Navigation */}
@@ -314,21 +325,36 @@ export default function Status() {
                       </Link>
                     </Button>
                     <div className="my-2 border-t border-border" />
-                    <Button
-                      variant="ghost"
-                      className="justify-start"
-                      asChild
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Link to="/login">Sign in</Link>
-                    </Button>
-                    <Button
-                      className="justify-start"
-                      asChild
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Link to="/register">Get started</Link>
-                    </Button>
+                    {user ? (
+                      <Button
+                        className="justify-start"
+                        asChild
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Link to="/dashboard">
+                          <LayoutGrid className="mr-3 h-4 w-4" />
+                          Dashboard
+                        </Link>
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          className="justify-start"
+                          asChild
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Link to="/login">Sign in</Link>
+                        </Button>
+                        <Button
+                          className="justify-start"
+                          asChild
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Link to="/register">Get started</Link>
+                        </Button>
+                      </>
+                    )}
                   </nav>
                 </SheetContent>
               </Sheet>

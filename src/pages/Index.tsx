@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles, Palette, Store, Zap, Shield, Users, CreditCard, LayoutGrid, Rocket, Menu, BookOpen, Play, Heart } from 'lucide-react';
 import { Logo } from '@/components/Logo';
@@ -50,6 +51,7 @@ function AnimatedSection({
 
 export default function Index() {
   const { t } = useTranslations();
+  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: activeMarketing } = useActiveMarketing();
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
@@ -115,12 +117,20 @@ export default function Index() {
             </Button>
             <LanguageSelector />
             <ThemeToggle />
-            <Button variant="ghost" asChild>
-              <Link to="/login">{t('nav.signIn')}</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/register">{t('nav.getStarted')}</Link>
-            </Button>
+            {user ? (
+              <Button asChild>
+                <Link to="/dashboard">Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link to="/login">{t('nav.signIn')}</Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/register">{t('nav.getStarted')}</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Navigation */}
@@ -195,21 +205,36 @@ export default function Index() {
                     </Link>
                   </Button>
                   <div className="my-2 border-t border-border" />
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    asChild
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Link to="/login">{t('nav.signIn')}</Link>
-                  </Button>
-                  <Button
-                    className="justify-start"
-                    asChild
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Link to="/register">{t('nav.getStarted')}</Link>
-                  </Button>
+                  {user ? (
+                    <Button
+                      className="justify-start"
+                      asChild
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Link to="/dashboard">
+                        <LayoutGrid className="mr-3 h-4 w-4" />
+                        Dashboard
+                      </Link>
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        className="justify-start"
+                        asChild
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Link to="/login">{t('nav.signIn')}</Link>
+                      </Button>
+                      <Button
+                        className="justify-start"
+                        asChild
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Link to="/register">{t('nav.getStarted')}</Link>
+                      </Button>
+                    </>
+                  )}
                 </nav>
               </SheetContent>
             </Sheet>

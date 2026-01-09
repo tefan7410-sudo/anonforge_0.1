@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Store, ExternalLink, Clock, Sparkles, Heart, Zap, Menu } from 'lucide-react';
+import { Store, ExternalLink, Clock, Sparkles, Heart, Zap, Menu, LayoutGrid } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useCollectionStatuses } from '@/hooks/use-collection-status';
@@ -187,6 +188,7 @@ function CollectionCardSkeleton() {
 }
 
 export default function Marketplace() {
+  const { user } = useAuth();
   const { data: collections, isLoading } = useMarketplaceData();
   const [filter, setFilter] = useState<'all' | 'live' | 'upcoming' | 'sold-out'>('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -282,12 +284,20 @@ export default function Marketplace() {
             </Button>
             <LanguageSelector />
             <ThemeToggle />
-            <Button variant="ghost" asChild>
-              <Link to="/login">Sign in</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/register">Get started</Link>
-            </Button>
+            {user ? (
+              <Button asChild>
+                <Link to="/dashboard">Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link to="/login">Sign in</Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/register">Get started</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Navigation */}
@@ -351,21 +361,36 @@ export default function Marketplace() {
                     </Link>
                   </Button>
                   <div className="my-2 border-t border-border" />
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    asChild
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Link to="/login">Sign in</Link>
-                  </Button>
-                  <Button
-                    className="justify-start"
-                    asChild
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Link to="/register">Get started</Link>
-                  </Button>
+                  {user ? (
+                    <Button
+                      className="justify-start"
+                      asChild
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Link to="/dashboard">
+                        <LayoutGrid className="mr-3 h-4 w-4" />
+                        Dashboard
+                      </Link>
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        className="justify-start"
+                        asChild
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Link to="/login">Sign in</Link>
+                      </Button>
+                      <Button
+                        className="justify-start"
+                        asChild
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Link to="/register">Get started</Link>
+                      </Button>
+                    </>
+                  )}
                 </nav>
               </SheetContent>
             </Sheet>
