@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, User, Check, X, Coins, AlertTriangle, GraduationCap, Sparkles } from 'lucide-react';
+import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, User, Check, X, Coins, AlertTriangle, GraduationCap, Sparkles, Megaphone, Palette } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { formatDistanceToNow } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -22,7 +23,8 @@ import { NewAccountWelcomeModal } from '@/components/NewAccountWelcomeModal';
 import { PageTransition } from '@/components/PageTransition';
 import { useTutorial } from '@/contexts/TutorialContext';
 import { useTutorialProject, TUTORIAL_PROJECT_ID } from '@/hooks/use-tutorial';
-
+import { useIsPromoter } from '@/hooks/use-promoter';
+import { PromoterWaitlistCard } from '@/components/dashboard/PromoterWaitlistCard';
 interface Project {
   id: string;
   name: string;
@@ -53,12 +55,14 @@ export default function Dashboard() {
   const [sharedProjects, setSharedProjects] = useState<Project[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dashboardMode, setDashboardMode] = useState<'creator' | 'promoter'>('creator');
   
   const acceptInvitation = useAcceptInvitation();
   const declineInvitation = useDeclineInvitation();
   const { totalCredits, isLowCredits } = useCreditBalance();
   const { isActive: isTutorialActive, currentStep } = useTutorial();
   const { project: tutorialProject } = useTutorialProject();
+  const { data: isPromoter } = useIsPromoter(user?.id);
 
   useEffect(() => {
     if (user) {
@@ -262,14 +266,38 @@ export default function Dashboard() {
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-3xl font-bold">Dashboard</h1>
-            <p className="mt-1 text-muted-foreground">Manage your layer generation projects</p>
+            <p className="mt-1 text-muted-foreground">
+              {dashboardMode === 'creator' 
+                ? 'Manage your layer generation projects' 
+                : 'Promote collections and earn rewards'}
+            </p>
           </div>
-          <Button asChild data-tutorial="new-project">
-            <Link to="/project/new">
-              <Plus className="mr-2 h-4 w-4" />
-              New Project
-            </Link>
-          </Button>
+          <div className="flex items-center gap-4">
+            {/* Creator / Promoter Toggle */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border/50 bg-muted/30">
+              <Palette className={`h-4 w-4 ${dashboardMode === 'creator' ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className={`text-sm ${dashboardMode === 'creator' ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                Creator
+              </span>
+              <Switch
+                checked={dashboardMode === 'promoter'}
+                onCheckedChange={(checked) => setDashboardMode(checked ? 'promoter' : 'creator')}
+              />
+              <span className={`text-sm ${dashboardMode === 'promoter' ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                Promoter
+              </span>
+              <Megaphone className={`h-4 w-4 ${dashboardMode === 'promoter' ? 'text-primary' : 'text-muted-foreground'}`} />
+            </div>
+            
+            {dashboardMode === 'creator' && (
+              <Button asChild data-tutorial="new-project">
+                <Link to="/project/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Project
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Tutorial Section - Show when tutorial is active */}
@@ -296,149 +324,188 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {invitations.length > 0 && (
-          <Card className="mb-8 border-primary/20 bg-primary/5">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 font-display text-lg">
-                <Users className="h-5 w-5 text-primary" />
-                Pending Invitations
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {invitations.map((invite) => (
-                  <div
-                    key={invite.id}
-                    className="flex flex-col gap-3 rounded-lg border border-border/50 bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div>
-                      <p className="font-medium">{invite.project_name || 'Unknown Project'}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Invited as {invite.role}
-                        {invite.inviter_name && ` by ${invite.inviter_name}`}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        disabled={declineInvitation.isPending}
-                        onClick={async () => {
-                          try {
-                            await declineInvitation.mutateAsync({ invitationId: invite.id });
-                            setInvitations(prev => prev.filter(i => i.id !== invite.id));
-                            toast({ title: 'Invitation declined' });
-                          } catch (error: any) {
-                            toast({ title: 'Failed', description: error.message, variant: 'destructive' });
-                          }
-                        }}
+        {/* Creator Mode Content */}
+        {dashboardMode === 'creator' && (
+          <>
+            {invitations.length > 0 && (
+              <Card className="mb-8 border-primary/20 bg-primary/5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 font-display text-lg">
+                    <Users className="h-5 w-5 text-primary" />
+                    Pending Invitations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {invitations.map((invite) => (
+                      <div
+                        key={invite.id}
+                        className="flex flex-col gap-3 rounded-lg border border-border/50 bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
                       >
-                        {declineInvitation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="mr-1 h-4 w-4" />}
-                        Decline
-                      </Button>
-                      <Button 
-                        size="sm"
-                        disabled={acceptInvitation.isPending}
-                        onClick={async () => {
-                          try {
-                            await acceptInvitation.mutateAsync({ invitationId: invite.id });
-                            setInvitations(prev => prev.filter(i => i.id !== invite.id));
-                            toast({ title: 'Invitation accepted', description: 'You now have access to this project' });
-                            loadProjects();
-                          } catch (error: any) {
-                            toast({ title: 'Failed', description: error.message, variant: 'destructive' });
-                          }
-                        }}
-                      >
-                        {acceptInvitation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
-                        Accept
-                      </Button>
-                    </div>
+                        <div>
+                          <p className="font-medium">{invite.project_name || 'Unknown Project'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Invited as {invite.role}
+                            {invite.inviter_name && ` by ${invite.inviter_name}`}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            disabled={declineInvitation.isPending}
+                            onClick={async () => {
+                              try {
+                                await declineInvitation.mutateAsync({ invitationId: invite.id });
+                                setInvitations(prev => prev.filter(i => i.id !== invite.id));
+                                toast({ title: 'Invitation declined' });
+                              } catch (error: any) {
+                                toast({ title: 'Failed', description: error.message, variant: 'destructive' });
+                              }
+                            }}
+                          >
+                            {declineInvitation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="mr-1 h-4 w-4" />}
+                            Decline
+                          </Button>
+                          <Button 
+                            size="sm"
+                            disabled={acceptInvitation.isPending}
+                            onClick={async () => {
+                              try {
+                                await acceptInvitation.mutateAsync({ invitationId: invite.id });
+                                setInvitations(prev => prev.filter(i => i.id !== invite.id));
+                                toast({ title: 'Invitation accepted', description: 'You now have access to this project' });
+                                loadProjects();
+                              } catch (error: any) {
+                                toast({ title: 'Failed', description: error.message, variant: 'destructive' });
+                              }
+                            }}
+                          >
+                            {acceptInvitation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+                            Accept
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            )}
+
+            <Tabs defaultValue="owned" className="space-y-6">
+              <TabsList>
+                <TabsTrigger value="owned">
+                  My Projects
+                  {ownedProjects.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {ownedProjects.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="shared">
+                  Shared with me
+                  {sharedProjects.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {sharedProjects.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="owned">
+                {loading ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {[1, 2, 3].map((i) => (
+                      <Card key={i} className="border-border/50">
+                        <CardHeader>
+                          <Skeleton className="h-5 w-32" />
+                          <Skeleton className="h-4 w-48" />
+                        </CardHeader>
+                        <CardContent>
+                          <Skeleton className="h-3 w-24" />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : ownedProjects.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {ownedProjects.map((project) => (
+                      <ProjectCard key={project.id} project={project} isOwner />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    title="No projects yet"
+                    description="Create your first project to start generating unique profile pictures"
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="shared">
+                {loading ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {[1, 2].map((i) => (
+                      <Card key={i} className="border-border/50">
+                        <CardHeader>
+                          <Skeleton className="h-5 w-32" />
+                          <Skeleton className="h-4 w-48" />
+                        </CardHeader>
+                        <CardContent>
+                          <Skeleton className="h-3 w-24" />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : sharedProjects.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {sharedProjects.map((project) => (
+                      <ProjectCard key={project.id} project={project} isOwner={false} />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    title="No shared projects"
+                    description="Projects shared with you will appear here"
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
+          </>
         )}
 
-        <Tabs defaultValue="owned" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="owned">
-              My Projects
-              {ownedProjects.length > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {ownedProjects.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="shared">
-              Shared with me
-              {sharedProjects.length > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {sharedProjects.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="owned">
-            {loading ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3].map((i) => (
-                  <Card key={i} className="border-border/50">
-                    <CardHeader>
-                      <Skeleton className="h-5 w-32" />
-                      <Skeleton className="h-4 w-48" />
-                    </CardHeader>
-                    <CardContent>
-                      <Skeleton className="h-3 w-24" />
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : ownedProjects.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {ownedProjects.map((project) => (
-                  <ProjectCard key={project.id} project={project} isOwner />
-                ))}
-              </div>
+        {/* Promoter Mode Content */}
+        {dashboardMode === 'promoter' && (
+          <>
+            {isPromoter ? (
+              // Approved promoter dashboard
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 font-display">
+                    <Megaphone className="h-5 w-5 text-primary" />
+                    Promoter Dashboard
+                  </CardTitle>
+                  <CardDescription>
+                    Welcome to the promoter program! This feature is coming soon.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Badge variant="secondary" className="mb-4">Coming Soon</Badge>
+                    <p className="text-muted-foreground max-w-md">
+                      The promoter dashboard is under development. You'll be able to browse collections 
+                      to promote, track your performance, and earn rewards here.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             ) : (
-              <EmptyState
-                title="No projects yet"
-                description="Create your first project to start generating unique profile pictures"
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="shared">
-            {loading ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {[1, 2].map((i) => (
-                  <Card key={i} className="border-border/50">
-                    <CardHeader>
-                      <Skeleton className="h-5 w-32" />
-                      <Skeleton className="h-4 w-48" />
-                    </CardHeader>
-                    <CardContent>
-                      <Skeleton className="h-3 w-24" />
-                    </CardContent>
-                  </Card>
-                ))}
+              // Not a promoter - show waitlist card
+              <div className="max-w-2xl mx-auto">
+                <PromoterWaitlistCard />
               </div>
-            ) : sharedProjects.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {sharedProjects.map((project) => (
-                  <ProjectCard key={project.id} project={project} isOwner={false} />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                title="No shared projects"
-                description="Projects shared with you will appear here"
-              />
             )}
-          </TabsContent>
-        </Tabs>
+          </>
+        )}
       </main>
 
       <FloatingHelpButton />
