@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Heart, Wallet, Users, Award, Sparkles, ExternalLink } from 'lucide-react';
+import { Heart, Wallet, Users, Award, Sparkles, ExternalLink, Home, Store } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -145,9 +145,17 @@ export default function ArtFund() {
               </div>
               <span className="font-display text-lg font-semibold">AnonForge</span>
             </Link>
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" asChild>
-                <Link to="/marketplace">Marketplace</Link>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" asChild className="hidden sm:flex">
+                <Link to="/">
+                  <Home className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button variant="ghost" asChild className="hidden sm:flex">
+                <Link to="/marketplace">
+                  <Store className="h-4 w-4 mr-2" />
+                  Marketplace
+                </Link>
               </Button>
               <ThemeToggle />
             </div>

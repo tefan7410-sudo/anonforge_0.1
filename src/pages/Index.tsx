@@ -108,9 +108,6 @@ export default function Index() {
               <Link to="/marketplace">{t('nav.marketplace')}</Link>
             </Button>
             <Button variant="ghost" asChild>
-              <Link to="/creators">{t('nav.forCreators')}</Link>
-            </Button>
-            <Button variant="ghost" asChild>
               <Link to="/artfund">Art Fund</Link>
             </Button>
             <Button variant="ghost" asChild>
