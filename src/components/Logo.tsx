@@ -1,3 +1,5 @@
+import { cn } from '@/lib/utils';
+
 interface LogoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
@@ -14,7 +16,8 @@ export function Logo({ className, size = 'md' }: LogoProps) {
     <img 
       src="/images/logo_anonforge.png" 
       alt="AnonForge" 
-      className={className || sizeClasses[size]}
+      className={cn('object-contain', className || sizeClasses[size])}
+      style={{ imageRendering: 'auto' }}
     />
   );
 }
