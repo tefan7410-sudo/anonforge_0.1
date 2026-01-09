@@ -72,7 +72,6 @@ import {
   Plus,
   Minus,
   Loader2,
-  BarChart3,
   ArrowUpDown,
   Megaphone,
   Sparkles,
@@ -82,6 +81,10 @@ import {
   Gift,
   Activity,
   UserX,
+  ClipboardCheck,
+  Users,
+  Wallet,
+  Settings,
 } from 'lucide-react';
 import { CostsAnalyticsTab } from '@/components/admin/CostsAnalyticsTab';
 import { SystemStatusTab } from '@/components/admin/SystemStatusTab';
@@ -136,6 +139,9 @@ export default function Admin() {
   const [creditSortOrder, setCreditSortOrder] = useState<'asc' | 'desc'>('desc');
   
   const { data: userTransactions, isLoading: transactionsLoading } = useUserCreditTransactions(transactionUserId);
+
+  // Calculate total pending count for Approvals tab badge
+  const totalPendingCount = (pendingCollections?.length || 0) + (pendingVerifications?.length || 0) + (pendingAmbassadors?.length || 0);
 
   const toggleCreditSort = (field: 'total' | 'purchased' | 'free') => {
     if (creditSortField === field) {
@@ -511,77 +517,57 @@ export default function Admin() {
           </p>
         </div>
 
-        {/* Tabs for different admin functions */}
-        <Tabs defaultValue="pending-launches" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="pending-launches" className="gap-2">
-              <Clock className="h-4 w-4" />
-              Pending Launches
-              {pendingCollections && pendingCollections.length > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 justify-center">
-                  {pendingCollections.length}
+        {/* Consolidated Tabs */}
+        <Tabs defaultValue="approvals" className="space-y-6">
+          <TabsList className="flex-wrap h-auto gap-1">
+            <TabsTrigger value="approvals" className="gap-2">
+              <ClipboardCheck className="h-4 w-4" />
+              Approvals
+              {totalPendingCount > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 min-w-5 p-0 justify-center">
+                  {totalPendingCount}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="verification-requests" className="gap-2">
-              <UserCheck className="h-4 w-4" />
-              Verification Requests
-              {pendingVerifications && pendingVerifications.length > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 justify-center">
-                  {pendingVerifications.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="all-collections" className="gap-2">
+            <TabsTrigger value="collections" className="gap-2">
               <Store className="h-4 w-4" />
-              All Collections
+              Collections
             </TabsTrigger>
-            <TabsTrigger value="user-credits" className="gap-2">
-              <Coins className="h-4 w-4" />
-              User Credits
+            <TabsTrigger value="users" className="gap-2">
+              <Users className="h-4 w-4" />
+              Users
             </TabsTrigger>
-            <TabsTrigger value="costs-analytics" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Costs & Analytics
+            <TabsTrigger value="treasury" className="gap-2">
+              <Wallet className="h-4 w-4" />
+              Treasury
             </TabsTrigger>
-            <TabsTrigger value="marketing" className="gap-2">
-              <Megaphone className="h-4 w-4" />
-              Marketing
+            <TabsTrigger value="operations" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Operations
               {actionableMarketing && actionableMarketing.length > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 justify-center">
+                <Badge variant="destructive" className="ml-1 h-5 min-w-5 p-0 justify-center">
                   {actionableMarketing.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="system-status" className="gap-2">
-              <Activity className="h-4 w-4" />
-              System Status
-            </TabsTrigger>
-            <TabsTrigger value="art-fund" className="gap-2">
-              <Heart className="h-4 w-4" />
-              Art Fund
-            </TabsTrigger>
-            <TabsTrigger value="ambassadors" className="gap-2">
-              <Megaphone className="h-4 w-4" />
-              Ambassadors
-              {pendingAmbassadors && pendingAmbassadors.length > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 justify-center">
-                  {pendingAmbassadors.length}
                 </Badge>
               )}
             </TabsTrigger>
           </TabsList>
 
-          {/* Pending Launches Tab */}
-          <TabsContent value="pending-launches">
+          {/* Approvals Tab - Combines Pending Launches, Verification Requests, Ambassadors */}
+          <TabsContent value="approvals" className="space-y-6">
+            {/* Pending Launches */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-amber-500" />
                   Pending Launch Approval
+                  {pendingCollections && pendingCollections.length > 0 && (
+                    <Badge variant="destructive" className="ml-2">
+                      {pendingCollections.length}
+                    </Badge>
+                  )}
                 </CardTitle>
                 <CardDescription>
-                  Scheduled collections awaiting admin review before going live (24h default wait)
+                  Scheduled collections awaiting admin review before going live
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -609,25 +595,28 @@ export default function Admin() {
                     </Table>
                   </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <Check className="h-12 w-12 mx-auto text-green-500/30" />
-                    <p className="mt-4 text-muted-foreground">No collections pending launch approval</p>
+                  <div className="text-center py-8">
+                    <Check className="h-10 w-10 mx-auto text-green-500/30" />
+                    <p className="mt-3 text-muted-foreground text-sm">No collections pending launch approval</p>
                   </div>
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
 
-          {/* Verification Requests Tab */}
-          <TabsContent value="verification-requests">
+            {/* Verification Requests */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BadgeCheck className="h-5 w-5 text-primary" />
                   Creator Verification Requests
+                  {pendingVerifications && pendingVerifications.length > 0 && (
+                    <Badge variant="destructive" className="ml-2">
+                      {pendingVerifications.length}
+                    </Badge>
+                  )}
                 </CardTitle>
                 <CardDescription>
-                  Creators requesting to be verified. Verified status applies to all their collections.
+                  Creators requesting to be verified
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -655,17 +644,194 @@ export default function Admin() {
                     </Table>
                   </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <BadgeCheck className="h-12 w-12 mx-auto text-muted-foreground/30" />
-                    <p className="mt-4 text-muted-foreground">No pending verification requests</p>
+                  <div className="text-center py-8">
+                    <BadgeCheck className="h-10 w-10 mx-auto text-muted-foreground/30" />
+                    <p className="mt-3 text-muted-foreground text-sm">No pending verification requests</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Ambassador Requests */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Megaphone className="h-5 w-5 text-primary" />
+                  Ambassador Requests
+                  {pendingAmbassadors && pendingAmbassadors.length > 0 && (
+                    <Badge variant="destructive" className="ml-2">
+                      {pendingAmbassadors.length}
+                    </Badge>
+                  )}
+                </CardTitle>
+                <CardDescription>
+                  Users requesting to become ambassadors
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {ambassadorsLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : pendingAmbassadors && pendingAmbassadors.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>User</TableHead>
+                          <TableHead>Twitter/X</TableHead>
+                          <TableHead>Requested</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingAmbassadors.map((request) => {
+                          const profile = request.profile;
+                          const displayName = profile?.display_name || profile?.email || 'Unknown';
+                          return (
+                            <TableRow key={request.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-10 w-10">
+                                    <AvatarImage src={profile?.avatar_url || undefined} />
+                                    <AvatarFallback>{displayName.charAt(0).toUpperCase()}</AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-medium">{displayName}</p>
+                                    <p className="text-xs text-muted-foreground">{profile?.email}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {request.twitter_link ? (
+                                  <a 
+                                    href={request.twitter_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-sm text-primary hover:underline"
+                                  >
+                                    <Twitter className="h-4 w-4" />
+                                    {request.twitter_link.replace(/https?:\/\/(twitter\.com|x\.com)\//, '@')}
+                                  </a>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(request.created_at).toLocaleDateString()}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="text-green-600 hover:text-green-700 hover:bg-green-100"
+                                    onClick={() => approveAmbassador.mutate({ requestId: request.id, userId: request.user_id })}
+                                    disabled={approveAmbassador.isPending}
+                                  >
+                                    <Check className="h-4 w-4 mr-1" />
+                                    Approve
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => handleRejectClick(request.id, 'ambassador')}
+                                    disabled={rejectAmbassador.isPending}
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    Reject
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Megaphone className="h-10 w-10 mx-auto text-muted-foreground/30" />
+                    <p className="mt-3 text-muted-foreground text-sm">No pending ambassador requests</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Active Ambassadors */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCheck className="h-5 w-5 text-green-600" />
+                  Active Ambassadors
+                </CardTitle>
+                <CardDescription>
+                  Users with ambassador role
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {allAmbassadors && allAmbassadors.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>User</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allAmbassadors.map((ambassador) => {
+                          const profile = ambassador.profile;
+                          const displayName = profile?.display_name || profile?.email || 'Unknown';
+                          return (
+                            <TableRow key={ambassador.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-10 w-10">
+                                    <AvatarImage src={profile?.avatar_url || undefined} />
+                                    <AvatarFallback>{displayName.charAt(0).toUpperCase()}</AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-medium">{displayName}</p>
+                                    <p className="text-xs text-muted-foreground">{profile?.email}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => removeAmbassadorRole.mutate({ userId: ambassador.user_id })}
+                                  disabled={removeAmbassadorRole.isPending}
+                                >
+                                  <UserX className="h-4 w-4 mr-1" />
+                                  Remove Role
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <UserCheck className="h-10 w-10 mx-auto text-muted-foreground/30" />
+                    <p className="mt-3 text-muted-foreground text-sm">No active ambassadors</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* All Collections Tab */}
-          <TabsContent value="all-collections">
+          {/* Collections Tab */}
+          <TabsContent value="collections">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -710,8 +876,8 @@ export default function Admin() {
             </Card>
           </TabsContent>
 
-          {/* User Credits Tab */}
-          <TabsContent value="user-credits">
+          {/* Users Tab */}
+          <TabsContent value="users">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -844,547 +1010,360 @@ export default function Admin() {
             </Card>
           </TabsContent>
 
-          {/* Costs & Analytics Tab */}
-          <TabsContent value="costs-analytics">
-            <CostsAnalyticsTab />
+          {/* Treasury Tab - Combines Costs & Analytics + Art Fund */}
+          <TabsContent value="treasury">
+            <Tabs defaultValue="revenue" className="space-y-6">
+              <TabsList>
+                <TabsTrigger value="revenue" className="gap-2">
+                  <Coins className="h-4 w-4" />
+                  Revenue & Costs
+                </TabsTrigger>
+                <TabsTrigger value="art-fund" className="gap-2">
+                  <Heart className="h-4 w-4" />
+                  Art Fund
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="revenue">
+                <CostsAnalyticsTab />
+              </TabsContent>
+              <TabsContent value="art-fund">
+                <ArtFundTab />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
-          {/* Marketing Tab */}
-          <TabsContent value="marketing">
-            <div className="space-y-6">
-              {/* Active Marketing */}
-              {allMarketing?.find(m => m.status === 'active') && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-amber-500" />
-                      Currently Featured
-                    </CardTitle>
-                    <CardDescription>
-                      This collection is currently being promoted across AnonForge
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {(() => {
-                      const active = allMarketing?.find(m => m.status === 'active');
-                      if (!active) return null;
-                      return (
-                        <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
-                          <div className="flex items-center gap-4">
-                            {active.product_page?.logo_url ? (
-                              <img 
-                                src={active.product_page.logo_url} 
-                                alt="" 
-                                className="h-12 w-12 rounded-lg object-cover"
-                              />
-                            ) : (
-                              <div className="h-12 w-12 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                                <Store className="h-6 w-6 text-amber-500" />
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-semibold">{active.project.name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {active.duration_days} day(s) • {active.price_ada} ADA
-                              </p>
-                              {active.end_date && (
-                                <p className="text-xs text-muted-foreground">
-                                  Ends: {format(new Date(active.end_date), 'MMM d, yyyy HH:mm')}
+          {/* Operations Tab - Combines Marketing + System Status */}
+          <TabsContent value="operations">
+            <Tabs defaultValue="marketing" className="space-y-6">
+              <TabsList>
+                <TabsTrigger value="marketing" className="gap-2">
+                  <Megaphone className="h-4 w-4" />
+                  Marketing
+                  {actionableMarketing && actionableMarketing.length > 0 && (
+                    <Badge variant="destructive" className="ml-1 h-5 min-w-5 p-0 justify-center">
+                      {actionableMarketing.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="system-status" className="gap-2">
+                  <Activity className="h-4 w-4" />
+                  System Status
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="marketing">
+                <div className="space-y-6">
+                  {/* Active Marketing */}
+                  {allMarketing?.find(m => m.status === 'active') && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Sparkles className="h-5 w-5 text-amber-500" />
+                          Currently Featured
+                        </CardTitle>
+                        <CardDescription>
+                          This collection is currently being promoted across AnonForge
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {(() => {
+                          const active = allMarketing?.find(m => m.status === 'active');
+                          if (!active) return null;
+                          return (
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-amber-500/5 border-amber-500/20">
+                              <div>
+                                <p className="font-semibold">{active.project.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  Ends: {active.end_date && format(new Date(active.end_date), 'MMM d, yyyy')}
                                 </p>
-                              )}
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive border-destructive/50 hover:bg-destructive/10"
+                                onClick={() => endMarketing.mutate({ 
+                                  requestId: active.id, 
+                                  projectId: active.project_id 
+                                })}
+                                disabled={endMarketing.isPending}
+                              >
+                                <StopCircle className="h-4 w-4 mr-1" />
+                                End Early
+                              </Button>
                             </div>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive hover:bg-destructive/10"
-                            onClick={() => endMarketing.mutate({ 
-                              requestId: active.id, 
-                              projectId: active.project_id 
-                            })}
-                            disabled={endMarketing.isPending}
-                          >
-                            <StopCircle className="mr-2 h-4 w-4" />
-                            End Early
-                          </Button>
-                        </div>
-                      );
-                    })()}
-                  </CardContent>
-                </Card>
-              )}
+                          );
+                        })()}
+                      </CardContent>
+                    </Card>
+                  )}
 
-              {/* Marketing Requests (Actionable) */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Megaphone className="h-5 w-5 text-primary" />
-                    Marketing Requests
-                  </CardTitle>
-                  <CardDescription>
-                    Pending, approved, and scheduled marketing campaigns
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {marketingLoading ? (
-                    <div className="space-y-4">
-                      {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-16 w-full" />
-                      ))}
-                    </div>
-                  ) : actionableMarketing && actionableMarketing.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Collection</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Dates</TableHead>
-                            <TableHead>Price</TableHead>
-                            <TableHead>Hero Image</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {actionableMarketing.map((request) => (
-                            <TableRow key={request.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-3">
-                                  {request.product_page?.logo_url ? (
-                                    <img 
-                                      src={request.product_page.logo_url} 
-                                      alt="" 
-                                      className="h-10 w-10 rounded-lg object-cover"
-                                    />
-                                  ) : (
-                                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                                      <Store className="h-5 w-5 text-muted-foreground" />
-                                    </div>
-                                  )}
-                                  <div>
-                                    <p className="font-medium">{request.project.name}</p>
-                                    {request.message && (
-                                      <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                                        {request.message}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge 
-                                  variant={
-                                    request.status === 'pending' ? 'outline' :
-                                    request.status === 'approved' ? 'default' :
-                                    'secondary'
-                                  }
-                                  className={
-                                    request.status === 'pending' ? 'text-amber-600 border-amber-500/50' :
-                                    request.status === 'approved' ? 'bg-primary' :
-                                    request.status === 'paid' ? 'bg-green-600' : ''
-                                  }
-                                >
-                                  {request.status === 'pending' && 'Pending Review'}
-                                  {request.status === 'approved' && 'Awaiting Payment'}
-                                  {request.status === 'paid' && 'Scheduled'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm">
-                                  {request.start_date && request.end_date ? (
-                                    <>
-                                      {format(new Date(request.start_date), 'MMM d')} - {format(new Date(request.end_date), 'MMM d')}
-                                    </>
-                                  ) : (
-                                    `${request.duration_days} day(s)`
-                                  )}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="font-medium">{request.price_ada} ADA</span>
-                              </TableCell>
-                              <TableCell>
-                                {request.hero_image_url ? (
-                                  <a 
-                                    href={request.hero_image_url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-sm text-primary hover:underline"
-                                  >
-                                    <ImageIcon className="h-4 w-4" />
-                                    View
-                                  </a>
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">None</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-1">
-                                {request.status === 'pending' && (
-                                    <>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-green-600 hover:text-green-700 hover:bg-green-100"
-                                        onClick={() => approveMarketing.mutate({ requestId: request.id })}
-                                        disabled={approveMarketing.isPending || approveFreeMarketing.isPending || !!allMarketing?.find(m => m.status === 'active')}
-                                      >
-                                        <Check className="h-4 w-4 mr-1" />
-                                        Approve
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-100"
-                                        onClick={() => approveFreeMarketing.mutate({ requestId: request.id })}
-                                        disabled={approveMarketing.isPending || approveFreeMarketing.isPending || !!allMarketing?.find(m => m.status === 'active')}
-                                        title="Approve as free promotional spotlight"
-                                      >
-                                        <Gift className="h-4 w-4 mr-1" />
-                                        Free Promo
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                        onClick={() => handleRejectClick(request.id, 'marketing')}
-                                        disabled={rejectMarketing.isPending}
-                                      >
-                                        <X className="h-4 w-4 mr-1" />
-                                        Reject
-                                      </Button>
-                                    </>
-                                  )}
-                                  {request.status === 'approved' && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-muted-foreground"
-                                      disabled
-                                    >
-                                      <Clock className="h-4 w-4 mr-1" />
-                                      Awaiting Payment
-                                    </Button>
-                                  )}
-                                  {request.status === 'paid' && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-destructive hover:bg-destructive/10"
-                                      onClick={() => cancelMarketing.mutate({ requestId: request.id })}
-                                      disabled={cancelMarketing.isPending}
-                                    >
-                                      <X className="h-4 w-4 mr-1" />
-                                      Cancel
-                                    </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
+                  {/* Actionable Requests */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Megaphone className="h-5 w-5 text-primary" />
+                        Marketing Requests
+                      </CardTitle>
+                      <CardDescription>
+                        Pending requests, approved awaiting payment, and paid awaiting activation
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {marketingLoading ? (
+                        <div className="space-y-4">
+                          {[1, 2, 3].map((i) => (
+                            <Skeleton key={i} className="h-16 w-full" />
                           ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/30" />
-                      <p className="mt-4 text-muted-foreground">No actionable marketing requests</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Marketing History */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <History className="h-5 w-5" />
-                    Marketing History
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {allMarketing && allMarketing.filter(m => ['completed', 'approved', 'paid', 'active'].includes(m.status)).length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Collection</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Duration</TableHead>
-                            <TableHead>Revenue</TableHead>
-                            <TableHead>Period</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {allMarketing
-                            .filter(m => ['completed', 'approved', 'paid', 'active'].includes(m.status))
-                            .map((request) => (
-                              <TableRow key={request.id}>
-                                <TableCell>
-                                  <p className="font-medium">{request.project.name}</p>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge 
-                                    variant={
-                                      request.status === 'active' ? 'default' :
-                                      request.status === 'paid' ? 'secondary' :
-                                      request.status === 'approved' ? 'outline' :
-                                      'secondary'
-                                    }
-                                    className={
-                                      request.status === 'active' ? 'bg-amber-500' :
-                                      request.status === 'paid' ? 'bg-green-600' :
-                                      request.status === 'approved' ? 'text-primary border-primary/50' : ''
-                                    }
-                                  >
-                                    {request.status === 'active' && 'Active'}
-                                    {request.status === 'paid' && 'Scheduled'}
-                                    {request.status === 'approved' && 'Awaiting Payment'}
-                                    {request.status === 'completed' && 'Completed'}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>{request.duration_days} day(s)</TableCell>
-                              <TableCell className="font-medium">
-                                  {(request as any).is_free_promo ? (
-                                    <span className="text-purple-600">FREE</span>
-                                  ) : (
-                                    <span className="text-green-600">{request.price_ada} ADA</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-sm text-muted-foreground">
-                                  {request.start_date && format(new Date(request.start_date), 'MMM d')} - {request.end_date && format(new Date(request.end_date), 'MMM d, yyyy')}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  {request.status === 'active' && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-destructive hover:bg-destructive/10"
-                                      onClick={() => endMarketing.mutate({ 
-                                        requestId: request.id, 
-                                        projectId: request.project_id 
-                                      })}
-                                      disabled={endMarketing.isPending}
-                                    >
-                                      <StopCircle className="h-4 w-4 mr-1" />
-                                      End Early
-                                    </Button>
-                                  )}
-                                  {request.status === 'paid' && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-destructive hover:bg-destructive/10"
-                                      onClick={() => cancelMarketing.mutate({ requestId: request.id })}
-                                      disabled={cancelMarketing.isPending}
-                                    >
-                                      <X className="h-4 w-4 mr-1" />
-                                      Cancel
-                                    </Button>
-                                  )}
-                                </TableCell>
+                        </div>
+                      ) : actionableMarketing && actionableMarketing.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Collection</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Duration</TableHead>
+                                <TableHead>Price</TableHead>
+                                <TableHead>Hero Image</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                               </TableRow>
-                            ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>No marketing history yet</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* System Status Tab */}
-          <TabsContent value="system-status">
-            <SystemStatusTab />
-          </TabsContent>
-
-          {/* Art Fund Tab */}
-          <TabsContent value="art-fund">
-            <ArtFundTab />
-          </TabsContent>
-
-          {/* Promoters Tab */}
-          <TabsContent value="promoters">
-            <div className="space-y-6">
-              {/* Pending Promoter Requests */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Megaphone className="h-5 w-5 text-primary" />
-                    Pending Ambassador Requests
-                  </CardTitle>
-                  <CardDescription>
-                    Users requesting to become ambassadors
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {ambassadorsLoading ? (
-                    <div className="space-y-4">
-                      {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-16 w-full" />
-                      ))}
-                    </div>
-                  ) : pendingAmbassadors && pendingAmbassadors.length > 0 ? (
-                    <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>User</TableHead>
-                            <TableHead>Twitter/X</TableHead>
-                            <TableHead>Requested</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {pendingAmbassadors.map((request) => {
-                            const profile = request.profile;
-                            const displayName = profile?.display_name || profile?.email || 'Unknown';
-                            return (
-                              <TableRow key={request.id}>
-                                <TableCell>
-                                  <div className="flex items-center gap-3">
-                                    <Avatar className="h-10 w-10">
-                                      <AvatarImage src={profile?.avatar_url || undefined} />
-                                      <AvatarFallback>{displayName.charAt(0).toUpperCase()}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                      <p className="font-medium">{displayName}</p>
-                                      <p className="text-xs text-muted-foreground">{profile?.email}</p>
+                            </TableHeader>
+                            <TableBody>
+                              {actionableMarketing.map((request) => (
+                                <TableRow key={request.id}>
+                                  <TableCell>
+                                    <p className="font-medium">{request.project.name}</p>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="flex items-center gap-1">
+                                      <Badge 
+                                        variant={
+                                          request.status === 'pending' ? 'secondary' :
+                                          request.status === 'approved' ? 'outline' :
+                                          request.status === 'paid' ? 'default' : 'secondary'
+                                        }
+                                        className={
+                                          request.status === 'paid' ? 'bg-green-600' :
+                                          request.status === 'approved' ? 'text-primary border-primary/50' : ''
+                                        }
+                                      >
+                                        {request.status === 'pending' && 'Pending Review'}
+                                        {request.status === 'approved' && 'Awaiting Payment'}
+                                        {request.status === 'paid' && 'Ready to Activate'}
+                                      </Badge>
+                                      {(request as any).is_free_promo && (
+                                        <Badge variant="outline" className="text-purple-600 border-purple-600">
+                                          <Gift className="h-3 w-3 mr-1" />
+                                          Free
+                                        </Badge>
+                                      )}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>{request.duration_days} day(s)</TableCell>
+                                  <TableCell>
+                                    <span className="font-medium">{request.price_ada} ADA</span>
+                                  </TableCell>
+                                  <TableCell>
+                                    {request.hero_image_url ? (
+                                      <a 
+                                        href={request.hero_image_url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1 text-sm text-primary hover:underline"
+                                      >
+                                        <ImageIcon className="h-4 w-4" />
+                                        View
+                                      </a>
+                                    ) : (
+                                      <span className="text-muted-foreground text-sm">None</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-1">
+                                      {request.status === 'pending' && (
+                                        <>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-green-600 hover:text-green-700 hover:bg-green-100"
+                                            onClick={() => approveMarketing.mutate({ requestId: request.id })}
+                                            disabled={approveMarketing.isPending || approveFreeMarketing.isPending || !!allMarketing?.find(m => m.status === 'active')}
+                                          >
+                                            <Check className="h-4 w-4 mr-1" />
+                                            Approve
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-100"
+                                            onClick={() => approveFreeMarketing.mutate({ requestId: request.id })}
+                                            disabled={approveMarketing.isPending || approveFreeMarketing.isPending || !!allMarketing?.find(m => m.status === 'active')}
+                                            title="Approve as free promotional spotlight"
+                                          >
+                                            <Gift className="h-4 w-4 mr-1" />
+                                            Free Promo
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            onClick={() => handleRejectClick(request.id, 'marketing')}
+                                            disabled={rejectMarketing.isPending}
+                                          >
+                                            <X className="h-4 w-4 mr-1" />
+                                            Reject
+                                          </Button>
+                                        </>
+                                      )}
+                                      {request.status === 'approved' && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-muted-foreground"
+                                          disabled
+                                        >
+                                          <Clock className="h-4 w-4 mr-1" />
+                                          Awaiting Payment
+                                        </Button>
+                                      )}
+                                      {request.status === 'paid' && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-destructive hover:bg-destructive/10"
+                                          onClick={() => cancelMarketing.mutate({ requestId: request.id })}
+                                          disabled={cancelMarketing.isPending}
+                                        >
+                                          <X className="h-4 w-4 mr-1" />
+                                          Cancel
+                                        </Button>
+                                      )}
                                     </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  {request.twitter_link ? (
-                                    <a 
-                                      href={request.twitter_link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-1 text-sm text-primary hover:underline"
-                                    >
-                                      <Twitter className="h-4 w-4" />
-                                      {request.twitter_link.replace(/https?:\/\/(twitter\.com|x\.com)\//, '@')}
-                                    </a>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">-</span>
-                                  )}
-                                </TableCell>
-                                <TableCell>
-                                  <span className="text-xs text-muted-foreground">
-                                    {new Date(request.created_at).toLocaleDateString()}
-                                  </span>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm"
-                                      className="text-green-600 hover:text-green-700 hover:bg-green-100"
-                                      onClick={() => approveAmbassador.mutate({ requestId: request.id, userId: request.user_id })}
-                                      disabled={approveAmbassador.isPending}
-                                    >
-                                      <Check className="h-4 w-4 mr-1" />
-                                      Approve
-                                    </Button>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm"
-                                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                      onClick={() => handleRejectClick(request.id, 'ambassador')}
-                                      disabled={rejectAmbassador.isPending}
-                                    >
-                                      <X className="h-4 w-4 mr-1" />
-                                      Reject
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/30" />
-                      <p className="mt-4 text-muted-foreground">No pending ambassador requests</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/30" />
+                          <p className="mt-4 text-muted-foreground">No actionable marketing requests</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
-              {/* Active Ambassadors */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <UserCheck className="h-5 w-5 text-green-600" />
-                    Active Ambassadors
-                  </CardTitle>
-                  <CardDescription>
-                    Users with ambassador role
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {allAmbassadors && allAmbassadors.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>User</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {allAmbassadors.map((ambassador) => {
-                            const profile = ambassador.profile;
-                            const displayName = profile?.display_name || profile?.email || 'Unknown';
-                            return (
-                              <TableRow key={ambassador.id}>
-                                <TableCell>
-                                  <div className="flex items-center gap-3">
-                                    <Avatar className="h-10 w-10">
-                                      <AvatarImage src={profile?.avatar_url || undefined} />
-                                      <AvatarFallback>{displayName.charAt(0).toUpperCase()}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                      <p className="font-medium">{displayName}</p>
-                                      <p className="text-xs text-muted-foreground">{profile?.email}</p>
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm"
-                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onClick={() => removeAmbassadorRole.mutate({ userId: ambassador.user_id })}
-                                    disabled={removeAmbassadorRole.isPending}
-                                  >
-                                    <UserX className="h-4 w-4 mr-1" />
-                                    Remove Role
-                                  </Button>
-                                </TableCell>
+                  {/* Marketing History */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <History className="h-5 w-5" />
+                        Marketing History
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {allMarketing && allMarketing.filter(m => ['completed', 'approved', 'paid', 'active'].includes(m.status)).length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Collection</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Duration</TableHead>
+                                <TableHead>Revenue</TableHead>
+                                <TableHead>Period</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                               </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <UserCheck className="h-12 w-12 mx-auto text-muted-foreground/30" />
-                      <p className="mt-4 text-muted-foreground">No active ambassadors</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                            </TableHeader>
+                            <TableBody>
+                              {allMarketing
+                                .filter(m => ['completed', 'approved', 'paid', 'active'].includes(m.status))
+                                .map((request) => (
+                                  <TableRow key={request.id}>
+                                    <TableCell>
+                                      <p className="font-medium">{request.project.name}</p>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge 
+                                        variant={
+                                          request.status === 'active' ? 'default' :
+                                          request.status === 'paid' ? 'secondary' :
+                                          request.status === 'approved' ? 'outline' :
+                                          'secondary'
+                                        }
+                                        className={
+                                          request.status === 'active' ? 'bg-amber-500' :
+                                          request.status === 'paid' ? 'bg-green-600' :
+                                          request.status === 'approved' ? 'text-primary border-primary/50' : ''
+                                        }
+                                      >
+                                        {request.status === 'active' && 'Active'}
+                                        {request.status === 'paid' && 'Scheduled'}
+                                        {request.status === 'approved' && 'Awaiting Payment'}
+                                        {request.status === 'completed' && 'Completed'}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>{request.duration_days} day(s)</TableCell>
+                                    <TableCell className="font-medium">
+                                      {(request as any).is_free_promo ? (
+                                        <span className="text-purple-600">FREE</span>
+                                      ) : (
+                                        <span className="text-green-600">{request.price_ada} ADA</span>
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">
+                                      {request.start_date && format(new Date(request.start_date), 'MMM d')} - {request.end_date && format(new Date(request.end_date), 'MMM d, yyyy')}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      {request.status === 'active' && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-destructive hover:bg-destructive/10"
+                                          onClick={() => endMarketing.mutate({ 
+                                            requestId: request.id, 
+                                            projectId: request.project_id 
+                                          })}
+                                          disabled={endMarketing.isPending}
+                                        >
+                                          <StopCircle className="h-4 w-4 mr-1" />
+                                          End Early
+                                        </Button>
+                                      )}
+                                      {request.status === 'paid' && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-destructive hover:bg-destructive/10"
+                                          onClick={() => cancelMarketing.mutate({ requestId: request.id })}
+                                          disabled={cancelMarketing.isPending}
+                                        >
+                                          <X className="h-4 w-4 mr-1" />
+                                          Cancel
+                                        </Button>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                          <p>No marketing history yet</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="system-status">
+                <SystemStatusTab />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </main>
