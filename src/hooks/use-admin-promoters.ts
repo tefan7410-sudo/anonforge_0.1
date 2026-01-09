@@ -7,6 +7,7 @@ interface PromoterRequest {
   user_id: string;
   reason: string | null;
   portfolio_links: string[];
+  twitter_link: string | null;
   status: 'pending' | 'approved' | 'rejected';
   rejection_reason: string | null;
   reviewed_by: string | null;
