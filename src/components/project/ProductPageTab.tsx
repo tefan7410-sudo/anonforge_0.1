@@ -936,54 +936,31 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-sm">Description</Label>
-                        <Textarea
-                          value={artwork.description || ''}
-                          onChange={(e) => {
-                            const newArtworks = [...artworks];
-                            newArtworks[index] = { ...artwork, description: e.target.value };
-                            setArtworks(newArtworks);
-                          }}
-                          placeholder="Brief description"
-                          rows={2}
-                        />
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-1">
-                          <Label className="text-sm">Edition Count *</Label>
+                          <Label className="text-sm">Editions</Label>
                           <Input
                             type="number"
                             min="1"
                             value={artwork.edition_count}
                             onChange={(e) => {
                               const newArtworks = [...artworks];
-                              newArtworks[index] = { 
-                                ...artwork, 
-                                edition_count: parseInt(e.target.value) || 1 
-                              };
+                              newArtworks[index] = { ...artwork, edition_count: parseInt(e.target.value) || 1 };
                               setArtworks(newArtworks);
                             }}
-                            placeholder="e.g., 20"
+                            placeholder="1"
                           />
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-sm">Price (ADA, optional)</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={artwork.price_in_lovelace ? artwork.price_in_lovelace / 1_000_000 : ''}
-                            onChange={(e) => {
-                              const newArtworks = [...artworks];
-                              newArtworks[index] = { 
-                                ...artwork, 
-                                price_in_lovelace: e.target.value ? parseFloat(e.target.value) * 1_000_000 : undefined 
-                              };
-                              setArtworks(newArtworks);
-                            }}
-                            placeholder="Uses collection price"
-                          />
-                        </div>
+                      <div className="space-y-1">
+                        <Label className="text-sm">Description</Label>
+                        <Textarea
+                          value={artwork.description ?? ''}
+                          onChange={(e) => {
+                            const newArtworks = [...artworks];
+                            newArtworks[index] = { ...artwork, description: e.target.value };
+                            setArtworks(newArtworks);
+                          }}
+                          placeholder="Brief description..."
+                          rows={2}
+                        />
                       </div>
                     </div>
                   </div>
@@ -1010,6 +987,129 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
               </Button>
             </div>
           )}
+
+          <Separator />
+
+          {/* Max Supply + Secondary Market */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="max-supply">Max Supply</Label>
+              <Input
+                id="max-supply"
+                type="number"
+                min="1"
+                value={maxSupply ?? ''}
+                onChange={(e) => setMaxSupply(e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="e.g., 10000"
+              />
+              <p className="text-xs text-muted-foreground">
+                Total number of NFTs in this collection
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="secondary-market" className="flex items-center gap-2">
+                <Store className="h-4 w-4" />
+                Secondary Market
+              </Label>
+              <Input
+                id="secondary-market"
+                type="url"
+                value={secondaryMarketUrl}
+                onChange={(e) => {
+                  setSecondaryMarketUrl(e.target.value);
+                  if (secondaryMarketError) validateSecondaryMarketUrl(e.target.value);
+                }}
+                onBlur={() => validateSecondaryMarketUrl(secondaryMarketUrl)}
+                placeholder="https://jpg.store/collection/..."
+                className={cn(secondaryMarketError && "border-destructive")}
+              />
+              {secondaryMarketError ? (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {secondaryMarketError}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Link to jpg.store or wayup.io collection page
+                </p>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Buy Now Button section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="buy-button-enabled" className="flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4" />
+                  Enable Buy Button
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Show a prominent mint button on your product page
+                </p>
+              </div>
+              <Switch
+                id="buy-button-enabled"
+                checked={buyButtonEnabled}
+                onCheckedChange={setBuyButtonEnabled}
+              />
+            </div>
+
+            {buyButtonEnabled && (
+              <div className="grid gap-4 md:grid-cols-2 pl-6 border-l-2 border-primary/20">
+                <div className="space-y-2">
+                  <Label htmlFor="buy-button-text">Button Text</Label>
+                  <Input
+                    id="buy-button-text"
+                    value={buyButtonText}
+                    onChange={(e) => setBuyButtonText(e.target.value)}
+                    placeholder="Mint Now"
+                    maxLength={30}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Payment Link</Label>
+                  {buyButtonLink ? (
+                    <div className="flex items-center gap-2">
+                      <Input value={buyButtonLink} readOnly className="font-mono text-xs" />
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setBuyButtonLink(null)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleGeneratePayLink}
+                        disabled={!nmkrProject || getPayLink.isPending}
+                        className="w-full"
+                      >
+                        {getPayLink.isPending ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-2 h-4 w-4" />
+                        )}
+                        Generate Payment Link
+                      </Button>
+                      {!nmkrProject && (
+                        <p className="text-xs text-muted-foreground">
+                          Set up NMKR project and pricing in the Publish tab first
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -1450,140 +1550,6 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
         </CardContent>
       </Card>
 
-      {/* Section 3: Collection Settings (combined) */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <Hash className="h-5 w-5 text-primary" />
-            Collection Settings
-          </CardTitle>
-          <CardDescription>
-            Supply, marketplace, and purchase settings
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Max Supply + Secondary Market */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="max-supply">Max Supply</Label>
-              <Input
-                id="max-supply"
-                type="number"
-                min="1"
-                value={maxSupply ?? ''}
-                onChange={(e) => setMaxSupply(e.target.value ? parseInt(e.target.value) : null)}
-                placeholder="e.g., 10000"
-              />
-              <p className="text-xs text-muted-foreground">
-                Total number of NFTs in this collection
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="secondary-market" className="flex items-center gap-2">
-                <Store className="h-4 w-4" />
-                Secondary Market
-              </Label>
-              <Input
-                id="secondary-market"
-                type="url"
-                value={secondaryMarketUrl}
-                onChange={(e) => {
-                  setSecondaryMarketUrl(e.target.value);
-                  if (secondaryMarketError) validateSecondaryMarketUrl(e.target.value);
-                }}
-                onBlur={() => validateSecondaryMarketUrl(secondaryMarketUrl)}
-                placeholder="https://jpg.store/collection/..."
-                className={cn(secondaryMarketError && "border-destructive")}
-              />
-              {secondaryMarketError ? (
-                <p className="text-xs text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {secondaryMarketError}
-                </p>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Link to jpg.store or wayup.io collection page
-                </p>
-              )}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Buy Now Button section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="buy-button-enabled" className="flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4" />
-                  Enable Buy Button
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Show a prominent mint button on your product page
-                </p>
-              </div>
-              <Switch
-                id="buy-button-enabled"
-                checked={buyButtonEnabled}
-                onCheckedChange={setBuyButtonEnabled}
-              />
-            </div>
-
-            {buyButtonEnabled && (
-              <div className="grid gap-4 md:grid-cols-2 pl-6 border-l-2 border-primary/20">
-                <div className="space-y-2">
-                  <Label htmlFor="buy-button-text">Button Text</Label>
-                  <Input
-                    id="buy-button-text"
-                    value={buyButtonText}
-                    onChange={(e) => setBuyButtonText(e.target.value)}
-                    placeholder="Mint Now"
-                    maxLength={30}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Payment Link</Label>
-                  {buyButtonLink ? (
-                    <div className="flex items-center gap-2">
-                      <Input value={buyButtonLink} readOnly className="font-mono text-xs" />
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        onClick={() => setBuyButtonLink(null)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <Button 
-                        variant="outline" 
-                        onClick={handleGeneratePayLink}
-                        disabled={!nmkrProject || getPayLink.isPending}
-                        className="w-full"
-                      >
-                        {getPayLink.isPending ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Sparkles className="mr-2 h-4 w-4" />
-                        )}
-                        Generate Payment Link
-                      </Button>
-                      {!nmkrProject && (
-                        <p className="text-xs text-muted-foreground">
-                          Set up NMKR project and pricing in the Publish tab first
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Section 4: Your AnonForge Collections (Auto-populated) */}
       {creatorCollections && creatorCollections.length > 0 && (
