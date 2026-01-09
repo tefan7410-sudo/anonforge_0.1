@@ -111,6 +111,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ambassador_requests: {
+        Row: {
+          created_at: string
+          id: string
+          portfolio_links: Json | null
+          reason: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          twitter_link: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          portfolio_links?: Json | null
+          reason?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          twitter_link?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          portfolio_links?: Json | null
+          reason?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          twitter_link?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       art_fund_settings: {
         Row: {
           description: string | null
@@ -1200,48 +1242,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      promoter_requests: {
-        Row: {
-          created_at: string
-          id: string
-          portfolio_links: Json | null
-          reason: string | null
-          rejection_reason: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: string
-          twitter_link: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          portfolio_links?: Json | null
-          reason?: string | null
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          twitter_link?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          portfolio_links?: Json | null
-          reason?: string | null
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          twitter_link?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       rate_limits: {
         Row: {
