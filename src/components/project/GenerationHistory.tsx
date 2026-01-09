@@ -151,6 +151,12 @@ export function GenerationHistory({ projectId }: GenerationHistoryProps) {
         <p className="text-sm text-muted-foreground">
           Generated images will appear here
         </p>
+        <div className="mt-6 max-w-md rounded-lg bg-muted/50 p-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">Note:</span> The layer system is designed for creating unique, generative collections with randomized traits. For non-unique collections, you can skip to the{' '}
+            <span className="font-medium text-primary">Publish</span> tab and upload your images + metadata directly.
+          </p>
+        </div>
       </div>
     );
   }
