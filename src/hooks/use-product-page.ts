@@ -11,6 +11,23 @@ export interface PortfolioItem {
   link?: string;
 }
 
+export interface PreviewImage {
+  id: string;
+  image_url: string;
+  caption?: string;
+}
+
+export interface ArtworkItem {
+  id: string;
+  image_url: string;
+  title: string;
+  description?: string;
+  edition_count: number;
+  price_in_lovelace?: number;
+}
+
+export type CollectionType = 'generative' | 'art_collection';
+
 export interface ProductPage {
   id: string;
   project_id: string;
@@ -33,6 +50,9 @@ export interface ProductPage {
   max_supply: number | null;
   scheduled_launch_at: string | null;
   is_hidden: boolean;
+  collection_type: CollectionType;
+  preview_images: PreviewImage[];
+  artworks: ArtworkItem[];
   created_at: string;
   updated_at: string;
 }
@@ -58,6 +78,9 @@ export interface ProductPageUpdate {
   scheduled_launch_at?: string | null;
   is_hidden?: boolean;
   slug?: string | null;
+  collection_type?: CollectionType;
+  preview_images?: PreviewImage[];
+  artworks?: ArtworkItem[];
 }
 
 // Fetch product page for a project
@@ -81,6 +104,18 @@ export function useProductPage(projectId: string) {
         portfolioItems = data.portfolio as unknown as PortfolioItem[];
       }
       
+      // Parse preview_images JSON
+      let previewImages: PreviewImage[] = [];
+      if (data.preview_images && Array.isArray(data.preview_images)) {
+        previewImages = data.preview_images as unknown as PreviewImage[];
+      }
+      
+      // Parse artworks JSON
+      let artworks: ArtworkItem[] = [];
+      if (data.artworks && Array.isArray(data.artworks)) {
+        artworks = data.artworks as unknown as ArtworkItem[];
+      }
+      
       return {
         ...data,
         portfolio: portfolioItems,
@@ -90,6 +125,9 @@ export function useProductPage(projectId: string) {
         is_live: data.is_live ?? false,
         scheduled_launch_at: data.scheduled_launch_at ?? null,
         is_hidden: data.is_hidden ?? false,
+        collection_type: (data.collection_type as CollectionType) ?? 'generative',
+        preview_images: previewImages,
+        artworks: artworks,
       } as ProductPage;
     },
     enabled: !!projectId,
@@ -108,10 +146,12 @@ export function useUpdateProductPage() {
       projectId: string;
       updates: ProductPageUpdate;
     }) => {
-      // Convert portfolio to JSON-compatible format
+      // Convert JSON fields to JSON-compatible format
       const dbUpdates = {
         ...updates,
         portfolio: updates.portfolio ? JSON.parse(JSON.stringify(updates.portfolio)) : undefined,
+        preview_images: updates.preview_images ? JSON.parse(JSON.stringify(updates.preview_images)) : undefined,
+        artworks: updates.artworks ? JSON.parse(JSON.stringify(updates.artworks)) : undefined,
       };
 
       // Check if product page exists
@@ -163,6 +203,8 @@ const imageTypeMap: Record<string, keyof typeof import('@/lib/image-validation')
   logo: 'logo',
   founder: 'founder',
   portfolio: 'portfolio',
+  preview: 'preview',
+  artwork: 'artwork',
 };
 
 // Upload image to product-assets bucket with validation

@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { 
   Twitter, 
   MessageCircle, 
@@ -18,6 +19,7 @@ import {
   Store,
   Clock,
   Share2,
+  Palette,
 } from 'lucide-react';
 import { cn, isUUID, generateSlug } from '@/lib/utils';
 import { useExternalLink } from '@/hooks/use-external-link';
@@ -136,6 +138,13 @@ export default function Collection() {
   const secondaryMarketUrl = (productPage as { secondary_market_url?: string }).secondary_market_url;
   const maxSupply = (productPage as { max_supply?: number }).max_supply;
   const scheduledLaunchAt = (productPage as { scheduled_launch_at?: string }).scheduled_launch_at;
+  const collectionType = (productPage as { collection_type?: string }).collection_type || 'generative';
+  const previewImages = (Array.isArray((productPage as unknown as { preview_images?: unknown[] }).preview_images) 
+    ? (productPage as unknown as { preview_images: Array<{ id: string; image_url: string; caption?: string }> }).preview_images 
+    : []);
+  const artworks = (Array.isArray((productPage as unknown as { artworks?: unknown[] }).artworks)
+    ? (productPage as unknown as { artworks: Array<{ id: string; image_url: string; title: string; description?: string; edition_count: number; price_in_lovelace?: number }> }).artworks
+    : []);
   const priceInLovelace = nmkrProject?.price_in_lovelace;
   
   // Show verified badge if either the collection has founder_verified OR the creator is a verified creator
@@ -248,6 +257,73 @@ export default function Collection() {
             )}
           </div>
         </div>
+
+        {/* Preview Characters (for Generative Collections) */}
+        {collectionType === 'generative' && previewImages.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-display font-semibold mb-4">Preview Characters</h2>
+            <div className="grid grid-cols-3 gap-4">
+              {previewImages.map((preview, index) => (
+                <div key={preview.id || index} className="space-y-2">
+                  <div className="aspect-square rounded-xl border overflow-hidden bg-muted">
+                    <img
+                      src={preview.image_url}
+                      alt={preview.caption || `Preview ${index + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  {preview.caption && (
+                    <p className="text-sm text-center text-muted-foreground">{preview.caption}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Artworks Gallery (for Art Collections) */}
+        {collectionType === 'art_collection' && artworks.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-display font-semibold mb-4">
+              <Palette className="inline-block h-5 w-5 mr-2 text-primary" />
+              Artworks in this Collection
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {artworks.map((artwork, index) => (
+                <div 
+                  key={artwork.id || index} 
+                  className="group rounded-xl border bg-card overflow-hidden transition-all hover:shadow-lg"
+                >
+                  {artwork.image_url && (
+                    <div className="aspect-square overflow-hidden">
+                      <img
+                        src={artwork.image_url}
+                        alt={artwork.title}
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      />
+                    </div>
+                  )}
+                  <div className="p-4 space-y-2">
+                    <h3 className="font-semibold">{artwork.title}</h3>
+                    {artwork.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">{artwork.description}</p>
+                    )}
+                    <div className="flex items-center justify-between pt-2">
+                      <Badge variant="secondary">
+                        {artwork.edition_count} editions
+                      </Badge>
+                      {artwork.price_in_lovelace && (
+                        <span className="text-sm font-medium text-primary">
+                          {(artwork.price_in_lovelace / 1_000_000).toLocaleString()} ₳
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Hero Action Card - Price & Mint Button */}
         {(priceInLovelace || (productPage.buy_button_enabled && productPage.buy_button_link)) && !isUpcoming && (

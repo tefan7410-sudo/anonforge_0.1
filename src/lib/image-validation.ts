@@ -15,6 +15,8 @@ export const IMAGE_LIMITS: Record<string, ImageLimits> = {
   layer: { maxSizeMB: 20, maxDimension: 3000, minDimension: 100 },
   portfolio: { maxSizeMB: 10, maxDimension: 3000, minDimension: 100 },
   founder: { maxSizeMB: 5, maxDimension: 2000, minDimension: 50 },
+  preview: { maxSizeMB: 10, maxDimension: 3000, minDimension: 200 },
+  artwork: { maxSizeMB: 15, maxDimension: 4000, minDimension: 200 },
 };
 
 export const SUPPORTED_FORMATS = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
