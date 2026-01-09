@@ -162,6 +162,9 @@ export default function ArtFund() {
               <Button variant="ghost" asChild>
                 <Link to="/marketplace">Marketplace</Link>
               </Button>
+              <Button variant="ghost" className="text-primary" asChild>
+                <Link to="/artfund">Art Fund</Link>
+              </Button>
               <Button variant="ghost" asChild>
                 <Link to="/status">Status</Link>
               </Button>
@@ -215,7 +218,7 @@ export default function ArtFund() {
                     </Button>
                     <Button
                       variant="ghost"
-                      className="justify-start bg-muted"
+                      className="justify-start bg-muted text-primary"
                       asChild
                       onClick={() => setMobileMenuOpen(false)}
                     >
