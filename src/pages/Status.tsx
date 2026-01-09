@@ -245,15 +245,6 @@ export default function Status() {
               </Button>
               <LanguageSelector />
               <ThemeToggle />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetch()}
-                disabled={isLoading}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
               <Button variant="ghost" asChild>
                 <Link to="/login">Sign in</Link>
               </Button>
@@ -264,14 +255,6 @@ export default function Status() {
 
             {/* Mobile Navigation */}
             <div className="flex items-center gap-2 md:hidden">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => refetch()}
-                disabled={isLoading}
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              </Button>
               <LanguageSelector />
               <ThemeToggle />
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
