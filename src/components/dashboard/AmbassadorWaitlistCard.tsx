@@ -51,11 +51,11 @@ export function AmbassadorWaitlistCard() {
   if (existingRequest) {
     if (existingRequest.status === 'pending') {
       return (
-        <Card className="border-amber-500/30 bg-amber-500/5">
+        <Card className="border-warning/30 bg-warning/5">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <Clock className="h-5 w-5 text-amber-500" />
+              <div className="p-2 rounded-lg bg-warning/10">
+                <Clock className="h-5 w-5 text-warning" />
               </div>
               <div>
                 <CardTitle className="font-display text-lg">Request Pending</CardTitle>
