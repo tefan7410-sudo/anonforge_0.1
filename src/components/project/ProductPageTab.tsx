@@ -651,171 +651,155 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
             Your collection's visual identity and social presence
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Banner - Compact */}
-          <div className="space-y-2">
-            <Label>Banner Image</Label>
-            <p className="text-xs text-muted-foreground">Recommended: 1200x400px</p>
-            {bannerUrl ? (
-              <div className="relative">
-                <img 
-                  src={bannerUrl} 
-                  alt="Banner preview" 
-                  className="h-32 w-full rounded-lg border object-cover"
-                />
-                <Button 
-                  variant="destructive" 
-                  size="icon" 
-                  className="absolute right-2 top-2"
-                  onClick={clearBanner}
+        <CardContent className="space-y-4">
+          {/* Banner + Logo side by side */}
+          <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+            {/* Banner */}
+            <div className="space-y-1">
+              <Label className="text-sm">Banner <span className="text-xs text-muted-foreground">(1200×400)</span></Label>
+              {bannerUrl ? (
+                <div className="relative">
+                  <img 
+                    src={bannerUrl} 
+                    alt="Banner preview" 
+                    className="h-24 w-full rounded-lg border object-cover"
+                  />
+                  <Button 
+                    variant="destructive" 
+                    size="icon" 
+                    className="absolute right-2 top-2 h-6 w-6"
+                    onClick={clearBanner}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  {...getBannerRootProps()}
+                  className={cn(
+                    "flex h-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
+                    isBannerDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                  )}
                 >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <div
-                {...getBannerRootProps()}
-                className={cn(
-                  "flex h-32 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
-                  isBannerDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
-                )}
-              >
-                <input {...getBannerInputProps()} />
-                <Upload className="mb-2 h-6 w-6 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  {isBannerDragActive ? "Drop banner here" : "Drag & drop or click to select"}
-                </p>
-              </div>
-            )}
-          </div>
+                  <input {...getBannerInputProps()} />
+                  <Upload className="h-5 w-5 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground mt-1">Drop or click</p>
+                </div>
+              )}
+            </div>
 
-          <Separator />
-
-          {/* Logo + Tagline side by side */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Collection Logo</Label>
+            {/* Logo */}
+            <div className="space-y-1">
+              <Label className="text-sm">Logo</Label>
               {logoUrl ? (
-                <div className="flex items-start gap-4">
-                  <div className="relative">
-                    <img 
-                      src={logoUrl} 
-                      alt="Logo preview" 
-                      className="h-24 w-24 rounded-lg border object-cover"
-                    />
-                    <Button 
-                      variant="destructive" 
-                      size="icon" 
-                      className="absolute -right-2 -top-2 h-6 w-6"
-                      onClick={clearLogo}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
+                <div className="relative">
+                  <img 
+                    src={logoUrl} 
+                    alt="Logo preview" 
+                    className="h-20 w-20 rounded-lg border object-cover"
+                  />
+                  <Button 
+                    variant="destructive" 
+                    size="icon" 
+                    className="absolute -right-2 -top-2 h-5 w-5"
+                    onClick={clearLogo}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
                 </div>
               ) : (
                 <div
                   {...getLogoRootProps()}
                   className={cn(
-                    "flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
+                    "flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
                     isLogoDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
                   )}
                 >
                   <input {...getLogoInputProps()} />
-                  <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                  <ImageIcon className="h-5 w-5 text-muted-foreground" />
                 </div>
               )}
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="tagline">Tagline</Label>
+          {/* Tagline + Social Links on same row */}
+          <div className="grid gap-4 md:grid-cols-[1fr_2fr]">
+            {/* Tagline */}
+            <div className="space-y-1">
+              <Label htmlFor="tagline" className="text-sm">Tagline</Label>
               <Input
                 id="tagline"
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
-                placeholder="A short catchy tagline for your collection"
+                placeholder="Short catchy tagline"
                 maxLength={100}
               />
-              <p className="text-xs text-muted-foreground">
-                {tagline.length}/100 characters
-              </p>
+              <p className="text-xs text-muted-foreground">{tagline.length}/100</p>
             </div>
-          </div>
 
-          <Separator />
-
-          {/* Social Links - inline grid */}
-          <div className="space-y-4">
-            <Label className="flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              Social Links
-            </Label>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Twitter className="h-3 w-3" /> Twitter/X
-                </Label>
-                <Input
-                  type="url"
-                  value={twitterUrl}
-                  onChange={(e) => {
-                    setTwitterUrl(e.target.value);
-                    if (twitterError) validateTwitterUrl(e.target.value);
-                  }}
-                  onBlur={() => validateTwitterUrl(twitterUrl)}
-                  placeholder="https://twitter.com/..."
-                  className={cn(twitterError && "border-destructive")}
-                />
-                {twitterError && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {twitterError}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                  <MessageCircle className="h-3 w-3" /> Discord
-                </Label>
-                <Input
-                  type="url"
-                  value={discordUrl}
-                  onChange={(e) => {
-                    setDiscordUrl(e.target.value);
-                    if (discordError) validateDiscordUrl(e.target.value);
-                  }}
-                  onBlur={() => validateDiscordUrl(discordUrl)}
-                  placeholder="https://discord.gg/..."
-                  className={cn(discordError && "border-destructive")}
-                />
-                {discordError && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {discordError}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Globe className="h-3 w-3" /> Website
-                </Label>
-                <Input
-                  type="url"
-                  value={websiteUrl}
-                  onChange={(e) => {
-                    setWebsiteUrl(e.target.value);
-                    if (websiteError) validateWebsiteUrl(e.target.value);
-                  }}
-                  onBlur={() => validateWebsiteUrl(websiteUrl)}
-                  placeholder="https://..."
-                  className={cn(websiteError && "border-destructive")}
-                />
-                {websiteError && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {websiteError}
-                  </p>
-                )}
+            {/* Social Links */}
+            <div className="space-y-1">
+              <Label className="text-sm flex items-center gap-1">
+                <Globe className="h-3 w-3" /> Links
+              </Label>
+              <div className="grid gap-2 md:grid-cols-3">
+                <div className="relative">
+                  <Input
+                    type="url"
+                    value={twitterUrl}
+                    onChange={(e) => {
+                      setTwitterUrl(e.target.value);
+                      if (twitterError) validateTwitterUrl(e.target.value);
+                    }}
+                    onBlur={() => validateTwitterUrl(twitterUrl)}
+                    placeholder="Twitter/X URL"
+                    className={cn("pl-7", twitterError && "border-destructive")}
+                  />
+                  <Twitter className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  {twitterError && (
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2" title={twitterError}>
+                      <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <Input
+                    type="url"
+                    value={discordUrl}
+                    onChange={(e) => {
+                      setDiscordUrl(e.target.value);
+                      if (discordError) validateDiscordUrl(e.target.value);
+                    }}
+                    onBlur={() => validateDiscordUrl(discordUrl)}
+                    placeholder="Discord URL"
+                    className={cn("pl-7", discordError && "border-destructive")}
+                  />
+                  <MessageCircle className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  {discordError && (
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2" title={discordError}>
+                      <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <Input
+                    type="url"
+                    value={websiteUrl}
+                    onChange={(e) => {
+                      setWebsiteUrl(e.target.value);
+                      if (websiteError) validateWebsiteUrl(e.target.value);
+                    }}
+                    onBlur={() => validateWebsiteUrl(websiteUrl)}
+                    placeholder="Website URL"
+                    className={cn("pl-7", websiteError && "border-destructive")}
+                  />
+                  <Globe className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  {websiteError && (
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2" title={websiteError}>
+                      <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
