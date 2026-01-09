@@ -280,11 +280,7 @@ export default function Index() {
             )}
           >
             <div className="mx-auto max-w-4xl text-center">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
-                <Sparkles className="h-4 w-4" />
-                {t('hero.badge')}
-              </div>
-              <h1 id="hero-heading" className="font-display text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+              <h1 id="hero-heading" className="mt-4 font-display text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
                 {t('hero.title1')}
                 <span className="text-primary"> {t('hero.title2')}</span>
                 <br />
