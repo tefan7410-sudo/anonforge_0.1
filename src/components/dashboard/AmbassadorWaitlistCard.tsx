@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useMyPromoterRequest, useSubmitPromoterRequest } from '@/hooks/use-promoter';
+import { useMyAmbassadorRequest, useSubmitAmbassadorRequest } from '@/hooks/use-ambassador';
 import { Megaphone, Clock, X, Send, Loader2, Twitter } from 'lucide-react';
 import { isValidTwitterUrl } from '@/lib/url-validation';
 
-export function PromoterWaitlistCard() {
-  const { data: existingRequest, isLoading } = useMyPromoterRequest();
-  const submitRequest = useSubmitPromoterRequest();
+export function AmbassadorWaitlistCard() {
+  const { data: existingRequest, isLoading } = useMyAmbassadorRequest();
+  const submitRequest = useSubmitAmbassadorRequest();
   
   const [twitterLink, setTwitterLink] = useState('');
   const [twitterError, setTwitterError] = useState('');
@@ -60,7 +60,7 @@ export function PromoterWaitlistCard() {
               <div>
                 <CardTitle className="font-display text-lg">Request Pending</CardTitle>
                 <CardDescription>
-                  Your promoter access request is being reviewed by our team.
+                  Your ambassador access request is being reviewed by our team.
                 </CardDescription>
               </div>
             </div>
@@ -101,7 +101,7 @@ export function PromoterWaitlistCard() {
               <div>
                 <CardTitle className="font-display text-lg">Request Declined</CardTitle>
                 <CardDescription>
-                  Unfortunately, your promoter request was not approved.
+                  Unfortunately, your ambassador request was not approved.
                 </CardDescription>
               </div>
             </div>
@@ -162,7 +162,7 @@ export function PromoterWaitlistCard() {
             <Megaphone className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <CardTitle className="font-display text-lg">Become a Promoter</CardTitle>
+            <CardTitle className="font-display text-lg">Become an Ambassador</CardTitle>
             <CardDescription>
               Help independent artists get in front of your audience
             </CardDescription>
@@ -177,7 +177,7 @@ export function PromoterWaitlistCard() {
             <Badge variant="secondary">Early Access</Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            As a promoter, you help independent artists get in front of your audience. 
+            As an ambassador, you help independent artists get in front of your audience. 
             This feature is currently in limited access - submit your Twitter/X profile to join the waitlist.
           </p>
         </div>

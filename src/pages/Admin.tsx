@@ -16,12 +16,12 @@ import {
   useAdminAdjustCredits,
 } from '@/hooks/use-admin';
 import {
-  usePendingPromoterRequests,
-  useAllPromoters,
-  useApprovePromoterRequest,
-  useRejectPromoterRequest,
-  useRemovePromoterRole,
-} from '@/hooks/use-admin-promoters';
+  usePendingAmbassadorRequests,
+  useAllAmbassadors,
+  useApproveAmbassadorRequest,
+  useRejectAmbassadorRequest,
+  useRemoveAmbassadorRole,
+} from '@/hooks/use-admin-ambassadors';
 import {
   useActionableMarketingRequests,
   useAllMarketingRequests,
@@ -97,8 +97,8 @@ export default function Admin() {
   const { data: collections, isLoading: collectionsLoading } = useAdminCollections();
   const { data: pendingCollections, isLoading: pendingLoading } = usePendingCollections();
   const { data: pendingVerifications, isLoading: verificationsLoading } = usePendingVerificationRequests();
-  const { data: pendingPromoters, isLoading: promotersLoading } = usePendingPromoterRequests();
-  const { data: allPromoters } = useAllPromoters();
+  const { data: pendingAmbassadors, isLoading: ambassadorsLoading } = usePendingAmbassadorRequests();
+  const { data: allAmbassadors } = useAllAmbassadors();
   const { data: userCredits, isLoading: creditsLoading } = useAllUserCredits();
   const { data: actionableMarketing, isLoading: marketingLoading } = useActionableMarketingRequests();
   const { data: allMarketing } = useAllMarketingRequests();
@@ -107,9 +107,9 @@ export default function Admin() {
   const rejectCollection = useRejectCollection();
   const approveVerification = useApproveVerification();
   const rejectVerification = useRejectVerification();
-  const approvePromoter = useApprovePromoterRequest();
-  const rejectPromoter = useRejectPromoterRequest();
-  const removePromoterRole = useRemovePromoterRole();
+  const approveAmbassador = useApproveAmbassadorRequest();
+  const rejectAmbassador = useRejectAmbassadorRequest();
+  const removeAmbassadorRole = useRemoveAmbassadorRole();
   const adjustCredits = useAdminAdjustCredits();
   const approveMarketing = useApproveMarketingRequest();
   const approveFreeMarketing = useApproveFreeMarketingRequest();
@@ -120,7 +120,7 @@ export default function Admin() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [rejectType, setRejectType] = useState<'collection' | 'verification' | 'marketing' | 'promoter'>('collection');
+  const [rejectType, setRejectType] = useState<'collection' | 'verification' | 'marketing' | 'ambassador'>('collection');
   
   // Credit management state
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
