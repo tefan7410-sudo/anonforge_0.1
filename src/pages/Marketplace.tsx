@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Store, ExternalLink, ArrowLeft, Clock, Sparkles } from 'lucide-react';
+import { Store, ExternalLink, ArrowLeft, Clock, Sparkles, Home } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useCollectionStatuses } from '@/hooks/use-collection-status';
@@ -15,6 +15,7 @@ import { FeaturedSpotlight } from '@/components/FeaturedSpotlight';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { PageTransition } from '@/components/PageTransition';
 import { SEOHead } from '@/components/SEOHead';
+import { LanguageSelector } from '@/components/LanguageSelector';
 import { cn } from '@/lib/utils';
 import {
   Pagination,
@@ -259,7 +260,22 @@ export default function Marketplace() {
             <span className="font-display text-lg sm:text-xl font-semibold">AnonForge</span>
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground border-muted-foreground/30">BETA</Badge>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Desktop nav links */}
+            <div className="hidden md:flex items-center gap-2">
+              <Button variant="ghost" size="icon" asChild>
+                <Link to="/">
+                  <Home className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link to="/artfund">Art Fund</Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link to="/status">Status</Link>
+              </Button>
+            </div>
+            <LanguageSelector />
             <ThemeToggle />
             <Button variant="ghost" asChild className="hidden sm:inline-flex">
               <Link to="/login">Sign in</Link>
