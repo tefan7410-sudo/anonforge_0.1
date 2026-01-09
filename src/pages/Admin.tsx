@@ -220,7 +220,7 @@ export default function Admin() {
     return creditSortOrder === 'asc' ? aVal - bVal : bVal - aVal;
   });
 
-  const handleRejectClick = (id: string, type: 'collection' | 'verification' | 'marketing' | 'promoter') => {
+  const handleRejectClick = (id: string, type: 'collection' | 'verification' | 'marketing' | 'ambassador') => {
     setRejectingId(id);
     setRejectType(type);
     setRejectReason('');
@@ -236,8 +236,8 @@ export default function Admin() {
       await rejectVerification.mutateAsync({ requestId: rejectingId, reason: rejectReason });
     } else if (rejectType === 'marketing') {
       await rejectMarketing.mutateAsync({ requestId: rejectingId, reason: rejectReason });
-    } else if (rejectType === 'promoter') {
-      await rejectPromoter.mutateAsync({ requestId: rejectingId, reason: rejectReason });
+    } else if (rejectType === 'ambassador') {
+      await rejectAmbassador.mutateAsync({ requestId: rejectingId, reason: rejectReason });
     }
     
     setRejectDialogOpen(false);
@@ -561,12 +561,12 @@ export default function Admin() {
               <Heart className="h-4 w-4" />
               Art Fund
             </TabsTrigger>
-            <TabsTrigger value="promoters" className="gap-2">
+            <TabsTrigger value="ambassadors" className="gap-2">
               <Megaphone className="h-4 w-4" />
-              Promoters
-              {pendingPromoters && pendingPromoters.length > 0 && (
+              Ambassadors
+              {pendingAmbassadors && pendingAmbassadors.length > 0 && (
                 <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 justify-center">
-                  {pendingPromoters.length}
+                  {pendingAmbassadors.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -1218,20 +1218,20 @@ export default function Admin() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Megaphone className="h-5 w-5 text-primary" />
-                    Pending Promoter Requests
+                    Pending Ambassador Requests
                   </CardTitle>
                   <CardDescription>
-                    Users requesting to become promoters
+                    Users requesting to become ambassadors
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {promotersLoading ? (
+                  {ambassadorsLoading ? (
                     <div className="space-y-4">
                       {[1, 2, 3].map((i) => (
                         <Skeleton key={i} className="h-16 w-full" />
                       ))}
                     </div>
-                  ) : pendingPromoters && pendingPromoters.length > 0 ? (
+                  ) : pendingAmbassadors && pendingAmbassadors.length > 0 ? (
                     <div className="overflow-x-auto">
                     <Table>
                         <TableHeader>
@@ -1243,7 +1243,7 @@ export default function Admin() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {pendingPromoters.map((request) => {
+                          {pendingAmbassadors.map((request) => {
                             const profile = request.profile;
                             const displayName = profile?.display_name || profile?.email || 'Unknown';
                             return (
@@ -1286,8 +1286,8 @@ export default function Admin() {
                                       variant="ghost" 
                                       size="sm"
                                       className="text-green-600 hover:text-green-700 hover:bg-green-100"
-                                      onClick={() => approvePromoter.mutate({ requestId: request.id, userId: request.user_id })}
-                                      disabled={approvePromoter.isPending}
+                                      onClick={() => approveAmbassador.mutate({ requestId: request.id, userId: request.user_id })}
+                                      disabled={approveAmbassador.isPending}
                                     >
                                       <Check className="h-4 w-4 mr-1" />
                                       Approve
@@ -1296,8 +1296,8 @@ export default function Admin() {
                                       variant="ghost" 
                                       size="sm"
                                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                      onClick={() => handleRejectClick(request.id, 'promoter')}
-                                      disabled={rejectPromoter.isPending}
+                                      onClick={() => handleRejectClick(request.id, 'ambassador')}
+                                      disabled={rejectAmbassador.isPending}
                                     >
                                       <X className="h-4 w-4 mr-1" />
                                       Reject
@@ -1313,25 +1313,25 @@ export default function Admin() {
                   ) : (
                     <div className="text-center py-12">
                       <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/30" />
-                      <p className="mt-4 text-muted-foreground">No pending promoter requests</p>
+                      <p className="mt-4 text-muted-foreground">No pending ambassador requests</p>
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Active Promoters */}
+              {/* Active Ambassadors */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <UserCheck className="h-5 w-5 text-green-600" />
-                    Active Promoters
+                    Active Ambassadors
                   </CardTitle>
                   <CardDescription>
-                    Users with promoter role
+                    Users with ambassador role
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {allPromoters && allPromoters.length > 0 ? (
+                  {allAmbassadors && allAmbassadors.length > 0 ? (
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
@@ -1341,11 +1341,11 @@ export default function Admin() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {allPromoters.map((promoter) => {
-                            const profile = promoter.profile;
+                          {allAmbassadors.map((ambassador) => {
+                            const profile = ambassador.profile;
                             const displayName = profile?.display_name || profile?.email || 'Unknown';
                             return (
-                              <TableRow key={promoter.id}>
+                              <TableRow key={ambassador.id}>
                                 <TableCell>
                                   <div className="flex items-center gap-3">
                                     <Avatar className="h-10 w-10">
@@ -1363,8 +1363,8 @@ export default function Admin() {
                                     variant="ghost" 
                                     size="sm"
                                     className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onClick={() => removePromoterRole.mutate({ userId: promoter.user_id })}
-                                    disabled={removePromoterRole.isPending}
+                                    onClick={() => removeAmbassadorRole.mutate({ userId: ambassador.user_id })}
+                                    disabled={removeAmbassadorRole.isPending}
                                   >
                                     <UserX className="h-4 w-4 mr-1" />
                                     Remove Role
@@ -1379,7 +1379,7 @@ export default function Admin() {
                   ) : (
                     <div className="text-center py-12">
                       <UserCheck className="h-12 w-12 mx-auto text-muted-foreground/30" />
-                      <p className="mt-4 text-muted-foreground">No active promoters</p>
+                      <p className="mt-4 text-muted-foreground">No active ambassadors</p>
                     </div>
                   )}
                 </CardContent>
@@ -1398,8 +1398,8 @@ export default function Admin() {
                 ? 'Reject Collection' 
                 : rejectType === 'verification' 
                   ? 'Reject Verification Request'
-                  : rejectType === 'promoter'
-                    ? 'Reject Promoter Request'
+                  : rejectType === 'ambassador'
+                    ? 'Reject Ambassador Request'
                     : 'Reject Marketing Request'}
             </DialogTitle>
             <DialogDescription>
@@ -1418,7 +1418,7 @@ export default function Admin() {
             <Button 
               variant="destructive" 
               onClick={handleRejectConfirm}
-              disabled={!rejectReason.trim() || rejectCollection.isPending || rejectVerification.isPending || rejectPromoter.isPending}
+              disabled={!rejectReason.trim() || rejectCollection.isPending || rejectVerification.isPending || rejectAmbassador.isPending}
             >
               Reject
             </Button>
