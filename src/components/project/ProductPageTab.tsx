@@ -463,19 +463,24 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
     toast.success(`Your collection is scheduled to launch on ${format(scheduledDate, 'PPP')} at ${format(scheduledDate, 'p')}!`);
   };
 
-  // Cancel scheduled launch
+  // Cancel scheduled launch - reset to hidden state
   const handleCancelLaunch = async () => {
     setIsLive(false);
     setScheduledLaunchAt(null);
+    // Reset visibility to hidden and disable buy button when cancelling
+    setIsHidden(true);
+    setBuyButtonEnabled(false);
     
     await updateProductPage.mutateAsync({
       projectId,
       updates: {
         is_live: false,
         scheduled_launch_at: null,
+        is_hidden: true,
+        buy_button_enabled: false,
       },
     });
-    toast.success('Scheduled launch cancelled');
+    toast.success('Scheduled launch cancelled. Collection hidden from marketplace.');
   };
 
   // Toggle collection visibility (pause/unpause) - also controls buy button
