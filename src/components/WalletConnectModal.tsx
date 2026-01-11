@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useExtensions } from '@ada-anvil/weld/react';
 import { SUPPORTED_WALLETS } from '@ada-anvil/weld';
 import {
@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, ExternalLink, Wallet, AlertCircle } from 'lucide-react';
+import { Loader2, ExternalLink, Wallet, AlertCircle, ChevronDown } from 'lucide-react';
 import { useWalletAuth, WalletAuthMode } from '@/hooks/use-wallet-auth';
 import { toast } from 'sonner';
 
@@ -40,11 +40,21 @@ export function WalletConnectModal({
   onSuccess 
 }: WalletConnectModalProps) {
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
+  const [showAllWallets, setShowAllWallets] = useState(false);
   
   const installed = useExtensions("supportedMap");
   const isExtensionsLoading = useExtensions("isLoading");
   
   const { authenticate, isConnecting, error } = useWalletAuth();
+
+  // Split wallets into installed and not installed
+  const { installedWallets, notInstalledWallets } = useMemo(() => {
+    const cardano = SUPPORTED_WALLETS.filter(w => !['metamask'].includes(w.key));
+    return {
+      installedWallets: cardano.filter(w => installed.has(w.key)),
+      notInstalledWallets: cardano.filter(w => !installed.has(w.key)),
+    };
+  }, [installed]);
 
   const handleConnect = async (walletKey: string) => {
     setSelectedWallet(walletKey);
@@ -97,11 +107,6 @@ export function WalletConnectModal({
     }
   };
 
-  // Filter to show only Cardano wallets
-  const cardanoWallets = SUPPORTED_WALLETS.filter(w => 
-    !['metamask'].includes(w.key) // Exclude non-Cardano wallets
-  );
-
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -122,35 +127,53 @@ export function WalletConnectModal({
             </div>
           ) : (
             <>
-              {/* Installed wallets */}
+              {/* Installed wallets - always visible */}
               <div className="space-y-2">
-                {cardanoWallets.map((wallet) => {
-                  const isInstalled = installed.has(wallet.key);
+                {installedWallets.map((wallet) => {
                   const isLoading = selectedWallet === wallet.key && isConnecting;
                   const colorClass = walletColors[wallet.key] || 'bg-gray-600';
                   
                   return (
-                    <div key={wallet.key}>
-                      {isInstalled ? (
+                    <Button
+                      key={wallet.key}
+                      variant="outline"
+                      className="w-full justify-start gap-3 h-14"
+                      onClick={() => handleConnect(wallet.key)}
+                      disabled={isConnecting}
+                    >
+                      <div className={`h-8 w-8 rounded-lg ${colorClass} flex items-center justify-center text-white font-bold text-sm`}>
+                        {wallet.displayName.charAt(0)}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="font-medium">{wallet.displayName}</div>
+                        <div className="text-xs text-muted-foreground">Installed</div>
+                      </div>
+                      {isLoading && (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              {/* Show more wallets toggle */}
+              {notInstalledWallets.length > 0 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    className="w-full text-sm text-muted-foreground"
+                    onClick={() => setShowAllWallets(!showAllWallets)}
+                  >
+                    {showAllWallets ? 'Hide' : 'Show'} wallets to install ({notInstalledWallets.length})
+                    <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showAllWallets ? 'rotate-180' : ''}`} />
+                  </Button>
+
+                  {/* Not installed wallets - only visible when expanded */}
+                  {showAllWallets && (
+                    <div className="space-y-2">
+                      {notInstalledWallets.map((wallet) => (
                         <Button
-                          variant="outline"
-                          className="w-full justify-start gap-3 h-14"
-                          onClick={() => handleConnect(wallet.key)}
-                          disabled={isConnecting}
-                        >
-                          <div className={`h-8 w-8 rounded-lg ${colorClass} flex items-center justify-center text-white font-bold text-sm`}>
-                            {wallet.displayName.charAt(0)}
-                          </div>
-                          <div className="flex-1 text-left">
-                            <div className="font-medium">{wallet.displayName}</div>
-                            <div className="text-xs text-muted-foreground">Installed</div>
-                          </div>
-                          {isLoading && (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          )}
-                        </Button>
-                      ) : (
-                        <Button
+                          key={wallet.key}
                           variant="ghost"
                           className="w-full justify-start gap-3 h-14 opacity-60"
                           asChild
@@ -160,7 +183,7 @@ export function WalletConnectModal({
                             target="_blank" 
                             rel="noopener noreferrer"
                           >
-                            <div className={`h-8 w-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm`}>
+                            <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm">
                               {wallet.displayName.charAt(0)}
                             </div>
                             <div className="flex-1 text-left">
@@ -172,11 +195,11 @@ export function WalletConnectModal({
                             <ExternalLink className="h-4 w-4 text-muted-foreground" />
                           </a>
                         </Button>
-                      )}
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+                </>
+              )}
 
               {/* No wallets installed message */}
               {installed.size === 0 && !isExtensionsLoading && (
