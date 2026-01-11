@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Wallet } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { PageTransition } from '@/components/PageTransition';
 import { WalletConnectModal } from '@/components/WalletConnectModal';
+import { useResetPassword } from '@/hooks/use-profile';
 
 const GoogleIcon = () => (
   <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
@@ -26,9 +28,13 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
   const { user, loading: authLoading, signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const resetPassword = useResetPassword();
 
   const from = location.state?.from?.pathname || '/dashboard';
 
@@ -60,6 +66,24 @@ export default function Login() {
     } else {
       toast.success('Welcome back!');
       navigate(from, { replace: true });
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!resetEmail) {
+      toast.error('Please enter your email address');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await resetPassword.mutateAsync({ email: resetEmail });
+      toast.success('Password reset email sent! Check your inbox.');
+      setShowForgotPassword(false);
+      setResetEmail('');
+    } catch (error) {
+      toast.error('Failed to send reset email. Please try again.');
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -98,7 +122,19 @@ export default function Login() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(true);
+                    setResetEmail(email);
+                  }}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
               <Input
                 id="password"
                 type="password"
@@ -174,6 +210,38 @@ export default function Login() {
         mode="login"
         onSuccess={() => navigate(from, { replace: true })}
       />
+
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                placeholder="you@example.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowForgotPassword(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleForgotPassword} disabled={resetLoading}>
+              {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Send Reset Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageTransition>
   );
 }
