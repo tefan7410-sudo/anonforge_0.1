@@ -90,14 +90,17 @@ import {
   Settings,
   Crown,
   ShieldCheck,
+  Bug,
 } from 'lucide-react';
 import { CostsAnalyticsTab } from '@/components/admin/CostsAnalyticsTab';
 import { SystemStatusTab } from '@/components/admin/SystemStatusTab';
 import { ArtFundTab } from '@/components/admin/ArtFundTab';
+import { BugReportsTab } from '@/components/admin/BugReportsTab';
 import { toast } from 'sonner';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { formatDistanceToNow, format } from 'date-fns';
 import { formatCredits } from '@/lib/credit-constants';
+import { useBugReportCount } from '@/hooks/use-bug-reports';
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
@@ -111,6 +114,7 @@ export default function Admin() {
   const { data: userCredits, isLoading: creditsLoading } = useAllUserCredits();
   const { data: actionableMarketing, isLoading: marketingLoading } = useActionableMarketingRequests();
   const { data: allMarketing } = useAllMarketingRequests();
+  const { data: openBugCount } = useBugReportCount();
   const { data: allUserRoles, isLoading: rolesLoading } = useAllUserRoles();
   const toggleHidden = useToggleCollectionHidden();
   const approveCollection = useApproveCollection();
@@ -575,6 +579,15 @@ export default function Admin() {
                 <TabsTrigger value="operations" className="gap-2">
                   <Activity className="h-4 w-4" />
                   Status
+                </TabsTrigger>
+                <TabsTrigger value="bugs" className="gap-2">
+                  <Bug className="h-4 w-4" />
+                  Bug Reports
+                  {openBugCount && openBugCount > 0 && (
+                    <Badge variant="destructive" className="ml-1 h-5 min-w-5 p-0 justify-center">
+                      {openBugCount}
+                    </Badge>
+                  )}
                 </TabsTrigger>
               </>
             )}
@@ -1511,6 +1524,11 @@ export default function Admin() {
           {/* Status Tab - System Status only */}
           <TabsContent value="operations">
             <SystemStatusTab />
+          </TabsContent>
+
+          {/* Bug Reports Tab */}
+          <TabsContent value="bugs">
+            <BugReportsTab />
           </TabsContent>
         </Tabs>
       </main>

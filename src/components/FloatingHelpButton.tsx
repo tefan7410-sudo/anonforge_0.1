@@ -1,26 +1,45 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, FileText, Bug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { BugReportModal } from '@/components/BugReportModal';
 
 export function FloatingHelpButton() {
+  const [bugReportOpen, setBugReportOpen] = useState(false);
+
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          asChild
-          className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full shadow-lg border-border bg-background hover:bg-muted transition-all hover:scale-105 md:bottom-6 md:right-6"
-        >
-          <Link to="/documentation">
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full shadow-lg border-border bg-background hover:bg-muted transition-all hover:scale-105 md:bottom-6 md:right-6"
+          >
             <HelpCircle className="h-5 w-5" />
-          </Link>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="left">
-        <p>Help & Documentation</p>
-      </TooltipContent>
-    </Tooltip>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="top" align="end" className="w-48">
+          <DropdownMenuItem asChild>
+            <Link to="/documentation" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Documentation
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setBugReportOpen(true)} className="flex items-center gap-2">
+            <Bug className="h-4 w-4" />
+            Report a Bug
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <BugReportModal open={bugReportOpen} onOpenChange={setBugReportOpen} />
+    </>
   );
 }

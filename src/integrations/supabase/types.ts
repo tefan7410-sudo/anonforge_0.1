@@ -216,6 +216,57 @@ export type Database = {
         }
         Relationships: []
       }
+      bug_reports: {
+        Row: {
+          admin_notes: string | null
+          browser_info: Json | null
+          console_logs: Json | null
+          created_at: string
+          description: string
+          error_stack: string | null
+          id: string
+          page_url: string | null
+          screenshot_url: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_actions: Json | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          browser_info?: Json | null
+          console_logs?: Json | null
+          created_at?: string
+          description: string
+          error_stack?: string | null
+          id?: string
+          page_url?: string | null
+          screenshot_url?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_actions?: Json | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          browser_info?: Json | null
+          console_logs?: Json | null
+          created_at?: string
+          description?: string
+          error_stack?: string | null
+          id?: string
+          page_url?: string | null
+          screenshot_url?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_actions?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
