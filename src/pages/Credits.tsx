@@ -37,6 +37,7 @@ import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { PageTransition } from '@/components/PageTransition';
 import { PaymentModal } from '@/components/credits/PaymentModal';
 import { WalletPaymentModal } from '@/components/credits/WalletPaymentModal';
+import { WalletReconnectModal } from '@/components/credits/WalletReconnectModal';
 import { useCreatePaymentIntent, PaymentIntent } from '@/hooks/use-payment-intent';
 import { useWalletPayment } from '@/hooks/use-wallet-payment';
 
@@ -49,6 +50,7 @@ export default function Credits() {
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [walletPaymentModalOpen, setWalletPaymentModalOpen] = useState(false);
   const [walletPaymentTier, setWalletPaymentTier] = useState<typeof CREDIT_TIERS[number] | null>(null);
+  const [walletReconnectModalOpen, setWalletReconnectModalOpen] = useState(false);
   
   const createPaymentIntent = useCreatePaymentIntent();
   const walletPayment = useWalletPayment();
@@ -344,12 +346,33 @@ export default function Credits() {
                               </>
                             )}
                           </Button>
-                        ) : (
+                        ) : walletPayment.lastWalletKey ? (
+                          // Has previous wallet - show reconnect
                           <Button 
                             className="w-full" 
                             variant="default"
-                            onClick={() => navigate('/dashboard')}
-                            disabled={walletPayment.isProcessing}
+                            onClick={() => setWalletReconnectModalOpen(true)}
+                            disabled={walletPayment.isConnecting}
+                          >
+                            {walletPayment.isConnecting ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Reconnecting...
+                              </>
+                            ) : (
+                              <>
+                                <Wallet className="mr-2 h-4 w-4" />
+                                Reconnect Wallet
+                              </>
+                            )}
+                          </Button>
+                        ) : (
+                          // No previous wallet - show connect
+                          <Button 
+                            className="w-full" 
+                            variant="default"
+                            onClick={() => setWalletReconnectModalOpen(true)}
+                            disabled={walletPayment.isConnecting}
                           >
                             <Wallet className="mr-2 h-4 w-4" />
                             Connect Wallet to Pay
@@ -463,6 +486,14 @@ export default function Credits() {
         priceAda={walletPaymentTier?.priceAda || 0}
         onRetry={handleWalletPaymentRetry}
         onClose={handleWalletPaymentClose}
+      />
+
+      <WalletReconnectModal
+        open={walletReconnectModalOpen}
+        onClose={() => setWalletReconnectModalOpen(false)}
+        onConnect={walletPayment.connectWallet}
+        lastWalletKey={walletPayment.lastWalletKey}
+        isReconnecting={!!walletPayment.lastWalletKey}
       />
     </div>
     </PageTransition>
