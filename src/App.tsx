@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { CardanoWalletProvider } from "@/contexts/WeldContext";
 import { TutorialProvider } from "@/components/tutorial/TutorialProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MaintenanceGuard } from "@/components/MaintenanceGuard";
@@ -50,6 +51,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <LanguageProvider>
+        <CardanoWalletProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -134,6 +136,7 @@ const App = () => (
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
+        </CardanoWalletProvider>
       </LanguageProvider>
     </ThemeProvider>
   </QueryClientProvider>

@@ -8,9 +8,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Wallet } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { PageTransition } from '@/components/PageTransition';
+import { WalletConnectModal } from '@/components/WalletConnectModal';
 
 const GoogleIcon = () => (
   <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
@@ -29,6 +30,7 @@ export default function Register() {
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
   const { user, loading: authLoading, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
@@ -220,6 +222,17 @@ export default function Register() {
               Sign in with Google
             </Button>
 
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={loading || googleLoading}
+              onClick={() => setShowWalletModal(true)}
+            >
+              <Wallet className="mr-2 h-5 w-5" />
+              Register with Cardano Wallet
+            </Button>
+
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
               <Link to="/login" className="text-primary hover:underline">
@@ -229,6 +242,13 @@ export default function Register() {
           </CardFooter>
         </form>
       </Card>
+
+      <WalletConnectModal
+        open={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        mode="register"
+        onSuccess={() => navigate('/dashboard', { replace: true })}
+      />
     </PageTransition>
   );
 }
