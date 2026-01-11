@@ -63,7 +63,11 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (existingProfile) {
-        return jsonResponse({ error: "stake_address_already_linked" }, 400);
+        return jsonResponse({ 
+          ok: false, 
+          code: "stake_address_already_linked",
+          message: "This wallet is already linked to another account"
+        }, 200);
       }
 
       // Link wallet to user's profile
@@ -131,7 +135,14 @@ Deno.serve(async (req) => {
     // New user - create account
     if (mode === "login") {
       // If explicitly logging in but no account exists
-      return jsonResponse({ error: "no_account_found" }, 404);
+      // Return 200 with structured error so frontend can handle gracefully
+      console.log("No account found for stake address:", stakeAddress.substring(0, 20) + "...");
+      return jsonResponse({ 
+        ok: false, 
+        code: "no_account_found",
+        attemptedStakeAddress: stakeAddress,
+        message: "No account found for this wallet stake address"
+      }, 200);
     }
 
     console.log("Creating new user with wallet:", stakeAddress);

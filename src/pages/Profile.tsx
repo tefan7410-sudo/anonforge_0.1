@@ -29,7 +29,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, BadgeCheck, Clock, X, Twitter, Coins, TrendingUp, GraduationCap, RotateCcw, RefreshCw, Wallet, Link2, Unlink } from 'lucide-react';
+import { ArrowLeft, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, BadgeCheck, Clock, X, Twitter, Coins, TrendingUp, GraduationCap, RotateCcw, RefreshCw, Wallet, Link2, Unlink, Copy, Check, Eye, EyeOff } from 'lucide-react';
 import { useWalletAuth, formatStakeAddress } from '@/hooks/use-wallet-auth';
 import { WalletConnectModal } from '@/components/WalletConnectModal';
 import { Logo } from '@/components/Logo';
@@ -38,6 +38,132 @@ import { MobileNav } from '@/components/MobileNav';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { PageTransition } from '@/components/PageTransition';
 import { useTutorial } from '@/contexts/TutorialContext';
+
+// Wallet Connected Section with full address display
+function WalletConnectedSection({ 
+  stakeAddress, 
+  walletConnectedAt, 
+  onDisconnect 
+}: { 
+  stakeAddress: string; 
+  walletConnectedAt: string | null;
+  onDisconnect: () => void;
+}) {
+  const [showFullAddress, setShowFullAddress] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(stakeAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-border/50 bg-muted/30 p-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <Wallet className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium">Cardano Wallet</p>
+            <div className="flex items-center gap-2">
+              {showFullAddress ? (
+                <code className="text-xs text-muted-foreground font-mono break-all">
+                  {stakeAddress}
+                </code>
+              ) : (
+                <p className="text-sm text-muted-foreground font-mono truncate">
+                  {formatStakeAddress(stakeAddress)}
+                </p>
+              )}
+            </div>
+          </div>
+          <Badge variant="outline" className="shrink-0">
+            <Link2 className="h-3 w-3 mr-1" />
+            Connected
+          </Badge>
+        </div>
+        
+        {/* Address actions */}
+        <div className="flex items-center gap-2 mt-3">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => setShowFullAddress(!showFullAddress)}
+          >
+            {showFullAddress ? (
+              <>
+                <EyeOff className="h-3 w-3 mr-1" />
+                Hide
+              </>
+            ) : (
+              <>
+                <Eye className="h-3 w-3 mr-1" />
+                Show Full
+              </>
+            )}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={handleCopy}
+          >
+            {copied ? (
+              <>
+                <Check className="h-3 w-3 mr-1 text-green-500" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Copy className="h-3 w-3 mr-1" />
+                Copy
+              </>
+            )}
+          </Button>
+        </div>
+        
+        {walletConnectedAt && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Connected on {new Date(walletConnectedAt).toLocaleDateString()}
+          </p>
+        )}
+      </div>
+      
+      {/* Help text */}
+      <p className="text-xs text-muted-foreground">
+        Wallet sign-in matches by stake address. If your wallet has multiple accounts, 
+        ensure you select the same account you used when linking.
+      </p>
+      
+      <div className="flex justify-end">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Unlink className="h-4 w-4 mr-2" />
+              Disconnect Wallet
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Disconnect wallet?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You will no longer be able to sign in with this wallet. 
+                You can reconnect it later from your profile.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onDisconnect}>
+                Disconnect
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+  );
+}
 
 function TutorialSection() {
   const { isActive, isCompleted, restartTutorial, loading } = useTutorial();
@@ -730,56 +856,11 @@ export default function Profile() {
             </CardHeader>
             <CardContent>
               {profile?.stake_address ? (
-                <div className="space-y-4">
-                  <div className="rounded-lg border border-border/50 bg-muted/30 p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Wallet className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium">Cardano Wallet</p>
-                        <p className="text-sm text-muted-foreground font-mono truncate">
-                          {formatStakeAddress(profile.stake_address)}
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="shrink-0">
-                        <Link2 className="h-3 w-3 mr-1" />
-                        Connected
-                      </Badge>
-                    </div>
-                    {profile.wallet_connected_at && (
-                      <p className="text-xs text-muted-foreground mt-3">
-                        Connected on {new Date(profile.wallet_connected_at).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="flex justify-end">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Unlink className="h-4 w-4 mr-2" />
-                          Disconnect Wallet
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Disconnect wallet?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            You will no longer be able to sign in with this wallet. 
-                            You can reconnect it later from your profile.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDisconnectWallet}>
-                            Disconnect
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
+                <WalletConnectedSection 
+                  stakeAddress={profile.stake_address}
+                  walletConnectedAt={profile.wallet_connected_at}
+                  onDisconnect={handleDisconnectWallet}
+                />
               ) : (
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
