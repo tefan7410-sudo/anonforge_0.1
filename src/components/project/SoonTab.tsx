@@ -1,8 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Lock, Gavel, Coins, BarChart3, Sparkles, MessageCircle } from 'lucide-react';
-import { useState } from 'react';
-import { BugReportModal } from '@/components/BugReportModal';
+import { Lock, Gavel, Coins, BarChart3, Sparkles } from 'lucide-react';
 
 const PLANNED_FEATURES = [
   {
@@ -28,8 +25,6 @@ const PLANNED_FEATURES = [
 ];
 
 export function SoonTab() {
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-
   return (
     <div className="flex flex-col items-center justify-center py-8">
       <Card className="max-w-lg w-full text-center">
@@ -70,23 +65,8 @@ export function SoonTab() {
             </p>
           </div>
 
-          {/* CTA Button */}
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => setFeedbackOpen(true)}
-          >
-            <MessageCircle className="h-4 w-4 mr-2" />
-            Share Your Ideas
-          </Button>
         </CardContent>
       </Card>
-
-      {/* Reuse BugReportModal for feedback */}
-      <BugReportModal 
-        open={feedbackOpen} 
-        onOpenChange={setFeedbackOpen}
-      />
     </div>
   );
 }
