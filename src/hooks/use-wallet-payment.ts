@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWallet } from '@ada-anvil/weld/react';
+import { STORAGE_KEYS } from '@ada-anvil/weld/server';
 import { supabase } from '@/integrations/supabase/client';
 
 export type WalletPaymentStep = 'idle' | 'building' | 'signing' | 'submitting' | 'complete' | 'error';
@@ -22,23 +23,59 @@ interface SubmitTransactionResult {
   message: string;
 }
 
+// Get stored wallet key for reconnection
+function getLastWalletKey(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(STORAGE_KEYS.connectedWallet);
+}
+
 export function useWalletPayment() {
   const queryClient = useQueryClient();
+  
+  // Select wallet state using useWallet hook
   const handler = useWallet('handler');
   const changeAddress = useWallet('changeAddressBech32');
   const isConnected = useWallet('isConnected');
+  const isConnectingWallet = useWallet('isConnectingTo');
+  const connectAsync = useWallet('connectAsync');
   
   const [step, setStep] = useState<WalletPaymentStep>('idle');
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [creditsAdded, setCreditsAdded] = useState<number>(0);
 
-  const reset = () => {
+  // Debug logging for wallet state changes
+  useEffect(() => {
+    console.log('[WalletPayment] State:', { 
+      isConnected, 
+      hasHandler: !!handler, 
+      hasChangeAddress: !!changeAddress,
+      isConnectingTo: isConnectingWallet 
+    });
+  }, [isConnected, handler, changeAddress, isConnectingWallet]);
+
+  // Computed state - wallet is ready when connected AND has handler
+  const isWalletReady = isConnected && !!handler;
+  const lastWalletKey = getLastWalletKey();
+
+  const reset = useCallback(() => {
     setStep('idle');
     setError(null);
     setTxHash(null);
     setCreditsAdded(0);
-  };
+  }, []);
+
+  // Connect to a specific wallet (for reconnection)
+  const connectWallet = useCallback(async (walletKey: string) => {
+    console.log('[WalletPayment] Connecting to wallet:', walletKey);
+    try {
+      await connectAsync(walletKey);
+      console.log('[WalletPayment] Connected successfully');
+    } catch (err) {
+      console.error('[WalletPayment] Connection failed:', err);
+      throw err;
+    }
+  }, [connectAsync]);
 
   const buildTransaction = useMutation({
     mutationFn: async (tierId: string): Promise<BuildTransactionResult> => {
@@ -167,9 +204,11 @@ export function useWalletPayment() {
   };
 
   return {
-    // State
-    isWalletConnected: isConnected,
-    hasWallet: !!handler,
+    // State - use isWalletReady for UI decisions
+    isWalletConnected: isWalletReady,
+    hasHandler: !!handler,
+    isConnected, // raw connected state for debugging
+    lastWalletKey,
     step,
     error,
     txHash,
@@ -177,6 +216,7 @@ export function useWalletPayment() {
     
     // Actions
     purchaseWithWallet,
+    connectWallet,
     reset,
     
     // Loading states
@@ -184,5 +224,6 @@ export function useWalletPayment() {
     isSigning: step === 'signing',
     isSubmitting: signAndSubmit.isPending && step === 'submitting',
     isProcessing: step !== 'idle' && step !== 'complete' && step !== 'error',
+    isConnecting: !!isConnectingWallet,
   };
 }
