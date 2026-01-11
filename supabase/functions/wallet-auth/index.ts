@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decode as cborDecode } from "https://esm.sh/cbor-x@1.5.9";
+import { verify } from "https://esm.sh/@stablelib/ed25519@1.0.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,43 +15,165 @@ function jsonResponse(data: unknown, status = 200) {
   });
 }
 
-// Verify CIP-8 signature using Anvil API
+// Helper to convert hex to bytes
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+// Verify CIP-8/CIP-30 signature locally
+// The signature is a COSE_Sign1 structure encoded in CBOR
 async function verifyCIP8Signature(
-  stakeAddress: string,
-  signature: string,
-  key: string,
-  payload: string,
-  anvilApiKey: string
+  signatureHex: string,
+  keyHex: string,
+  expectedPayload: string
 ): Promise<boolean> {
   try {
-    // Use Anvil API to verify the CIP-8 signature
-    const response = await fetch("https://api.ada-anvil.app/v2/services/verify-signature", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": anvilApiKey,
-      },
-      body: JSON.stringify({
-        address: stakeAddress,
-        signature,
-        key,
-        message: payload,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Anvil API error:", response.status, errorText);
+    console.log("Starting CIP-8 verification...");
+    
+    // Parse the COSE_Sign1 structure from the signature
+    // COSE_Sign1 = [protected, unprotected, payload, signature]
+    const signatureBytes = hexToBytes(signatureHex);
+    const coseSign1 = cborDecode(signatureBytes);
+    
+    if (!Array.isArray(coseSign1) || coseSign1.length < 4) {
+      console.error("Invalid COSE_Sign1 structure");
       return false;
     }
-
-    const result = await response.json();
-    console.log("Signature verification result:", result);
     
-    return result.valid === true || result.isValid === true;
+    const [protectedHeader, _unprotectedHeader, payload, signature] = coseSign1;
+    
+    // The protected header is CBOR-encoded
+    const protectedHeaderDecoded = cborDecode(protectedHeader);
+    console.log("Protected header:", protectedHeaderDecoded);
+    
+    // Get the public key from the key parameter (COSE_Key)
+    const keyBytes = hexToBytes(keyHex);
+    const coseKey = cborDecode(keyBytes);
+    
+    // COSE_Key for Ed25519: {1: 1 (OKP), 3: -8 (EdDSA), -1: 6 (Ed25519), -2: x (public key)}
+    // The public key is in the -2 parameter
+    let publicKeyBytes: Uint8Array;
+    if (coseKey instanceof Map) {
+      publicKeyBytes = coseKey.get(-2);
+    } else if (typeof coseKey === 'object' && coseKey !== null) {
+      publicKeyBytes = coseKey[-2] || coseKey['-2'];
+    } else {
+      console.error("Invalid COSE_Key structure");
+      return false;
+    }
+    
+    if (!publicKeyBytes || publicKeyBytes.length !== 32) {
+      console.error("Invalid public key in COSE_Key");
+      return false;
+    }
+    
+    // Build the Sig_structure for verification
+    // Sig_structure = ["Signature1", protected, external_aad, payload]
+    const sigStructure = ["Signature1", protectedHeader, new Uint8Array(0), payload];
+    const sigStructureBytes = cborEncode(sigStructure);
+    
+    // Verify the Ed25519 signature
+    const isValid = verify(publicKeyBytes, sigStructureBytes, signature);
+    
+    if (!isValid) {
+      console.error("Ed25519 signature verification failed");
+      return false;
+    }
+    
+    // Verify the payload matches what we expect
+    const payloadString = new TextDecoder().decode(payload);
+    if (payloadString !== expectedPayload) {
+      console.error("Payload mismatch:", payloadString, "vs", expectedPayload);
+      return false;
+    }
+    
+    console.log("CIP-8 signature verified successfully");
+    return true;
+    
   } catch (error) {
-    console.error("Signature verification error:", error);
+    console.error("CIP-8 verification error:", error);
     return false;
+  }
+}
+
+// Simple CBOR encoder for Sig_structure
+function cborEncode(value: unknown): Uint8Array {
+  const encoder = new CborEncoder();
+  encoder.encode(value);
+  return encoder.getBytes();
+}
+
+class CborEncoder {
+  private buffer: number[] = [];
+  
+  encode(value: unknown): void {
+    if (value === null || value === undefined) {
+      this.buffer.push(0xf6); // null
+    } else if (typeof value === 'string') {
+      this.encodeString(value);
+    } else if (value instanceof Uint8Array) {
+      this.encodeBytes(value);
+    } else if (Array.isArray(value)) {
+      this.encodeArray(value);
+    } else if (typeof value === 'number') {
+      this.encodeNumber(value);
+    } else {
+      throw new Error(`Unsupported type: ${typeof value}`);
+    }
+  }
+  
+  private encodeNumber(n: number): void {
+    if (n >= 0 && n <= 23) {
+      this.buffer.push(n);
+    } else if (n >= 0 && n <= 255) {
+      this.buffer.push(0x18, n);
+    } else {
+      throw new Error(`Number too large: ${n}`);
+    }
+  }
+  
+  private encodeString(s: string): void {
+    const bytes = new TextEncoder().encode(s);
+    if (bytes.length <= 23) {
+      this.buffer.push(0x60 + bytes.length);
+    } else if (bytes.length <= 255) {
+      this.buffer.push(0x78, bytes.length);
+    } else {
+      throw new Error(`String too long: ${bytes.length}`);
+    }
+    this.buffer.push(...bytes);
+  }
+  
+  private encodeBytes(bytes: Uint8Array): void {
+    if (bytes.length <= 23) {
+      this.buffer.push(0x40 + bytes.length);
+    } else if (bytes.length <= 255) {
+      this.buffer.push(0x58, bytes.length);
+    } else if (bytes.length <= 65535) {
+      this.buffer.push(0x59, (bytes.length >> 8) & 0xff, bytes.length & 0xff);
+    } else {
+      throw new Error(`Bytes too long: ${bytes.length}`);
+    }
+    this.buffer.push(...bytes);
+  }
+  
+  private encodeArray(arr: unknown[]): void {
+    if (arr.length <= 23) {
+      this.buffer.push(0x80 + arr.length);
+    } else {
+      throw new Error(`Array too long: ${arr.length}`);
+    }
+    for (const item of arr) {
+      this.encode(item);
+    }
+  }
+  
+  getBytes(): Uint8Array {
+    return new Uint8Array(this.buffer);
   }
 }
 
@@ -91,20 +215,11 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Signature expired, please try again" }, 400);
     }
 
-    // Get Anvil API key
-    const anvilApiKey = Deno.env.get("ANVIL_API_KEY");
-    if (!anvilApiKey) {
-      console.error("ANVIL_API_KEY not configured");
-      return jsonResponse({ error: "Server configuration error" }, 500);
-    }
-
-    // Verify the signature
+    // Verify the signature locally (no external API needed)
     const isValidSignature = await verifyCIP8Signature(
-      stakeAddress,
       signature,
       key,
-      payload,
-      anvilApiKey
+      payload
     );
 
     if (!isValidSignature) {
