@@ -1113,8 +1113,11 @@ export type Database = {
           id: string
           is_verified_creator: boolean | null
           marketing_consent: boolean | null
+          stake_address: string | null
           twitter_handle: string | null
           updated_at: string
+          wallet_address: string | null
+          wallet_connected_at: string | null
         }
         Insert: {
           accepted_terms_at?: string | null
@@ -1125,8 +1128,11 @@ export type Database = {
           id: string
           is_verified_creator?: boolean | null
           marketing_consent?: boolean | null
+          stake_address?: string | null
           twitter_handle?: string | null
           updated_at?: string
+          wallet_address?: string | null
+          wallet_connected_at?: string | null
         }
         Update: {
           accepted_terms_at?: string | null
@@ -1137,8 +1143,11 @@ export type Database = {
           id?: string
           is_verified_creator?: boolean | null
           marketing_consent?: boolean | null
+          stake_address?: string | null
           twitter_handle?: string | null
           updated_at?: string
+          wallet_address?: string | null
+          wallet_connected_at?: string | null
         }
         Relationships: []
       }

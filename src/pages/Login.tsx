@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Wallet } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { PageTransition } from '@/components/PageTransition';
+import { WalletConnectModal } from '@/components/WalletConnectModal';
 
 const GoogleIcon = () => (
   <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
@@ -24,6 +25,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
   const { user, loading: authLoading, signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -145,6 +147,17 @@ export default function Login() {
               Sign in with Google
             </Button>
 
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={loading || googleLoading}
+              onClick={() => setShowWalletModal(true)}
+            >
+              <Wallet className="mr-2 h-5 w-5" />
+              Sign in with Cardano Wallet
+            </Button>
+
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{' '}
               <Link to="/register" className="text-primary hover:underline">
@@ -154,6 +167,13 @@ export default function Login() {
           </CardFooter>
         </form>
       </Card>
+
+      <WalletConnectModal
+        open={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        mode="login"
+        onSuccess={() => navigate(from, { replace: true })}
+      />
     </PageTransition>
   );
 }

@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.get-wallet-balance]
 verify_jwt = false
+
+[functions.wallet-auth]
+verify_jwt = false
