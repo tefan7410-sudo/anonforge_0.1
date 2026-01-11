@@ -318,7 +318,7 @@ export default function ProjectDetail() {
                     </TabsTrigger>
                     <TabsTrigger 
                       value="soon"
-                      className="opacity-50"
+                      className="text-primary/70 data-[state=active]:text-primary"
                     >
                       <Lock className="h-3 w-3 mr-1" />
                       Soon
