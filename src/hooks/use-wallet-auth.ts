@@ -11,10 +11,16 @@ interface WalletAuthResult {
   message?: string;
 }
 
+interface WalletAuthError {
+  code: string;
+  message: string;
+  attemptedStakeAddress?: string;
+}
+
 // Map backend error codes to user-friendly messages
 function getErrorMessage(errorCode: string): string {
   const errorMessages: Record<string, string> = {
-    no_account_found: "No account found for this wallet. Please register first.",
+    no_account_found: "No account found for this wallet. The wallet may be on a different account than when you linked it.",
     stake_address_already_linked: "This wallet is already linked to another account.",
     invalid_session: "Your session has expired. Please log in again.",
     not_authenticated: "Please log in to link your wallet.",
@@ -24,6 +30,7 @@ function getErrorMessage(errorCode: string): string {
 
 export function useWalletAuth() {
   const [isConnecting, setIsConnecting] = useState(false);
+  const [lastAttemptedStake, setLastAttemptedStake] = useState<string | null>(null);
   const queryClient = useQueryClient();
   
   const connectAsync = useWallet("connectAsync");
@@ -45,6 +52,7 @@ export function useWalletAuth() {
       walletKey: string;
     }): Promise<WalletAuthResult> => {
       setIsConnecting(true);
+      setLastAttemptedStake(null);
       
       try {
         // Step 1: Connect to wallet
@@ -56,6 +64,9 @@ export function useWalletAuth() {
         if (!stakeAddr) {
           throw new Error('Could not retrieve stake address from wallet');
         }
+        
+        // Save the attempted stake address for debugging
+        setLastAttemptedStake(stakeAddr);
         
         // Get payment address for display
         const paymentAddr = wallet.changeAddressBech32;
@@ -73,8 +84,24 @@ export function useWalletAuth() {
           throw new Error(error.message || 'Authentication failed');
         }
         
+        // Check for structured error responses (ok: false)
+        if (data?.ok === false) {
+          const walletError: WalletAuthError = {
+            code: data.code || 'unknown_error',
+            message: getErrorMessage(data.code || data.message),
+            attemptedStakeAddress: data.attemptedStakeAddress || stakeAddr,
+          };
+          throw walletError;
+        }
+        
+        // Legacy error format (for backwards compatibility)
         if (data?.error) {
-          throw new Error(getErrorMessage(data.error));
+          const walletError: WalletAuthError = {
+            code: data.error,
+            message: getErrorMessage(data.error),
+            attemptedStakeAddress: stakeAddr,
+          };
+          throw walletError;
         }
         
         // Step 3: Handle different modes
@@ -146,6 +173,7 @@ export function useWalletAuth() {
     changeAddress,
     installedExtensions,
     isExtensionsLoading,
+    lastAttemptedStake,
     
     // Actions
     authenticate: authenticate.mutateAsync,
@@ -170,4 +198,14 @@ export function formatPaymentAddress(address: string | undefined): string {
   if (!address) return '';
   if (address.length <= 20) return address;
   return `${address.slice(0, 12)}...${address.slice(-8)}`;
+}
+
+// Type guard to check if an error is a WalletAuthError
+export function isWalletAuthError(error: unknown): error is WalletAuthError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'message' in error
+  );
 }
