@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { 
   useMarketingPaymentStatus,
+  useCancelMarketingPayment,
   type MarketingPaymentIntent,
 } from '@/hooks/use-marketing';
 import { toast } from 'sonner';
@@ -37,6 +38,7 @@ export function MarketingPaymentModal({
     paymentIntent?.paymentId ?? null,
     open
   );
+  const cancelPayment = useCancelMarketingPayment();
 
   // Handle payment completion
   useEffect(() => {
@@ -66,6 +68,17 @@ export function MarketingPaymentModal({
 
   const handleExpiry = () => {
     queryClient.invalidateQueries({ queryKey: ['marketing-payment-status', paymentIntent?.paymentId] });
+  };
+
+  const handleCancel = async () => {
+    if (!paymentIntent) return;
+    try {
+      await cancelPayment.mutateAsync(paymentIntent.paymentId);
+      onOpenChange(false);
+      toast.info('Payment cancelled');
+    } catch {
+      toast.error('Failed to cancel payment');
+    }
   };
 
   if (!paymentIntent) return null;
@@ -224,6 +237,16 @@ export function MarketingPaymentModal({
               <Loader2 className="h-4 w-4 animate-spin" />
               Waiting for payment...
             </div>
+
+            {/* Cancel button */}
+            <Button 
+              variant="ghost" 
+              className="w-full text-muted-foreground"
+              onClick={handleCancel}
+              disabled={cancelPayment.isPending}
+            >
+              Cancel Payment
+            </Button>
           </div>
         )}
       </DialogContent>
