@@ -442,15 +442,7 @@ export default function Status() {
             {/* Footer Info */}
             <div className="text-center text-sm text-muted-foreground pt-8 border-t">
               <p>
-                Status updates every minute automatically. For urgent issues, contact us on{" "}
-                <a 
-                  href="https://twitter.com/AnonForge" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  Twitter/X
-                </a>
+                Service health is checked every 30 minutes. For urgent issues, please report via our support channels.
               </p>
             </div>
           </div>
