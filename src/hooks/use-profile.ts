@@ -194,3 +194,34 @@ export function useResetPassword() {
     },
   });
 }
+
+/**
+ * Check if a user's profile is incomplete (wallet-only registration)
+ * Returns true if the user needs to complete their profile setup
+ */
+export function useIsProfileIncomplete(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['profile-incomplete', userId],
+    queryFn: async () => {
+      if (!userId) return false;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('display_name, email, accepted_terms_at, stake_address')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error || !data) return false;
+      
+      // Profile is incomplete if:
+      // 1. User registered via wallet (has stake_address and email ends with @wallet.anonforge.com)
+      // 2. AND hasn't set a proper display name (still auto-generated or null)
+      const isWalletUser = data.stake_address && data.email?.endsWith('@wallet.anonforge.com');
+      const hasAutoDisplayName = !data.display_name || data.display_name.startsWith('Wallet ');
+      const hasNotAcceptedTerms = !data.accepted_terms_at;
+      
+      return isWalletUser && (hasAutoDisplayName || hasNotAcceptedTerms);
+    },
+    enabled: !!userId,
+  });
+}

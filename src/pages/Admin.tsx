@@ -1261,6 +1261,7 @@ export default function Admin() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>User</TableHead>
+                          <TableHead>Wallet</TableHead>
                           <TableHead>Current Role</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -1284,6 +1285,33 @@ export default function Admin() {
                                     <p className="text-xs text-muted-foreground">{userRole.email}</p>
                                   </div>
                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                {userRole.stake_address ? (
+                                  <div className="flex items-center gap-2">
+                                    <Wallet className="h-4 w-4 text-primary" />
+                                    <div className="flex flex-col">
+                                      <button
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(userRole.stake_address!);
+                                          toast.success('Stake address copied!');
+                                        }}
+                                        className="text-xs font-mono text-muted-foreground hover:text-foreground flex items-center gap-1"
+                                        title={userRole.stake_address}
+                                      >
+                                        {userRole.stake_address.slice(0, 12)}...{userRole.stake_address.slice(-6)}
+                                        <Copy className="h-3 w-3" />
+                                      </button>
+                                      {userRole.wallet_connected_at && (
+                                        <span className="text-[10px] text-muted-foreground">
+                                          {formatDistanceToNow(new Date(userRole.wallet_connected_at), { addSuffix: true })}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                )}
                               </TableCell>
                               <TableCell>
                                 <Badge 
