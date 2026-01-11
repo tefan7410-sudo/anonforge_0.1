@@ -114,9 +114,10 @@ export function useSubmitAmbassadorRequest() {
             onConflict: 'user_id,role'
           });
 
-        if (roleError) {
-          console.error('Failed to add ambassador role:', roleError);
-        }
+      if (roleError) {
+        console.error('Failed to add ambassador role:', roleError);
+        throw new Error('Failed to grant ambassador role. Please try again.');
+      }
       }
 
       return { isVerified };
