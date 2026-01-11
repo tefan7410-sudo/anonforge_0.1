@@ -40,15 +40,24 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body
-    const { paymentId, signedTransaction } = await req.json();
+    // Parse request body - Anvil flow: unsigned tx + signatures array
+    const { paymentId, transaction, signatures } = await req.json();
 
     console.log('Submitting transaction for payment:', paymentId);
+    console.log('Transaction CBOR prefix:', transaction?.substring(0, 10));
+    console.log('Signatures count:', signatures?.length);
 
     // Validate required fields
-    if (!paymentId || !signedTransaction) {
+    if (!paymentId || !transaction) {
       return new Response(
-        JSON.stringify({ error: 'Missing paymentId or signedTransaction' }),
+        JSON.stringify({ error: 'Missing paymentId or transaction' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!signatures || !Array.isArray(signatures) || signatures.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Missing signatures array' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -102,7 +111,10 @@ serve(async (req) => {
 
     console.log('Calling Anvil API to submit transaction...');
 
-    // Submit signed transaction to Anvil
+    // Submit unsigned transaction + signatures to Anvil (documented flow)
+    const submitBody = { transaction, signatures };
+    console.log('Anvil submit payload keys:', Object.keys(submitBody));
+    
     const submitResponse = await fetch(
       'https://prod.api.ada-anvil.app/v2/services/transactions/submit',
       {
@@ -111,9 +123,7 @@ serve(async (req) => {
           'Content-Type': 'application/json',
           'X-Api-Key': anvilApiKey,
         },
-        body: JSON.stringify({
-          transaction: signedTransaction,
-        }),
+        body: JSON.stringify(submitBody),
       }
     );
 
