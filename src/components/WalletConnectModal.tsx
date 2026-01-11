@@ -20,18 +20,6 @@ interface WalletConnectModalProps {
   onSuccess?: () => void;
 }
 
-// Wallet icons - using simple colored backgrounds with initials
-const walletColors: Record<string, string> = {
-  eternl: 'bg-blue-600',
-  lace: 'bg-purple-600',
-  vespr: 'bg-green-600',
-  flint: 'bg-orange-600',
-  typhoncip30: 'bg-cyan-600',
-  nufi: 'bg-indigo-600',
-  nufiSnap: 'bg-yellow-600',
-  gerowallet: 'bg-pink-600',
-  tokeo: 'bg-teal-600',
-};
 
 export function WalletConnectModal({ 
   open, 
@@ -131,7 +119,6 @@ export function WalletConnectModal({
               <div className="space-y-2">
                 {installedWallets.map((wallet) => {
                   const isLoading = selectedWallet === wallet.key && isConnecting;
-                  const colorClass = walletColors[wallet.key] || 'bg-gray-600';
                   
                   return (
                     <Button
@@ -141,8 +128,21 @@ export function WalletConnectModal({
                       onClick={() => handleConnect(wallet.key)}
                       disabled={isConnecting}
                     >
-                      <div className={`h-8 w-8 rounded-lg ${colorClass} flex items-center justify-center text-white font-bold text-sm`}>
-                        {wallet.displayName.charAt(0)}
+                      <div className="h-8 w-8 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                        <img 
+                          src={wallet.icon} 
+                          alt={wallet.displayName}
+                          className="h-full w-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.nextElementSibling) {
+                              (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                            }
+                          }}
+                        />
+                        <span className="hidden items-center justify-center text-muted-foreground font-bold text-sm">
+                          {wallet.displayName.charAt(0)}
+                        </span>
                       </div>
                       <div className="flex-1 text-left">
                         <div className="font-medium">{wallet.displayName}</div>
@@ -183,8 +183,21 @@ export function WalletConnectModal({
                             target="_blank" 
                             rel="noopener noreferrer"
                           >
-                            <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm">
-                              {wallet.displayName.charAt(0)}
+                            <div className="h-8 w-8 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                              <img 
+                                src={wallet.icon} 
+                                alt={wallet.displayName}
+                                className="h-full w-full object-contain grayscale"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.nextElementSibling) {
+                                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                                  }
+                                }}
+                              />
+                              <span className="hidden items-center justify-center text-muted-foreground font-bold text-sm">
+                                {wallet.displayName.charAt(0)}
+                              </span>
                             </div>
                             <div className="flex-1 text-left">
                               <div className="font-medium">{wallet.displayName}</div>
