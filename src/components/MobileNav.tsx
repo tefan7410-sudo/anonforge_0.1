@@ -74,9 +74,12 @@ export function MobileNav() {
               <p className="truncate text-sm font-medium">
                 {profile?.display_name || 'User'}
               </p>
-              <p className="truncate text-xs text-muted-foreground">
-                {user.email}
-              </p>
+              {/* Hide synthetic wallet email - only show for regular email users */}
+              {user.email && !user.email.endsWith('@wallet.anonforge.com') && (
+                <p className="truncate text-xs text-muted-foreground">
+                  {user.email}
+                </p>
+              )}
             </div>
           </div>
         )}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Loader2, ArrowLeft, Wallet } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { PageTransition } from '@/components/PageTransition';
 import { WalletConnectModal } from '@/components/WalletConnectModal';
+import { EmailVerificationPending } from '@/components/EmailVerificationPending';
 
 const GoogleIcon = () => (
   <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
@@ -31,8 +32,24 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [verificationPending, setVerificationPending] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
   const { user, loading: authLoading, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check if redirected from wallet login for auto-registration
+  const walletAutoRegister = (location.state as any)?.walletAutoRegister;
+  const walletKey = (location.state as any)?.walletKey;
+
+  // Auto-open wallet modal if redirected from login with unregistered wallet
+  useEffect(() => {
+    if (walletAutoRegister && !showWalletModal) {
+      setShowWalletModal(true);
+      // Clear the state to prevent re-opening on navigation
+      window.history.replaceState({}, document.title);
+    }
+  }, [walletAutoRegister]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -47,6 +64,19 @@ export default function Register() {
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  // Show verification pending screen
+  if (verificationPending) {
+    return (
+      <EmailVerificationPending 
+        email={pendingEmail} 
+        onBack={() => {
+          setVerificationPending(false);
+          setPendingEmail('');
+        }}
+      />
     );
   }
 
@@ -71,20 +101,11 @@ export default function Register() {
       toast.error(error.message);
       setLoading(false);
     } else {
-      // Update profile with terms and marketing consent after auth state updates
-      const { data: { user: newUser } } = await supabase.auth.getUser();
-      if (newUser) {
-        await supabase
-          .from('profiles')
-          .update({
-            accepted_terms_at: new Date().toISOString(),
-            marketing_consent: marketingConsent,
-          })
-          .eq('id', newUser.id);
-      }
-
-      toast.success('Welcome to AnonForge!');
-      navigate('/dashboard', { replace: true });
+      // Store marketing consent for later (will be updated when user verifies)
+      // For now, show verification pending screen
+      setPendingEmail(email);
+      setVerificationPending(true);
+      setLoading(false);
     }
   };
 
