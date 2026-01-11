@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Store, ArrowRight, ExternalLink, Sparkles } from 'lucide-react';
+import { Store, ArrowRight, ExternalLink, Sparkles, Clock } from 'lucide-react';
 import { useScrollAnimation } from '@/hooks/use-scroll-animation';
 import { useCollectionStatuses } from '@/hooks/use-collection-status';
 import { FeaturedSpotlight } from '@/components/FeaturedSpotlight';
+import { CountdownTimer } from '@/components/CountdownTimer';
 import { cn } from '@/lib/utils';
 
 interface LiveCollection {
@@ -19,6 +20,7 @@ interface LiveCollection {
   banner_url: string | null;
   logo_url: string | null;
   tagline: string | null;
+  scheduled_launch_at: string | null;
   is_featured: boolean | null;
   project: {
     id: string;
@@ -40,6 +42,7 @@ const useMarketplaceCollections = (limit?: number) => {
           banner_url,
           logo_url,
           tagline,
+          scheduled_launch_at,
           is_featured,
           project:projects!inner(id, name, description)
         `)
@@ -62,6 +65,8 @@ const useMarketplaceCollections = (limit?: number) => {
 function CollectionCard({ collection, index, isSoldOut }: { collection: LiveCollection; index: number; isSoldOut?: boolean }) {
   const { ref, isVisible } = useScrollAnimation<HTMLDivElement>();
   const isFeatured = collection.is_featured;
+  const isUpcoming = collection.scheduled_launch_at && 
+    new Date(collection.scheduled_launch_at) > new Date();
   
   return (
     <div
@@ -100,7 +105,12 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
                   FEATURED
                 </Badge>
               )}
-              {isSoldOut ? (
+              {isUpcoming ? (
+                <Badge className="bg-primary/90 text-primary-foreground hover:bg-primary">
+                  <Clock className="mr-1 h-3 w-3" />
+                  UPCOMING
+                </Badge>
+              ) : isSoldOut ? (
                 <Badge className="bg-orange-500/90 text-white hover:bg-orange-500">
                   SOLD OUT
                 </Badge>
@@ -132,6 +142,11 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
           <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
             {collection.tagline || collection.project.description || 'Explore this collection'}
           </p>
+          {isUpcoming && collection.scheduled_launch_at && (
+            <div className="mt-2">
+              <CountdownTimer targetDate={new Date(collection.scheduled_launch_at)} compact />
+            </div>
+          )}
           <div className="mt-4 flex items-center justify-between">
             <span className="text-xs text-muted-foreground">View Collection</span>
             <ExternalLink className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
