@@ -14,6 +14,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Rocket, ExternalLink, Loader2, CheckCircle2, CalendarIcon, ChevronDown, Info, Coins, ImageIcon, X, Globe, Twitter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,7 +38,7 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
   const [nmkrProjectName, setNmkrProjectName] = useState(projectName);
   const [tokenPrefix, setTokenPrefix] = useState(defaultTokenPrefix || 'Token');
   const [description, setDescription] = useState('');
-  const [maxSupply, setMaxSupply] = useState('10000');
+  const [maxSupply, setMaxSupply] = useState('1');
   const [payoutWallet, setPayoutWallet] = useState('');
   
   // Storage
@@ -56,6 +66,8 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
   // UI state
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [showCopiesWarning, setShowCopiesWarning] = useState(false);
+  const [pendingCopiesValue, setPendingCopiesValue] = useState('');
   
   const createProject = useCreateNmkrProject();
   const mintRoyalty = useMintRoyaltyToken();
@@ -108,6 +120,31 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
     setLogoFile(null);
     setLogoPreview(null);
     setLogoError(null);
+  };
+
+  // Copies per NFT change handler with warning
+  const handleCopiesChange = (newValue: string) => {
+    const numValue = parseInt(newValue) || 0;
+    const currentValue = parseInt(maxSupply) || 1;
+    
+    // Show warning when changing from 1 to a higher value
+    if (currentValue === 1 && numValue > 1) {
+      setPendingCopiesValue(newValue);
+      setShowCopiesWarning(true);
+    } else {
+      setMaxSupply(newValue);
+    }
+  };
+
+  const confirmCopiesChange = () => {
+    setMaxSupply(pendingCopiesValue);
+    setShowCopiesWarning(false);
+    setPendingCopiesValue('');
+  };
+
+  const cancelCopiesChange = () => {
+    setShowCopiesWarning(false);
+    setPendingCopiesValue('');
   };
 
   // Validation
@@ -275,17 +312,17 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="max-supply">Max NFT Supply <span className="text-destructive">*</span></Label>
+            <Label htmlFor="copies-per-nft">Copies Per NFT <span className="text-destructive">*</span></Label>
             <Input
-              id="max-supply"
+              id="copies-per-nft"
               type="number"
               min="1"
               value={maxSupply}
-              onChange={(e) => setMaxSupply(e.target.value)}
-              placeholder="10000"
+              onChange={(e) => handleCopiesChange(e.target.value)}
+              placeholder="1"
             />
             <p className="text-xs text-muted-foreground">
-              The maximum number of NFTs that can be minted from this collection
+              How many copies of each unique NFT design can be minted. Set to 1 for a fully unique collection.
             </p>
           </div>
 
@@ -632,6 +669,36 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
             Terms of Service
           </a>
         </p>
+
+        {/* Copies Per NFT Warning Modal */}
+        <AlertDialog open={showCopiesWarning} onOpenChange={setShowCopiesWarning}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want multiple copies?</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3">
+                  <p>
+                    Setting "Copies Per NFT" to <strong>{pendingCopiesValue}</strong> means each unique NFT design 
+                    in your collection can be minted <strong>{pendingCopiesValue} times</strong>.
+                  </p>
+                  <p>
+                    <strong>Example:</strong> If you have 100 unique designs and set this to {pendingCopiesValue}, 
+                    your total collection supply will be <strong>{(parseInt(pendingCopiesValue) || 1) * 100} NFTs</strong>.
+                  </p>
+                  <p className="text-amber-600 font-medium">
+                    For fully unique, 1-of-1 collections, this value should remain at 1.
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={cancelCopiesChange}>Keep at 1</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmCopiesChange}>
+                Yes, set to {pendingCopiesValue}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
