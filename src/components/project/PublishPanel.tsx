@@ -68,9 +68,9 @@ export function PublishPanel({ projectId, projectName, onSwitchTab }: PublishPan
 
   if (credentialsLoading || nmkrLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <div className="space-y-4">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-48 w-full" />
       </div>
     );
   }
@@ -85,7 +85,7 @@ export function PublishPanel({ projectId, projectName, onSwitchTab }: PublishPan
   // No NMKR project created yet
   if (!nmkrProject) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <ApiKeyStatusBar onRemove={() => deleteCredentials.mutate()} isRemoving={deleteCredentials.isPending} />
         <NmkrSetupWizard 
           projectId={projectId} 
@@ -104,29 +104,30 @@ export function PublishPanel({ projectId, projectName, onSwitchTab }: PublishPan
   }[nmkrProject.status] || 'secondary';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* API Key Status */}
       <ApiKeyStatusBar onRemove={() => deleteCredentials.mutate()} isRemoving={deleteCredentials.isPending} />
 
       {/* Status Overview */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                <Rocket className="h-5 w-5 text-primary-foreground" />
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <Rocket className="h-4 w-4 text-primary-foreground" />
               </div>
               <div>
-                <CardTitle className="font-display">NMKR Project</CardTitle>
+                <CardTitle className="font-display text-base">NMKR Project</CardTitle>
                 <CardDescription className="text-xs">
                   UID: {nmkrProject.nmkr_project_uid}
                 </CardDescription>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button 
                 variant="ghost" 
                 size="icon"
+                className="h-8 w-8"
                 onClick={() => setShowSettingsModal(true)}
                 title="Edit NMKR Settings"
               >
@@ -139,7 +140,7 @@ export function PublishPanel({ projectId, projectName, onSwitchTab }: PublishPan
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-2">
           <MintStatusCard 
             counts={counts} 
             priceInLovelace={nmkrProject.price_in_lovelace}
@@ -168,28 +169,28 @@ export function PublishPanel({ projectId, projectName, onSwitchTab }: PublishPan
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="upload" className="mt-6">
+        <TabsContent value="upload" className="mt-4">
           <NftUploadQueue 
             projectId={projectId}
             nmkrProject={nmkrProject}
           />
         </TabsContent>
 
-        <TabsContent value="pricing" className="mt-6 space-y-4">
+        <TabsContent value="pricing" className="mt-4 space-y-3">
           {/* Workflow explanation */}
-          <div className="rounded-lg border border-border bg-muted/30 p-4">
-            <h4 className="text-sm font-medium mb-2">Publishing Workflow</h4>
-            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+          <div className="rounded-lg border border-border bg-muted/30 p-3">
+            <h4 className="text-sm font-medium mb-1">Publishing Workflow</h4>
+            <ol className="text-xs text-muted-foreground space-y-0.5 list-decimal list-inside">
               <li>Upload your NFTs in the Upload tab</li>
-              <li>Set your pricing tiers below (each quantity needs a separate price)</li>
+              <li>Set your pricing tiers below</li>
               <li>Generate a payment link for NMKR Pay</li>
-              <li>Create a Product Page (separate tab) for your public storefront</li>
+              <li>Create a Product Page for your storefront</li>
             </ol>
           </div>
           <SaleConfigForm nmkrProject={nmkrProject} onSwitchTab={onSwitchTab} />
         </TabsContent>
 
-        <TabsContent value="royalties" className="mt-6">
+        <TabsContent value="royalties" className="mt-4">
           <RoyaltiesTab nmkrProject={nmkrProject} />
         </TabsContent>
       </Tabs>
@@ -206,15 +207,15 @@ export function PublishPanel({ projectId, projectName, onSwitchTab }: PublishPan
 
 function ApiKeyStatusBar({ onRemove, isRemoving }: { onRemove: () => void; isRemoving: boolean }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-4 py-2">
+    <div className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-3 py-1.5">
       <div className="flex items-center gap-2 text-sm">
-        <Key className="h-4 w-4 text-green-500" />
-        <span className="text-muted-foreground">NMKR API key connected</span>
+        <Key className="h-3.5 w-3.5 text-green-500" />
+        <span className="text-muted-foreground text-xs">NMKR API connected</span>
       </div>
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">
-            <Trash2 className="h-4 w-4" />
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive">
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>

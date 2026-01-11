@@ -513,10 +513,10 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-48 w-full" />
+      <div className="space-y-4">
         <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
       </div>
     );
   }
@@ -524,40 +524,32 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
   // Show locked state if pricing not set up
   if (isLocked) {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
+      <div className="flex flex-col items-center justify-center py-10">
         <Card className="max-w-lg w-full text-center">
-          <CardHeader>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-              <Store className="h-8 w-8 text-muted-foreground" />
+          <CardHeader className="pb-3">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <Store className="h-6 w-6 text-muted-foreground" />
             </div>
-            <CardTitle className="font-display">Set Up Your Minting First</CardTitle>
-            <CardDescription>
-              Before creating your Product Page, you need to configure your NFT pricing in the Publish tab.
+            <CardTitle className="font-display text-lg">Set Up Your Minting First</CardTitle>
+            <CardDescription className="text-sm">
+              Configure your NFT pricing in the Publish tab before creating your Product Page.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-left rounded-lg border bg-muted/30 p-4">
-              <h4 className="text-sm font-medium mb-3">What you'll need for your Product Page:</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+          <CardContent className="space-y-3">
+            <div className="text-left rounded-lg border bg-muted/30 p-3">
+              <h4 className="text-sm font-medium mb-2">What you'll need:</h4>
+              <ul className="space-y-1.5 text-xs text-muted-foreground">
                 <li className="flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4" />
-                  Banner image (recommended 1200x400)
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  Banner image & logo
                 </li>
                 <li className="flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4" />
-                  Collection logo
-                </li>
-                <li className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4" />
+                  <Sparkles className="h-3.5 w-3.5" />
                   Tagline/description
                 </li>
                 <li className="flex items-center gap-2">
-                  <Twitter className="h-4 w-4" />
-                  Social links (Twitter, Discord, Website)
-                </li>
-                <li className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Founder/team information
+                  <Twitter className="h-3.5 w-3.5" />
+                  Social links & founder info
                 </li>
               </ul>
             </div>
@@ -628,9 +620,9 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
   }, [isEditingLocked]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Action Bar with Save Button */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-muted/30 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
         <div className="flex items-center gap-2 flex-wrap">
           {isScheduled ? (
             <>
@@ -766,23 +758,12 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
       {/* Collection Visibility (for live or approved scheduled collections) */}
       {(isActuallyLive || (isScheduled && isApproved)) && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display">
-              <EyeOff className="h-5 w-5 text-primary" />
-              Collection Visibility
-            </CardTitle>
-            <CardDescription>
-              Temporarily hide your collection from the marketplace
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="pause-collection">Pause Collection</Label>
-                <p className="text-xs text-muted-foreground">
-                  When paused, your collection won't appear in the marketplace and the buy button will be disabled
-                </p>
-              </div>
+              <CardTitle className="flex items-center gap-2 font-display text-base">
+                <EyeOff className="h-4 w-4 text-primary" />
+                Collection Visibility
+              </CardTitle>
               <Switch
                 id="pause-collection"
                 checked={isHidden}
@@ -790,6 +771,11 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                 disabled={isSaving}
               />
             </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-xs text-muted-foreground">
+              When paused, your collection won't appear in the marketplace
+            </p>
           </CardContent>
         </Card>
       )}
@@ -813,41 +799,40 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
             </Button>
           </CollapsibleTrigger>
         )}
-        <CollapsibleContent className={cn(isEditingLocked && "pt-4")}>
-          <div className="space-y-6">
+        <CollapsibleContent className={cn(isEditingLocked && "pt-3")}>
+          <div className="space-y-4">
       {/* Collection Settings - Type & Content */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <Palette className="h-5 w-5 text-primary" />
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 font-display text-base">
+            <Palette className="h-4 w-4 text-primary" />
             Collection Settings
           </CardTitle>
-          <CardDescription>
-            Choose your collection type and configure display settings
+          <CardDescription className="text-xs">
+            Choose collection type and configure display settings
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {/* Collection Type Toggle */}
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => !isEditingLocked && setCollectionType('generative')}
               disabled={isEditingLocked}
               className={cn(
-                "relative flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-all",
+                "relative flex items-center gap-2 rounded-lg border-2 p-2.5 text-left transition-all",
                 collectionType === 'generative' 
                   ? "border-primary bg-primary/5" 
                   : "border-muted",
                 isEditingLocked ? "opacity-60 cursor-not-allowed" : "hover:bg-accent/50"
               )}
             >
-              <Layers className="h-5 w-5 text-primary shrink-0" />
-              <div className="min-w-0">
-                <span className="font-semibold text-sm">Generative Collection</span>
-                <p className="text-xs text-muted-foreground truncate">Unique NFTs from layers</p>
+              <Layers className="h-4 w-4 text-primary shrink-0" />
+              <div className="min-w-0 flex-1">
+                <span className="font-semibold text-sm">Generative</span>
               </div>
               {collectionType === 'generative' && (
-                <CheckCircle className="h-4 w-4 text-primary shrink-0 ml-auto" />
+                <CheckCircle className="h-4 w-4 text-primary shrink-0" />
               )}
             </button>
             
@@ -856,20 +841,19 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
               onClick={() => !isEditingLocked && setCollectionType('art_collection')}
               disabled={isEditingLocked}
               className={cn(
-                "relative flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-all",
+                "relative flex items-center gap-2 rounded-lg border-2 p-2.5 text-left transition-all",
                 collectionType === 'art_collection' 
                   ? "border-primary bg-primary/5" 
                   : "border-muted",
                 isEditingLocked ? "opacity-60 cursor-not-allowed" : "hover:bg-accent/50"
               )}
             >
-              <Palette className="h-5 w-5 text-primary shrink-0" />
-              <div className="min-w-0">
+              <Palette className="h-4 w-4 text-primary shrink-0" />
+              <div className="min-w-0 flex-1">
                 <span className="font-semibold text-sm">Art Collection</span>
-                <p className="text-xs text-muted-foreground truncate">Artworks with editions</p>
               </div>
               {collectionType === 'art_collection' && (
-                <CheckCircle className="h-4 w-4 text-primary shrink-0 ml-auto" />
+                <CheckCircle className="h-4 w-4 text-primary shrink-0" />
               )}
             </button>
           </div>
@@ -878,17 +862,17 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
 
           {/* Preview Characters (for Generative Collections) - Compact */}
           {collectionType === 'generative' && (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label className="text-sm font-medium">
-                Preview Characters <span className="text-muted-foreground font-normal">(up to 3 examples)</span>
+                Preview Characters <span className="text-muted-foreground font-normal text-xs">(up to 3)</span>
               </Label>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 {[0, 1, 2].map((index) => {
                   const previewImage = previewImages[index];
                   return (
                     <div key={index} className="relative">
                       {previewImage?.image_url ? (
-                        <div className="relative h-20 w-20 rounded-lg border overflow-hidden">
+                        <div className="relative h-16 w-16 rounded-lg border overflow-hidden">
                           <img 
                             src={previewImage.image_url} 
                             alt={`Preview ${index + 1}`}
@@ -897,20 +881,20 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                           <Button 
                             variant="destructive" 
                             size="icon" 
-                            className="absolute right-1 top-1 h-5 w-5"
+                            className="absolute right-0.5 top-0.5 h-4 w-4"
                             onClick={() => {
                               const newImages = [...previewImages];
                               newImages.splice(index, 1);
                               setPreviewImages(newImages);
                             }}
                           >
-                            <X className="h-3 w-3" />
+                            <X className="h-2.5 w-2.5" />
                           </Button>
                         </div>
                       ) : (
                         <div
                           className={cn(
-                            "flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors hover:border-primary/50",
+                            "flex h-16 w-16 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors hover:border-primary/50",
                             "border-muted-foreground/25"
                           )}
                           onClick={async () => {
@@ -1218,18 +1202,18 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <ImageIcon className="h-5 w-5 text-primary" />
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 font-display text-base">
+            <ImageIcon className="h-4 w-4 text-primary" />
             Branding & Identity
           </CardTitle>
-          <CardDescription>
-            Your collection's visual identity and social presence
+          <CardDescription className="text-xs">
+            Visual identity and social presence
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {/* Banner + Logo side by side */}
-          <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+          <div className="grid gap-3 md:grid-cols-[1fr_auto]">
             {/* Banner */}
             <div className="space-y-1">
               <Label className="text-sm">Banner <span className="text-xs text-muted-foreground">(1200×400)</span></Label>
@@ -1238,12 +1222,12 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                   <img 
                     src={bannerUrl} 
                     alt="Banner preview" 
-                    className="h-24 w-full rounded-lg border object-cover"
+                    className="h-20 w-full rounded-lg border object-cover"
                   />
                   <Button 
                     variant="destructive" 
                     size="icon" 
-                    className="absolute right-2 top-2 h-6 w-6"
+                    className="absolute right-1 top-1 h-5 w-5"
                     onClick={clearBanner}
                   >
                     <X className="h-3 w-3" />
@@ -1253,15 +1237,15 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                 <div
                   {...(isEditingLocked ? {} : getBannerRootProps())}
                   className={cn(
-                    "flex h-24 flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
+                    "flex h-20 flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
                     isEditingLocked 
                       ? "bg-muted cursor-not-allowed border-muted" 
                       : isBannerDragActive ? "border-primary bg-primary/5 cursor-pointer" : "border-muted-foreground/25 hover:border-primary/50 cursor-pointer"
                   )}
                 >
                   {!isEditingLocked && <input {...getBannerInputProps()} />}
-                  <Upload className="h-5 w-5 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground mt-1">{isEditingLocked ? 'Locked' : 'Drop or click'}</p>
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground mt-0.5">{isEditingLocked ? 'Locked' : 'Drop or click'}</p>
                 </div>
               )}
             </div>
@@ -1274,36 +1258,36 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                   <img 
                     src={logoUrl} 
                     alt="Logo preview" 
-                    className="h-20 w-20 rounded-lg border object-cover"
+                    className="h-16 w-16 rounded-lg border object-cover"
                   />
                   <Button 
                     variant="destructive" 
                     size="icon" 
-                    className="absolute -right-2 -top-2 h-5 w-5"
+                    className="absolute -right-1 -top-1 h-4 w-4"
                     onClick={clearLogo}
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-2.5 w-2.5" />
                   </Button>
                 </div>
               ) : (
                 <div
                   {...(isEditingLocked ? {} : getLogoRootProps())}
                   className={cn(
-                    "flex h-20 w-20 flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
+                    "flex h-16 w-16 flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
                     isEditingLocked 
                       ? "bg-muted cursor-not-allowed border-muted" 
                       : isLogoDragActive ? "border-primary bg-primary/5 cursor-pointer" : "border-muted-foreground/25 hover:border-primary/50 cursor-pointer"
                   )}
                 >
                   {!isEditingLocked && <input {...getLogoInputProps()} />}
-                  <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
                 </div>
               )}
             </div>
           </div>
 
           {/* Tagline + Social Links on same row */}
-          <div className="grid gap-4 md:grid-cols-[1fr_2fr]">
+          <div className="grid gap-3 md:grid-cols-[1fr_2fr]">
             {/* Tagline */}
             <div className="space-y-1">
               <Label htmlFor="tagline" className="text-sm">Tagline</Label>
@@ -1396,8 +1380,8 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
 
       {/* Section 2: Founder/Creator Info */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 font-display text-base">
             <User className="h-5 w-5 text-primary" />
             Founder / Creator Info
           </CardTitle>
@@ -1563,26 +1547,26 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
             </Alert>
           )}
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-3">
               {/* Founder PFP */}
-              <div className="space-y-2">
-                <Label>Profile Picture</Label>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Profile Picture</Label>
                 {founderPfpUrl ? (
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3">
                     <div className="relative">
                       <img 
                         src={founderPfpUrl} 
                         alt="Founder PFP" 
-                        className="h-20 w-20 rounded-full border object-cover"
+                        className="h-16 w-16 rounded-full border object-cover"
                       />
                       <Button 
                         variant="destructive" 
                         size="icon" 
-                        className="absolute -right-1 -top-1 h-5 w-5"
+                        className="absolute -right-1 -top-1 h-4 w-4"
                         onClick={clearFounderPfp}
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-2.5 w-2.5" />
                       </Button>
                     </div>
                   </div>
@@ -1590,21 +1574,21 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                   <div
                     {...(isEditingLocked ? {} : getFounderPfpRootProps())}
                     className={cn(
-                      "flex h-20 w-20 flex-col items-center justify-center rounded-full border-2 border-dashed transition-colors",
+                      "flex h-16 w-16 flex-col items-center justify-center rounded-full border-2 border-dashed transition-colors",
                       isEditingLocked 
                         ? "bg-muted cursor-not-allowed border-muted" 
                         : isFounderPfpDragActive ? "border-primary bg-primary/5 cursor-pointer" : "border-muted-foreground/25 hover:border-primary/50 cursor-pointer"
                     )}
                   >
                     {!isEditingLocked && <input {...getFounderPfpInputProps()} />}
-                    <User className="h-6 w-6 text-muted-foreground" />
+                    <User className="h-5 w-5 text-muted-foreground" />
                   </div>
                 )}
               </div>
 
               {/* Founder Name */}
-              <div className="space-y-2">
-                <Label htmlFor="founder-name" className="flex items-center gap-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="founder-name" className="flex items-center gap-2 text-sm">
                   Name
                   {(isVerifiedCreator || isEditingLocked) && (
                     <Badge variant="outline" className="text-xs">Locked</Badge>
@@ -1616,42 +1600,36 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                   onChange={(e) => !isVerifiedCreator && !isEditingLocked && setFounderName(e.target.value)}
                   placeholder="Your name or alias"
                   disabled={isVerifiedCreator || isEditingLocked}
-                  className={(isVerifiedCreator || isEditingLocked) ? "bg-muted cursor-not-allowed" : ""}
+                  className={cn("h-9", (isVerifiedCreator || isEditingLocked) && "bg-muted cursor-not-allowed")}
                 />
-                {isVerifiedCreator && (
-                  <p className="text-xs text-muted-foreground">From your verified profile</p>
-                )}
               </div>
 
               {/* Founder Twitter */}
-              <div className="space-y-2">
-                <Label htmlFor="founder-twitter" className="flex items-center gap-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="founder-twitter" className="flex items-center gap-2 text-sm">
                   <Twitter className="h-3 w-3" />
-                  Twitter Handle
+                  Twitter
                   {(isVerifiedCreator || isEditingLocked) && (
                     <Badge variant="outline" className="text-xs">Locked</Badge>
                   )}
                 </Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
                   <Input
                     id="founder-twitter"
                     value={isVerifiedCreator ? (profile?.twitter_handle || founderTwitter) : founderTwitter}
                     onChange={(e) => !isVerifiedCreator && !isEditingLocked && setFounderTwitter(e.target.value.replace('@', ''))}
-                    placeholder="yourhandle"
-                    className={cn("pl-7", (isVerifiedCreator || isEditingLocked) && "bg-muted cursor-not-allowed")}
+                    placeholder="handle"
+                    className={cn("pl-7 h-9", (isVerifiedCreator || isEditingLocked) && "bg-muted cursor-not-allowed")}
                     disabled={isVerifiedCreator || isEditingLocked}
                   />
                 </div>
-                {isVerifiedCreator && (
-                  <p className="text-xs text-muted-foreground">From your verified profile</p>
-                )}
               </div>
             </div>
 
             {/* Founder Bio */}
-            <div className="space-y-2">
-              <Label htmlFor="founder-bio" className="flex items-center gap-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="founder-bio" className="flex items-center gap-2 text-sm">
                 Bio
                 {isEditingLocked && (
                   <Badge variant="outline" className="text-xs">Locked</Badge>
@@ -1661,14 +1639,14 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                 id="founder-bio"
                 value={founderBio}
                 onChange={(e) => !isEditingLocked && setFounderBio(e.target.value)}
-                placeholder="Tell collectors about yourself, your background, and your vision for this collection..."
-                rows={8}
+                placeholder="Tell collectors about yourself..."
+                rows={6}
                 maxLength={500}
                 disabled={isEditingLocked}
                 className={cn(isEditingLocked && "bg-muted cursor-not-allowed")}
               />
               <p className="text-xs text-muted-foreground">
-                {founderBio.length}/500 characters
+                {founderBio.length}/500
               </p>
             </div>
           </div>
@@ -1679,17 +1657,14 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
       {/* Section 4: Your AnonForge Collections (Auto-populated) */}
       {creatorCollections && creatorCollections.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display">
-              <Rocket className="h-5 w-5 text-primary" />
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 font-display text-base">
+              <Rocket className="h-4 w-4 text-primary" />
               Your AnonForge Collections
             </CardTitle>
-            <CardDescription>
-              Your other live collections on AnonForge (auto-populated)
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {creatorCollections.map((collection) => (
                 <a
                   key={collection.id}

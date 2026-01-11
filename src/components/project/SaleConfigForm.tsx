@@ -144,16 +144,16 @@ export function SaleConfigForm({ nmkrProject, onSwitchTab }: SaleConfigFormProps
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Pricing Card */}
       <Card>
-        <CardHeader>
-          <CardTitle className="font-display">Price Tiers</CardTitle>
-          <CardDescription>
-            Define separate prices for each quantity. Buyers can only purchase amounts you've explicitly configured.
+        <CardHeader className="pb-2">
+          <CardTitle className="font-display text-base">Price Tiers</CardTitle>
+          <CardDescription className="text-xs">
+            Define prices for each quantity. Buyers can only purchase configured amounts.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {/* Price Tiers Table */}
           <div className="rounded-lg border">
             <Table>
@@ -265,13 +265,11 @@ export function SaleConfigForm({ nmkrProject, onSwitchTab }: SaleConfigFormProps
             )}
           </div>
 
-          <div className="rounded-lg border border-border bg-muted/30 p-4">
-            <h4 className="mb-2 text-sm font-medium">Pricing Tips</h4>
-            <ul className="space-y-1 text-xs text-muted-foreground">
-              <li>• Each row defines a purchasable quantity (e.g., 1 NFT for 50 ADA, 2 NFTs for 90 ADA)</li>
-              <li>• Buyers can only purchase exact amounts you've configured</li>
+          <div className="rounded-lg border border-border bg-muted/30 p-3">
+            <h4 className="mb-1 text-sm font-medium">Pricing Tips</h4>
+            <ul className="space-y-0.5 text-xs text-muted-foreground">
+              <li>• Each row defines a purchasable quantity</li>
               <li>• Use bulk discounts to encourage larger purchases</li>
-              <li>• NMKR charges fees on each sale (check their pricing)</li>
             </ul>
           </div>
         </CardContent>
@@ -279,13 +277,13 @@ export function SaleConfigForm({ nmkrProject, onSwitchTab }: SaleConfigFormProps
 
       {/* Payment Link Card */}
       <Card>
-        <CardHeader>
-          <CardTitle className="font-display">NMKR Pay Link</CardTitle>
-          <CardDescription>
-            Generate a payment link to share with your buyers
+        <CardHeader className="pb-2">
+          <CardTitle className="font-display text-base">NMKR Pay Link</CardTitle>
+          <CardDescription className="text-xs">
+            Generate a payment link to share with buyers
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {!nmkrProject.price_in_lovelace && (!pricelist || pricelist.length === 0) ? (
             <p className="text-sm text-muted-foreground">
               Set and save at least one price tier first to generate payment links
