@@ -142,7 +142,7 @@ export function NewAccountWelcomeModal({ onClose }: NewAccountWelcomeModalProps)
             <DialogTitle className="text-2xl">Welcome to Your Dashboard!</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-5 py-4 relative z-10">
+          <div className="space-y-4 py-4 relative z-10">
             {/* Features grid */}
             <div className="grid grid-cols-2 gap-3">
               {features.map((feature) => (

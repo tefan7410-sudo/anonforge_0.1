@@ -83,7 +83,7 @@ export function ScheduleLaunchModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col items-center gap-4 py-4">
+        <div className="flex flex-col items-center gap-3 py-4">
           <Calendar
             mode="single"
             selected={selectedDate}
