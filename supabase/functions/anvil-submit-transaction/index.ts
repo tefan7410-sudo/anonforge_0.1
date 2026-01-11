@@ -70,7 +70,7 @@ serve(async (req) => {
     }
 
     // Check payment status
-    if (payment.status !== 'building') {
+    if (payment.status !== 'pending') {
       return new Response(
         JSON.stringify({ error: `Invalid payment status: ${payment.status}` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

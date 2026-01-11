@@ -137,7 +137,7 @@ serve(async (req) => {
         price_ada: tier.priceAda,
         expected_amount_lovelace: amountLovelace,
         dust_amount: 0, // No dust needed for Anvil
-        status: 'building',
+        status: 'pending',
         expires_at: expiresAt.toISOString(),
       })
       .select()
@@ -146,7 +146,11 @@ serve(async (req) => {
     if (insertError) {
       console.error('Failed to create payment record:', insertError);
       return new Response(
-        JSON.stringify({ error: 'Failed to create payment record' }),
+        JSON.stringify({ 
+          error: 'Failed to create payment record',
+          details: insertError.message,
+          code: insertError.code
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
