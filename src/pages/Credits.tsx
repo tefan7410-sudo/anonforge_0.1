@@ -324,8 +324,8 @@ export default function Credits() {
                         </li>
                       </ul>
                       <div className="space-y-2">
-                        {/* Wallet Payment - Only for Pro tier and if wallet connected */}
-                        {tier.id === 'pro' && walletPayment.isWalletConnected && (
+                        {/* Wallet Payment - Available for all tiers */}
+                        {walletPayment.isWalletConnected ? (
                           <Button 
                             className="w-full" 
                             variant="default"
@@ -344,12 +344,22 @@ export default function Credits() {
                               </>
                             )}
                           </Button>
+                        ) : (
+                          <Button 
+                            className="w-full" 
+                            variant="default"
+                            onClick={() => navigate('/dashboard')}
+                            disabled={walletPayment.isProcessing}
+                          >
+                            <Wallet className="mr-2 h-4 w-4" />
+                            Connect Wallet to Pay
+                          </Button>
                         )}
                         
                         {/* Manual Payment */}
                         <Button 
                           className="w-full" 
-                          variant={tier.id === 'pro' && walletPayment.isWalletConnected ? 'outline' : (tier.badge ? 'default' : 'outline')}
+                          variant="outline"
                           onClick={() => handlePurchase(tier)}
                           disabled={loadingTier === tier.id || createPaymentIntent.isPending}
                         >
@@ -359,7 +369,7 @@ export default function Credits() {
                               Loading...
                             </>
                           ) : (
-                            tier.id === 'pro' && walletPayment.isWalletConnected ? 'Pay Manually' : 'Buy Now'
+                            'Pay Manually'
                           )}
                         </Button>
                       </div>

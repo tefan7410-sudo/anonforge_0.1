@@ -159,51 +159,36 @@ serve(async (req) => {
       // Don't fail - the transaction is already submitted
     }
 
-    // Use admin client for crediting user
+    // Use admin client for crediting user via RPC (writes to correct user_credits table)
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Add credits to user's purchased_credits
-    const { data: profile, error: profileError } = await adminSupabase
-      .from('profiles')
-      .select('purchased_credits')
-      .eq('id', user.id)
-      .single();
+    const { error: creditError } = await adminSupabase.rpc('add_purchased_credits', {
+      p_user_id: user.id,
+      p_amount: payment.credits_amount,
+      p_description: `Purchased ${payment.credits_amount} credits for ${payment.price_ada} ADA via wallet`
+    });
 
-    if (profileError) {
-      console.error('Failed to fetch profile:', profileError);
+    if (creditError) {
+      console.error('Failed to add credits via RPC:', creditError);
+      // Don't fail - transaction is already on chain
     } else {
-      const newCredits = (profile.purchased_credits || 0) + payment.credits_amount;
-      
-      const { error: creditError } = await adminSupabase
-        .from('profiles')
-        .update({ purchased_credits: newCredits })
-        .eq('id', user.id);
-
-      if (creditError) {
-        console.error('Failed to update credits:', creditError);
-      } else {
-        console.log('Credits updated successfully:', { 
-          userId: user.id, 
-          added: payment.credits_amount, 
-          total: newCredits 
-        });
-      }
+      console.log('Credits added successfully via RPC:', { 
+        userId: user.id, 
+        added: payment.credits_amount 
+      });
     }
 
-    // Log credit transaction
-    const { error: logError } = await adminSupabase
-      .from('credit_transactions')
+    // Create notification for user
+    await adminSupabase
+      .from('notifications')
       .insert({
         user_id: user.id,
-        transaction_type: 'purchase',
-        amount: payment.credits_amount,
-        description: `Purchased ${payment.credits_amount} credits for ${payment.price_ada} ADA`,
+        type: 'payment_complete',
+        title: 'Payment Received!',
+        message: `Your payment of ${payment.price_ada} ADA has been confirmed. ${payment.credits_amount} credits have been added to your account.`,
+        link: '/credits'
       });
-
-    if (logError) {
-      console.error('Failed to log credit transaction:', logError);
-    }
 
     return new Response(
       JSON.stringify({
