@@ -229,281 +229,220 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 font-display">
-          <Rocket className="h-5 w-5 text-primary" />
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 font-display text-base">
+          <Rocket className="h-4 w-4 text-primary" />
           Publish to Cardano
         </CardTitle>
-        <CardDescription>
-          Set up your NMKR Studio project to mint NFTs on the Cardano blockchain
+        <CardDescription className="text-xs">
+          Set up your NMKR Studio project to mint NFTs
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         {/* Info box */}
-        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-          <h4 className="mb-2 font-semibold text-primary">What is NMKR?</h4>
-          <p className="text-sm text-muted-foreground">
-            NMKR Studio is a no-code NFT platform for the Cardano blockchain. 
-            It allows you to create, mint, and sell NFT collections with ease.
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <h4 className="mb-1 text-sm font-semibold text-primary">What is NMKR?</h4>
+          <p className="text-xs text-muted-foreground">
+            NMKR Studio is a no-code NFT platform for Cardano.{' '}
+            <a 
+              href="https://www.nmkr.io/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline inline-flex items-center gap-0.5"
+            >
+              Learn more <ExternalLink className="h-3 w-3" />
+            </a>
           </p>
-          <a 
-            href="https://www.nmkr.io/" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"
-          >
-            Learn more about NMKR
-            <ExternalLink className="h-3 w-3" />
-          </a>
         </div>
 
-        {/* Connection status */}
-        <div className="flex items-center gap-2 rounded-lg border border-green-500/20 bg-green-500/10 p-3">
-          <CheckCircle2 className="h-5 w-5 text-green-500" />
-          <span className="text-sm font-medium text-green-700 dark:text-green-400">
-            NMKR API Connected
-          </span>
-        </div>
-
-        {/* Token Type Badge */}
-        <div className="flex items-center gap-3 rounded-lg border bg-muted/50 p-3">
-          <Badge variant="secondary" className="text-xs">NFT</Badge>
-          <div>
-            <p className="text-sm font-medium">Non-Fungible Token Collection</p>
-            <p className="text-xs text-muted-foreground">Each token is unique and cannot be subdivided</p>
+        {/* Connection status + Token Type inline */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 rounded-lg border border-green-500/20 bg-green-500/10 px-2 py-1">
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+            <span className="text-xs font-medium text-green-700 dark:text-green-400">
+              API Connected
+            </span>
           </div>
+          <Badge variant="secondary" className="text-xs">NFT Collection</Badge>
         </div>
 
         {/* Basic Information */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <h4 className="text-sm font-semibold text-foreground">Basic Information</h4>
           
-          <div className="space-y-2">
-            <Label htmlFor="nmkr-project-name">Collection Name <span className="text-destructive">*</span></Label>
-            <Input
-              id="nmkr-project-name"
-              value={nmkrProjectName}
-              onChange={(e) => setNmkrProjectName(e.target.value)}
-              placeholder="My NFT Collection"
-            />
-            <p className="text-xs text-muted-foreground">
-              This name will appear on marketplaces and in your NMKR dashboard
-            </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="nmkr-project-name" className="text-sm">Collection Name <span className="text-destructive">*</span></Label>
+              <Input
+                id="nmkr-project-name"
+                value={nmkrProjectName}
+                onChange={(e) => setNmkrProjectName(e.target.value)}
+                placeholder="My NFT Collection"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="token-prefix" className="text-sm">Token Prefix <span className="text-destructive">*</span></Label>
+              <Input
+                id="token-prefix"
+                value={tokenPrefix}
+                onChange={(e) => setTokenPrefix(e.target.value)}
+                placeholder="Token"
+                maxLength={15}
+                className={tokenPrefix && !isValidPrefix ? 'border-destructive' : ''}
+              />
+              {tokenPrefix && !isValidPrefix && (
+                <p className="text-xs text-destructive">Alphanumeric only, 1-15 chars</p>
+              )}
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="token-prefix">Token Name Prefix <span className="text-destructive">*</span></Label>
-            <Input
-              id="token-prefix"
-              value={tokenPrefix}
-              onChange={(e) => setTokenPrefix(e.target.value)}
-              placeholder="Token"
-              maxLength={15}
-              className={tokenPrefix && !isValidPrefix ? 'border-destructive' : ''}
-            />
-            <p className="text-xs text-muted-foreground">
-              Added to each NFT's on-chain name (e.g., "{tokenPrefix || 'Token'}0001"). Max 15 characters, alphanumeric only.
-            </p>
-            {tokenPrefix && !isValidPrefix && (
-              <p className="text-xs text-destructive">
-                Only letters, numbers, and underscores allowed (1-15 characters)
-              </p>
-            )}
-          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="copies-per-nft" className="text-sm">Copies Per NFT <span className="text-destructive">*</span></Label>
+              <Input
+                id="copies-per-nft"
+                type="number"
+                min="1"
+                value={maxSupply}
+                onChange={(e) => handleCopiesChange(e.target.value)}
+                placeholder="1"
+              />
+              <p className="text-xs text-muted-foreground">Set to 1 for unique NFTs</p>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="copies-per-nft">Copies Per NFT <span className="text-destructive">*</span></Label>
-            <Input
-              id="copies-per-nft"
-              type="number"
-              min="1"
-              value={maxSupply}
-              onChange={(e) => handleCopiesChange(e.target.value)}
-              placeholder="1"
-            />
-            <p className="text-xs text-muted-foreground">
-              How many copies of each unique NFT design can be minted. Set to 1 for a fully unique collection.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="payout-wallet">Payout Wallet Address <span className="text-destructive">*</span></Label>
-            <Input
-              id="payout-wallet"
-              value={payoutWallet}
-              onChange={(e) => setPayoutWallet(e.target.value)}
-              placeholder="addr1..."
-              className={payoutWallet && !isValidWallet ? 'border-destructive' : ''}
-            />
-            <p className="text-xs text-muted-foreground">
-              Your Cardano wallet address where you'll receive ADA from NFT sales
-            </p>
-            {payoutWallet && !isValidWallet && (
-              <p className="text-xs text-destructive">
-                Please enter a valid Cardano mainnet address (starts with addr1)
-              </p>
-            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="payout-wallet" className="text-sm">Payout Wallet <span className="text-destructive">*</span></Label>
+              <Input
+                id="payout-wallet"
+                value={payoutWallet}
+                onChange={(e) => setPayoutWallet(e.target.value)}
+                placeholder="addr1..."
+                className={payoutWallet && !isValidWallet ? 'border-destructive' : ''}
+              />
+              {payoutWallet && !isValidWallet && (
+                <p className="text-xs text-destructive">Valid Cardano address required</p>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Marketing & Branding */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <h4 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Globe className="h-4 w-4 text-primary" />
             Marketing & Branding
           </h4>
           
-          {/* Logo Upload */}
-          <div className="space-y-2">
-            <Label>Collection Logo (Optional)</Label>
-            <p className="text-xs text-muted-foreground">
-              Square image, max 300x300px. Displayed on NMKR payment gateway.
-            </p>
-            
-            {logoPreview ? (
-              <div className="flex items-start gap-4">
+          <div className="grid gap-3 sm:grid-cols-[auto_1fr_1fr]">
+            {/* Logo Upload */}
+            <div className="space-y-1.5">
+              <Label className="text-sm">Logo</Label>
+              {logoPreview ? (
                 <div className="relative">
                   <img 
                     src={logoPreview} 
                     alt="Logo preview" 
-                    className="h-20 w-20 rounded-lg border object-cover"
+                    className="h-16 w-16 rounded-lg border object-cover"
                   />
                   <Button 
                     variant="destructive" 
                     size="icon" 
-                    className="absolute -right-2 -top-2 h-6 w-6"
+                    className="absolute -right-1 -top-1 h-5 w-5"
                     onClick={clearLogo}
                   >
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Logo uploaded successfully
-                </p>
-              </div>
-            ) : (
-              <div
-                {...getLogoRootProps()}
-                className={cn(
-                  "flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 transition-colors",
-                  isLogoDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
-                )}
-              >
-                <input {...getLogoInputProps()} />
-                <ImageIcon className="mb-2 h-8 w-8 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground text-center">
-                  {isLogoDragActive ? "Drop logo here" : "Drag & drop logo or click to select"}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Max 300x300px, square, under 500KB
-                </p>
-              </div>
-            )}
-            
-            {logoError && (
-              <p className="text-xs text-destructive">{logoError}</p>
-            )}
-          </div>
+              ) : (
+                <div
+                  {...getLogoRootProps()}
+                  className={cn(
+                    "flex h-16 w-16 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
+                    isLogoDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                  )}
+                >
+                  <input {...getLogoInputProps()} />
+                  <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                </div>
+              )}
+              {logoError && <p className="text-xs text-destructive">{logoError}</p>}
+            </div>
 
-          {/* Project URL */}
-          <div className="space-y-2">
-            <Label htmlFor="project-url">Project URL (Optional)</Label>
-            <Input
-              id="project-url"
-              type="url"
-              value={projectUrl}
-              onChange={(e) => setProjectUrl(e.target.value)}
-              placeholder="https://myproject.com"
-            />
-            <p className="text-xs text-muted-foreground">
-              Website URL for your collection
-            </p>
-          </div>
-
-          {/* Twitter Handle */}
-          <div className="space-y-2">
-            <Label htmlFor="twitter-handle" className="flex items-center gap-2">
-              <Twitter className="h-3 w-3" />
-              Twitter/X Handle (Optional)
-            </Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+            {/* Project URL */}
+            <div className="space-y-1.5">
+              <Label htmlFor="project-url" className="text-sm">Project URL</Label>
               <Input
-                id="twitter-handle"
-                value={twitterHandle}
-                onChange={(e) => setTwitterHandle(e.target.value.replace('@', ''))}
-                placeholder="yourhandle"
-                className="pl-7"
+                id="project-url"
+                type="url"
+                value={projectUrl}
+                onChange={(e) => setProjectUrl(e.target.value)}
+                placeholder="https://myproject.com"
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Buyers can tag you when sharing purchases
-            </p>
-          </div>
-        </div>
 
-        {/* Storage Provider */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-foreground">Storage Provider</h4>
-          <RadioGroup value={storageProvider} onValueChange={(v) => setStorageProvider(v as 'ipfs' | 'iagon')}>
-            <div className="flex items-start space-x-3 rounded-lg border p-3">
-              <RadioGroupItem value="ipfs" id="storage-ipfs" className="mt-0.5" />
-              <div className="flex-1">
-                <Label htmlFor="storage-ipfs" className="cursor-pointer font-medium">
-                  IPFS <Badge variant="outline" className="ml-2 text-xs">Recommended</Badge>
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  InterPlanetary File System - the industry standard for decentralized NFT storage
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3 rounded-lg border p-3">
-              <RadioGroupItem value="iagon" id="storage-iagon" className="mt-0.5" />
-              <div className="flex-1">
-                <Label htmlFor="storage-iagon" className="cursor-pointer font-medium">Iagon</Label>
-                <p className="text-xs text-muted-foreground">
-                  Cardano-native decentralized storage alternative
-                </p>
-              </div>
-            </div>
-          </RadioGroup>
-        </div>
-
-        {/* Policy Settings */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-foreground">Policy Settings</h4>
-          
-          <div className="flex items-start space-x-3 rounded-lg border p-3">
-            <Checkbox 
-              id="policy-expires" 
-              checked={policyExpires}
-              onCheckedChange={(checked) => setPolicyExpires(checked === true)}
-              className="mt-0.5"
-            />
-            <div className="flex-1">
-              <Label htmlFor="policy-expires" className="cursor-pointer font-medium">
-                Lock policy on a specific date
+            {/* Twitter Handle */}
+            <div className="space-y-1.5">
+              <Label htmlFor="twitter-handle" className="text-sm flex items-center gap-1">
+                <Twitter className="h-3 w-3" /> Twitter
               </Label>
-              <p className="text-xs text-muted-foreground">
-                Ensures no new tokens can be minted after this date. Recommended for authenticity.
-              </p>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                <Input
+                  id="twitter-handle"
+                  value={twitterHandle}
+                  onChange={(e) => setTwitterHandle(e.target.value.replace('@', ''))}
+                  placeholder="handle"
+                  className="pl-7"
+                />
+              </div>
             </div>
           </div>
+        </div>
 
-          {policyExpires && (
-            <div className="ml-6 space-y-2">
-              <Label>Policy Lock Date (Optional)</Label>
+        {/* Storage Provider + Policy Settings - More compact */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-foreground">Storage</h4>
+            <RadioGroup value={storageProvider} onValueChange={(v) => setStorageProvider(v as 'ipfs' | 'iagon')} className="space-y-1">
+              <div className="flex items-center space-x-2 rounded-lg border p-2">
+                <RadioGroupItem value="ipfs" id="storage-ipfs" />
+                <Label htmlFor="storage-ipfs" className="cursor-pointer text-sm">
+                  IPFS <Badge variant="outline" className="ml-1 text-xs">Recommended</Badge>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 rounded-lg border p-2">
+                <RadioGroupItem value="iagon" id="storage-iagon" />
+                <Label htmlFor="storage-iagon" className="cursor-pointer text-sm">Iagon</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-foreground">Policy</h4>
+            <div className="flex items-center space-x-2 rounded-lg border p-2">
+              <Checkbox 
+                id="policy-expires" 
+                checked={policyExpires}
+                onCheckedChange={(checked) => setPolicyExpires(checked === true)}
+              />
+              <Label htmlFor="policy-expires" className="cursor-pointer text-sm">
+                Lock policy on date
+              </Label>
+            </div>
+            {policyExpires && (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
+                    size="sm"
                     className={cn(
                       "w-full justify-start text-left font-normal",
                       !policyLockDate && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {policyLockDate ? format(policyLockDate, "PPP") : "Pick a date"}
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {policyLockDate ? format(policyLockDate, "PP") : "Pick date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -517,73 +456,51 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
                   />
                 </PopoverContent>
               </Popover>
-              <p className="text-xs text-muted-foreground">
-                If not set, the policy will remain open until you lock it manually in NMKR
-              </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* Royalty Settings */}
-        <div className="space-y-3">
+        {/* Royalty Settings - Compact */}
+        <div className="space-y-2">
           <h4 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Coins className="h-4 w-4 text-primary" />
             Royalty Settings
           </h4>
           
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-            <div className="flex items-start gap-2">
-              <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">
-                  Royalties ensure you receive a percentage of every secondary sale on marketplaces 
-                  like jpg.store. Highly recommended!
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">Note:</span> Creating the royalty token will use 1 mint credit in NMKR Studio.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>Royalty Percentage</Label>
-              <Badge variant="outline">{royaltyPercent}%</Badge>
-            </div>
-            <Slider
-              value={[royaltyPercent]}
-              onValueChange={(value) => setRoyaltyPercent(value[0])}
-              min={1}
-              max={10}
-              step={1}
-              className="w-full"
-            />
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-2">
             <p className="text-xs text-muted-foreground">
-              Standard is 5%. Range: 1-10%
+              Earn from secondary sales on jpg.store. Uses 1 NMKR mint credit.
             </p>
           </div>
 
-          <div className="flex items-start space-x-3 rounded-lg border p-3">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <Slider
+                value={[royaltyPercent]}
+                onValueChange={(value) => setRoyaltyPercent(value[0])}
+                min={1}
+                max={10}
+                step={1}
+                className="w-full"
+              />
+            </div>
+            <Badge variant="outline" className="shrink-0">{royaltyPercent}%</Badge>
+          </div>
+
+          <div className="flex items-center space-x-2 rounded-lg border p-2">
             <Checkbox
               id="use-payout-royalty"
               checked={usePayoutForRoyalty}
               onCheckedChange={(checked) => setUsePayoutForRoyalty(checked === true)}
-              className="mt-0.5"
             />
-            <div className="flex-1">
-              <Label htmlFor="use-payout-royalty" className="cursor-pointer font-medium">
-                Use payout wallet for royalties
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Receive royalties to the same wallet as primary sales
-              </p>
-            </div>
+            <Label htmlFor="use-payout-royalty" className="cursor-pointer text-sm">
+              Use payout wallet for royalties
+            </Label>
           </div>
 
           {!usePayoutForRoyalty && (
-            <div className="ml-6 space-y-2">
-              <Label htmlFor="royalty-address">Royalty Wallet Address</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="royalty-address" className="text-sm">Royalty Wallet</Label>
               <Input
                 id="royalty-address"
                 value={royaltyAddress}
@@ -592,53 +509,48 @@ export function NmkrSetupWizard({ projectId, projectName, tokenPrefix: defaultTo
                 className={royaltyAddress && !isValidRoyaltyAddress ? 'border-destructive' : ''}
               />
               {royaltyAddress && !isValidRoyaltyAddress && (
-                <p className="text-xs text-destructive">
-                  Please enter a valid Cardano mainnet address
-                </p>
+                <p className="text-xs text-destructive">Valid Cardano address required</p>
               )}
             </div>
           )}
         </div>
 
-        {/* Advanced Options */}
+        {/* Advanced Options + Description - Compact */}
         <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
           <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="flex w-full items-center justify-between p-0 hover:bg-transparent">
+            <Button variant="ghost" size="sm" className="flex w-full items-center justify-between px-0 hover:bg-transparent">
               <span className="text-sm font-semibold text-foreground">Advanced Options</span>
               <ChevronDown className={cn("h-4 w-4 transition-transform", advancedOpen && "rotate-180")} />
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="mt-3 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="address-expire-time">Address Reservation Time (minutes)</Label>
-              <Input
-                id="address-expire-time"
-                type="number"
-                min="5"
-                max="60"
-                value={addressExpireTime}
-                onChange={(e) => setAddressExpireTime(e.target.value)}
-                placeholder="20"
-                className={!isValidAddressExpireTime ? 'border-destructive' : ''}
-              />
-              <p className="text-xs text-muted-foreground">
-                How long a token is reserved for a buyer before expiring (5-60 minutes, default: 20)
-              </p>
+          <CollapsibleContent className="mt-2 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="address-expire-time" className="text-sm">Reservation Time (min)</Label>
+                <Input
+                  id="address-expire-time"
+                  type="number"
+                  min="5"
+                  max="60"
+                  value={addressExpireTime}
+                  onChange={(e) => setAddressExpireTime(e.target.value)}
+                  placeholder="20"
+                  className={!isValidAddressExpireTime ? 'border-destructive' : ''}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="description" className="text-sm">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe your collection..."
+                  rows={2}
+                />
+              </div>
             </div>
           </CollapsibleContent>
         </Collapsible>
-
-        {/* Description */}
-        <div className="space-y-2">
-          <Label htmlFor="description">Description (Optional)</Label>
-          <Textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe your NFT collection..."
-            rows={3}
-          />
-        </div>
 
         <Button 
           onClick={handleCreateProject}

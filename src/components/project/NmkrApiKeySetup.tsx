@@ -39,31 +39,30 @@ export function NmkrApiKeySetup({ onSuccess }: NmkrApiKeySetupProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-            <Rocket className="h-5 w-5 text-primary-foreground" />
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+            <Rocket className="h-4 w-4 text-primary-foreground" />
           </div>
           <div>
-            <CardTitle className="font-display">Connect to NMKR Studio</CardTitle>
-            <CardDescription>
+            <CardTitle className="font-display text-base">Connect to NMKR Studio</CardTitle>
+            <CardDescription className="text-xs">
               Enter your NMKR API key to mint NFTs on Cardano
             </CardDescription>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <Alert>
+      <CardContent className="space-y-4">
+        <Alert className="py-2">
           <Key className="h-4 w-4" />
-          <AlertDescription>
-            You need an NMKR Studio account and API key to publish NFTs on Cardano. 
-            Your API key is stored securely and only used for your projects.
+          <AlertDescription className="text-xs">
+            You need an NMKR Studio account and API key to publish NFTs on Cardano.
           </AlertDescription>
         </Alert>
 
-        <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-3">
-          <h4 className="font-medium">Don't have an API key?</h4>
-          <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+        <div className="rounded-lg border border-border bg-muted/50 p-3 space-y-2">
+          <h4 className="font-medium text-sm">Don't have an API key?</h4>
+          <ol className="list-decimal list-inside space-y-1 text-xs text-muted-foreground">
             <li>
               <a 
                 href="https://www.nmkr.io/" 
@@ -83,18 +82,18 @@ export function NmkrApiKeySetup({ onSuccess }: NmkrApiKeySetupProps) {
               href="https://studio.nmkr.io/apikeys" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="gap-2"
+              className="gap-1.5"
             >
-              <Key className="h-4 w-4" />
+              <Key className="h-3.5 w-3.5" />
               Open NMKR API Keys Page
               <ExternalLink className="h-3 w-3" />
             </a>
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="apiKey">NMKR API Key</Label>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="apiKey" className="text-sm">NMKR API Key</Label>
             <div className="relative">
               <Input
                 id="apiKey"
