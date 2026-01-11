@@ -38,6 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   Image as ImageIcon, 
   Upload, 
@@ -68,6 +69,7 @@ import {
   Plus,
   Trash2,
   Lock,
+  ChevronDown,
 } from 'lucide-react';
 import { cn, generateSlug } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -723,6 +725,9 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
             {isApproved 
               ? "Your collection has been approved — only visibility can be changed."
               : "Your launch is scheduled and pending review. You can edit again if your submission is rejected."}
+            <span className="block mt-1 text-sm opacity-80">
+              Click below to view your saved details.
+            </span>
           </AlertDescription>
         </Alert>
       )}
@@ -782,6 +787,24 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
         </Card>
       )}
 
+      {/* Collapsible wrapper for editable content when locked */}
+      <Collapsible open={!isEditingLocked ? true : undefined} defaultOpen={!isEditingLocked}>
+        {isEditingLocked && (
+          <CollapsibleTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="w-full justify-between"
+            >
+              <span className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                View Product Page Details
+              </span>
+              <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </Button>
+          </CollapsibleTrigger>
+        )}
+        <CollapsibleContent className={cn(isEditingLocked && "pt-4")}>
+          <div className="space-y-6">
       {/* Collection Settings - Type & Content */}
       <Card>
         <CardHeader>
@@ -1709,6 +1732,9 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
           </CardContent>
         </Card>
       )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Preview Modal */}
       {showPreview && (
