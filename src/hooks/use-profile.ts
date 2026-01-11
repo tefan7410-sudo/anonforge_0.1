@@ -9,6 +9,9 @@ export interface Profile {
   avatar_url: string | null;
   twitter_handle: string | null;
   is_verified_creator: boolean;
+  stake_address: string | null;
+  wallet_address: string | null;
+  wallet_connected_at: string | null;
   created_at: string;
   updated_at: string;
 }

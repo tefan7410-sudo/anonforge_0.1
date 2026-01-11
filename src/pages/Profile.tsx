@@ -26,7 +26,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, BadgeCheck, Clock, X, Twitter, Coins, TrendingUp, GraduationCap, RotateCcw, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, BadgeCheck, Clock, X, Twitter, Coins, TrendingUp, GraduationCap, RotateCcw, RefreshCw, Wallet, Link2, Unlink } from 'lucide-react';
+import { useWalletAuth, formatStakeAddress } from '@/hooks/use-wallet-auth';
+import { WalletConnectModal } from '@/components/WalletConnectModal';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
@@ -103,8 +105,10 @@ export default function Profile() {
   const submitVerification = useSubmitVerificationRequest();
   const syncToCollections = useSyncProfileToCollections();
   const { totalCredits, freeCredits, purchasedCredits, daysUntilReset, isLowCredits } = useCreditBalance();
+  const { unlinkWallet, isConnecting: isWalletConnecting } = useWalletAuth();
 
   const [displayName, setDisplayName] = useState('');
+  const [showWalletModal, setShowWalletModal] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   // Verification form state
@@ -204,6 +208,16 @@ export default function Profile() {
       setVerificationBio('');
     } catch (error: any) {
       toast.error(error.message);
+    }
+  };
+
+  const handleDisconnectWallet = async () => {
+    if (!user) return;
+    try {
+      await unlinkWallet(user.id);
+      toast.success('Wallet disconnected');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to disconnect wallet');
     }
   };
 
@@ -590,6 +604,97 @@ export default function Profile() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Connected Wallet */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-display">
+                <Wallet className="h-5 w-5" />
+                Connected Wallet
+              </CardTitle>
+              <CardDescription>
+                Link a Cardano wallet for wallet-based sign-in
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {profile?.stake_address ? (
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-border/50 bg-muted/30 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Wallet className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium">Cardano Wallet</p>
+                        <p className="text-sm text-muted-foreground font-mono truncate">
+                          {formatStakeAddress(profile.stake_address)}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="shrink-0">
+                        <Link2 className="h-3 w-3 mr-1" />
+                        Connected
+                      </Badge>
+                    </div>
+                    {profile.wallet_connected_at && (
+                      <p className="text-xs text-muted-foreground mt-3">
+                        Connected on {new Date(profile.wallet_connected_at).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Unlink className="h-4 w-4 mr-2" />
+                          Disconnect Wallet
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Disconnect wallet?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            You will no longer be able to sign in with this wallet. 
+                            You can reconnect it later from your profile.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDisconnectWallet}>
+                            Disconnect
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium">No Wallet Connected</p>
+                    <p className="text-sm text-muted-foreground">
+                      Connect a Cardano wallet to enable wallet-based sign-in
+                    </p>
+                  </div>
+                  <Button onClick={() => setShowWalletModal(true)} disabled={isWalletConnecting}>
+                    {isWalletConnecting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Wallet className="mr-2 h-4 w-4" />
+                    )}
+                    Connect Wallet
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <WalletConnectModal
+            open={showWalletModal}
+            onClose={() => setShowWalletModal(false)}
+            mode="link"
+            onSuccess={() => setShowWalletModal(false)}
+          />
 
           {/* Tutorial */}
           <TutorialSection />
