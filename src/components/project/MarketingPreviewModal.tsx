@@ -7,7 +7,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sparkles, ArrowRight, Store, X } from 'lucide-react';
+import { Sparkles, ArrowRight, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MarketingPreviewModalProps {
@@ -32,14 +32,11 @@ export function MarketingPreviewModal({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-4 py-3 border-b flex-row items-center justify-between space-y-0">
+        <DialogHeader className="px-4 py-3 border-b">
           <DialogTitle className="text-base font-medium flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
             Marketing Preview
           </DialogTitle>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
         </DialogHeader>
 
         <div className="max-h-[70vh] overflow-y-auto">
