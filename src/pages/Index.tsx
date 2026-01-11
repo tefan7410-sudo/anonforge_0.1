@@ -133,16 +133,16 @@ export default function Index() {
               <Link to="/marketplace">{t('nav.marketplace')}</Link>
             </Button>
             <Button variant="ghost" asChild>
-              <Link to="/artfund">Art Fund</Link>
+              <Link to="/artfund">{t('nav.artFund')}</Link>
             </Button>
             <Button variant="ghost" asChild>
-              <Link to="/status">Status</Link>
+              <Link to="/status">{t('nav.status')}</Link>
             </Button>
             <LanguageSelector />
             <ThemeToggle />
             {user ? (
               <Button asChild>
-                <Link to="/dashboard">Dashboard</Link>
+                <Link to="/dashboard">{t('nav.dashboard')}</Link>
               </Button>
             ) : (
               <>
@@ -213,7 +213,7 @@ export default function Index() {
                   >
                     <Link to="/artfund">
                       <Heart className="mr-3 h-4 w-4" />
-                      Art Fund
+                      {t('nav.artFund')}
                     </Link>
                   </Button>
                   <Button
@@ -224,7 +224,7 @@ export default function Index() {
                   >
                     <Link to="/status">
                       <Zap className="mr-3 h-4 w-4" />
-                      Status
+                      {t('nav.status')}
                     </Link>
                   </Button>
                   <div className="my-2 border-t border-border" />
@@ -236,7 +236,7 @@ export default function Index() {
                     >
                       <Link to="/dashboard">
                         <LayoutGrid className="mr-3 h-4 w-4" />
-                        Dashboard
+                        {t('nav.dashboard')}
                       </Link>
                     </Button>
                   ) : (
@@ -326,7 +326,7 @@ export default function Index() {
                 <Button size="lg" variant="ghost" asChild>
                   <Link to="/creators">
                     <Play className="mr-2 h-4 w-4" aria-hidden="true" />
-                    For Creators
+                    {t('nav.forCreators')}
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild>
@@ -475,8 +475,8 @@ export default function Index() {
               <Link to="/documentation" className="transition-colors hover:text-foreground">{t('footer.documentation')}</Link>
               <Link to="/marketplace" className="transition-colors hover:text-foreground">{t('footer.marketplace')}</Link>
               <Link to="/creators" className="transition-colors hover:text-foreground">{t('nav.forCreators')}</Link>
-              <Link to="/artfund" className="transition-colors hover:text-foreground">Art Fund</Link>
-              <Link to="/status" className="transition-colors hover:text-foreground">Status</Link>
+              <Link to="/artfund" className="transition-colors hover:text-foreground">{t('nav.artFund')}</Link>
+              <Link to="/status" className="transition-colors hover:text-foreground">{t('nav.status')}</Link>
             </nav>
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} {t('footer.rights')}

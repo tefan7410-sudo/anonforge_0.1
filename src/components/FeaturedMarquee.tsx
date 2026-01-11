@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { useActiveMarketing } from '@/hooks/use-marketing';
+import { useTranslations } from '@/hooks/use-translations';
 import { cn } from '@/lib/utils';
 
 export function FeaturedMarquee() {
+  const { t } = useTranslations();
   const { data: activeMarketing, isLoading } = useActiveMarketing();
 
   // Only show when there's active paid marketing
@@ -12,12 +14,12 @@ export function FeaturedMarquee() {
   const featuredData = activeMarketing;
 
   const projectName = featuredData.project.name;
-  const tagline = featuredData.product_page?.tagline || 'Minting Now!';
+  const tagline = featuredData.product_page?.tagline || t('featured.mintingNow');
   
   const content = (
     <>
       <Sparkles className="h-3.5 w-3.5 text-primary-foreground/80" />
-      <span className="font-medium">Featured:</span>
+      <span className="font-medium">{t('featured.label')}</span>
       <span>{projectName}</span>
       <span className="text-primary-foreground/60">|</span>
       <span className="text-primary-foreground/90">{tagline}</span>
