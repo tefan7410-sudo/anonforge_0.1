@@ -53,6 +53,8 @@ export interface ProductPage {
   collection_type: CollectionType;
   preview_images: PreviewImage[];
   artworks: ArtworkItem[];
+  admin_approved: boolean;
+  rejection_reason: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -128,6 +130,8 @@ export function useProductPage(projectId: string) {
         collection_type: (data.collection_type as CollectionType) ?? 'generative',
         preview_images: previewImages,
         artworks: artworks,
+        admin_approved: (data as any).admin_approved ?? false,
+        rejection_reason: (data as any).rejection_reason ?? null,
       } as ProductPage;
     },
     enabled: !!projectId,
