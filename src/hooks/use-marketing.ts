@@ -120,6 +120,28 @@ export function useMarketingPaymentStatus(paymentId: string | null, enabled = tr
   });
 }
 
+// Cancel a pending marketing payment
+export function useCancelMarketingPayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (paymentId: string) => {
+      const { error } = await supabase
+        .from('pending_marketing_payments')
+        .update({ status: 'expired' })
+        .eq('id', paymentId)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['marketing-payment-status'] });
+      queryClient.invalidateQueries({ queryKey: ['existing-marketing-payment'] });
+      queryClient.invalidateQueries({ queryKey: ['marketing-request'] });
+    },
+  });
+}
+
 // Fetch existing pending payment for a marketing request (for session persistence)
 export function useExistingMarketingPayment(marketingRequestId: string | null) {
   return useQuery({
