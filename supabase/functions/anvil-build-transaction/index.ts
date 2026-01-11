@@ -7,11 +7,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Credit tiers with TEST pricing (1 ADA for Pro tier)
+// Credit tiers pricing
 const CREDIT_TIERS: Record<string, { credits: number; priceAda: number }> = {
   'starter': { credits: 1000, priceAda: 17 },
   'popular': { credits: 2500, priceAda: 33 },
-  'pro': { credits: 5000, priceAda: 1 }, // TEST: 1 ADA instead of 53
+  'pro': { credits: 5000, priceAda: 53 },
 };
 
 serve(async (req) => {
