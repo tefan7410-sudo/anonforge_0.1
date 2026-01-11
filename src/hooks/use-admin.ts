@@ -528,12 +528,22 @@ export function useApproveVerification() {
       if (requestError) throw requestError;
 
       // Update the profile to mark as verified creator
-      const { error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .update({ is_verified_creator: true })
-        .eq('id', userId);
+        .eq('id', userId)
+        .select('id');
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Failed to update profile:', profileError);
+        throw new Error(`Failed to mark creator as verified: ${profileError.message}`);
+      }
+
+      // Check if any rows were affected (RLS might block silently)
+      if (!profileData || profileData.length === 0) {
+        console.error('Profile update affected 0 rows - RLS may be blocking');
+        throw new Error('Failed to update profile - check RLS policies');
+      }
 
       // Log admin action
       await logAdminAction({
