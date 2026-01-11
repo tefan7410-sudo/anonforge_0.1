@@ -247,7 +247,7 @@ export default function Register() {
         open={showWalletModal}
         onClose={() => setShowWalletModal(false)}
         mode="register"
-        onSuccess={() => navigate('/dashboard', { replace: true })}
+        onSuccess={() => navigate('/profile?setup=true', { replace: true })}
       />
     </PageTransition>
   );

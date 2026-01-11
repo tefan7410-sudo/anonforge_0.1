@@ -155,6 +155,9 @@ interface UserWithRoles {
   display_name: string | null;
   email: string;
   avatar_url: string | null;
+  stake_address: string | null;
+  wallet_address: string | null;
+  wallet_connected_at: string | null;
   user_roles: { role: string }[];
 }
 
@@ -163,10 +166,10 @@ export function useAllUserRoles() {
   return useQuery({
     queryKey: ['admin-user-roles'],
     queryFn: async () => {
-      // Step 1: Fetch all profiles
+      // Step 1: Fetch all profiles including wallet info
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, display_name, email, avatar_url')
+        .select('id, display_name, email, avatar_url, stake_address, wallet_address, wallet_connected_at')
         .order('email');
 
       if (profilesError) throw profilesError;
@@ -193,6 +196,9 @@ export function useAllUserRoles() {
         display_name: profile.display_name,
         email: profile.email,
         avatar_url: profile.avatar_url,
+        stake_address: profile.stake_address,
+        wallet_address: profile.wallet_address,
+        wallet_connected_at: profile.wallet_connected_at,
         user_roles: rolesMap.get(profile.id) || [],
       })) as UserWithRoles[];
     },

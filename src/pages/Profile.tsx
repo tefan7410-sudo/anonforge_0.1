@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useProfile, useUpdateProfile, useUploadAvatar, useResetPassword, useSyncProfileToCollections } from '@/hooks/use-profile';
 import { useMyVerificationRequest, useSubmitVerificationRequest } from '@/hooks/use-verification-request';
 import { useCreditBalance } from '@/hooks/use-credits';
@@ -9,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
@@ -94,6 +97,9 @@ function TutorialSection() {
 
 export default function Profile() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  const isSetupMode = searchParams.get('setup') === 'true';
   const { user, signOut } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -115,7 +121,9 @@ export default function Profile() {
   const [showVerificationForm, setShowVerificationForm] = useState(false);
   const [verificationTwitter, setVerificationTwitter] = useState('');
   const [verificationBio, setVerificationBio] = useState('');
-
+  
+  // Setup mode state
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   // Initialize form when profile loads
   if (profile && !initialized) {
     setDisplayName(profile.display_name || '');
@@ -131,6 +139,42 @@ export default function Profile() {
         displayName: displayName.trim(),
       });
       toast.success('Profile saved');
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleSetupComplete = async () => {
+    if (!user) return;
+    
+    if (!displayName.trim()) {
+      toast.error('Please enter a display name');
+      return;
+    }
+    
+    if (!acceptedTerms) {
+      toast.error('Please accept the Terms of Service');
+      return;
+    }
+
+    try {
+      // Update profile with display name and terms acceptance
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: displayName.trim(),
+          accepted_terms_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      // Invalidate profile queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['profile-incomplete', user.id] });
+      
+      toast.success('Welcome to AnonForge!');
+      navigate('/dashboard', { replace: true });
     } catch (error: any) {
       toast.error(error.message);
     }
@@ -294,6 +338,20 @@ export default function Profile() {
 
       <main className="container mx-auto max-w-2xl px-6 py-6">
         <div className="space-y-6">
+          {/* Setup Mode Banner */}
+          {isSetupMode && (
+            <Card className="border-primary/30 bg-gradient-to-r from-primary/10 to-transparent">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 font-display text-lg">
+                  <Wallet className="h-5 w-5 text-primary" />
+                  Welcome to AnonForge!
+                </CardTitle>
+                <CardDescription>
+                  Complete your profile to get started. Please set a display name and accept our terms of service.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          )}
           {/* Profile Information */}
           <Card>
             <CardHeader>
@@ -400,18 +458,57 @@ export default function Profile() {
                 </p>
               </div>
 
-              {/* Save Button - only show if user can make changes */}
-              {!isVerifiedCreator && (
-                <div className="flex justify-end">
-                  <Button onClick={handleSave} disabled={updateProfile.isPending}>
-                    {updateProfile.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="mr-2 h-4 w-4" />
-                    )}
-                    Save Changes
-                  </Button>
+              {/* Setup Mode: Terms checkbox and complete button */}
+              {isSetupMode ? (
+                <div className="space-y-4 pt-2">
+                  <Separator />
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="terms"
+                      checked={acceptedTerms}
+                      onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                      className="mt-1"
+                    />
+                    <Label htmlFor="terms" className="text-sm font-normal leading-relaxed cursor-pointer">
+                      I agree to the{' '}
+                      <Link
+                        to="/terms-of-service"
+                        target="_blank"
+                        className="text-primary hover:underline"
+                      >
+                        Terms of Service
+                      </Link>
+                      <span className="text-destructive ml-1">*</span>
+                    </Label>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={handleSetupComplete} 
+                      disabled={!displayName.trim() || !acceptedTerms || updateProfile.isPending}
+                    >
+                      {updateProfile.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="mr-2 h-4 w-4" />
+                      )}
+                      Complete Setup
+                    </Button>
+                  </div>
                 </div>
+              ) : (
+                /* Regular Save Button - only show if user can make changes */
+                !isVerifiedCreator && (
+                  <div className="flex justify-end">
+                    <Button onClick={handleSave} disabled={updateProfile.isPending}>
+                      {updateProfile.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="mr-2 h-4 w-4" />
+                      )}
+                      Save Changes
+                    </Button>
+                  </div>
+                )
               )}
             </CardContent>
           </Card>

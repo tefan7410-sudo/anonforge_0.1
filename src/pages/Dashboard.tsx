@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAcceptInvitation, useDeclineInvitation } from '@/hooks/use-team';
+import { useIsProfileIncomplete } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -50,6 +51,7 @@ interface Invitation {
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [ownedProjects, setOwnedProjects] = useState<Project[]>([]);
   const [sharedProjects, setSharedProjects] = useState<Project[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -62,6 +64,14 @@ export default function Dashboard() {
   const { isActive: isTutorialActive, currentStep } = useTutorial();
   const { project: tutorialProject } = useTutorialProject();
   const { data: isAmbassador } = useIsAmbassador(user?.id);
+  const { data: isProfileIncomplete, isLoading: profileCheckLoading } = useIsProfileIncomplete(user?.id);
+
+  // Redirect to profile setup if profile is incomplete (wallet registration)
+  useEffect(() => {
+    if (!profileCheckLoading && isProfileIncomplete) {
+      navigate('/profile?setup=true', { replace: true });
+    }
+  }, [isProfileIncomplete, profileCheckLoading, navigate]);
 
   useEffect(() => {
     if (user) {
