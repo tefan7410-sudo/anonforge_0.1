@@ -481,6 +481,39 @@ export type Database = {
           },
         ]
       }
+      hero_backgrounds: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          image_url: string
+          is_active: boolean | null
+          storage_path: string
+          updated_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          storage_path: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          storage_path?: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       layer_effects: {
         Row: {
           created_at: string

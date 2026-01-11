@@ -96,6 +96,7 @@ import { CostsAnalyticsTab } from '@/components/admin/CostsAnalyticsTab';
 import { SystemStatusTab } from '@/components/admin/SystemStatusTab';
 import { ArtFundTab } from '@/components/admin/ArtFundTab';
 import { BugReportsTab } from '@/components/admin/BugReportsTab';
+import { HeroBackgroundsTab } from '@/components/admin/HeroBackgroundsTab';
 import { toast } from 'sonner';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -588,6 +589,10 @@ export default function Admin() {
                       {openBugCount}
                     </Badge>
                   )}
+                </TabsTrigger>
+                <TabsTrigger value="hero-backgrounds" className="gap-2">
+                  <ImageIcon className="h-4 w-4" />
+                  Hero Backgrounds
                 </TabsTrigger>
               </>
             )}
@@ -1557,6 +1562,11 @@ export default function Admin() {
           {/* Bug Reports Tab */}
           <TabsContent value="bugs">
             <BugReportsTab />
+          </TabsContent>
+
+          {/* Hero Backgrounds Tab */}
+          <TabsContent value="hero-backgrounds">
+            <HeroBackgroundsTab />
           </TabsContent>
         </Tabs>
       </main>
