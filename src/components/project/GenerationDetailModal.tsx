@@ -17,7 +17,7 @@ import {
 } from '@/hooks/use-generation-comments';
 import { useMentionableUsers, type MentionableUser } from '@/hooks/use-mentions';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { getGenerationFileUrl, type Generation } from '@/hooks/use-generations';
 import { Send, Trash2, Loader2, MessageSquare } from 'lucide-react';
@@ -37,7 +37,6 @@ export function GenerationDetailModal({
   onOpenChange,
 }: GenerationDetailModalProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
@@ -150,17 +149,17 @@ export function GenerationDetailModal({
         await supabase.from('notifications').insert({
           user_id: mentionedUserId,
           type: 'comment_mention',
-          title: 'You were mentioned',
-          message: `Someone mentioned you in a comment on ${generation.token_id}`,
+          title: 'Someone mentioned you',
+          message: `You were tagged in a comment on ${generation.token_id}`,
           link: `/project/${projectId}?generation=${generation.id}`,
           metadata: { generation_id: generation.id },
         });
       }
 
       setNewComment('');
-      toast({ title: 'Comment added' });
+      toast.success('Comment added');
     } catch {
-      toast({ title: 'Failed to add comment', variant: 'destructive' });
+      toast.error('Failed to add comment');
     }
   };
 
@@ -172,9 +171,9 @@ export function GenerationDetailModal({
         commentId,
         generationId: generation.id,
       });
-      toast({ title: 'Comment deleted' });
+      toast.success('Comment deleted');
     } catch {
-      toast({ title: 'Failed to delete comment', variant: 'destructive' });
+      toast.error('Failed to delete comment');
     }
   };
 
