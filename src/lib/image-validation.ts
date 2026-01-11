@@ -12,10 +12,10 @@ export const IMAGE_LIMITS: Record<string, ImageLimits> = {
   avatar: { maxSizeMB: 5, maxDimension: 2000, minDimension: 50 },
   banner: { maxSizeMB: 10, maxDimension: 4000, minDimension: 400 },
   logo: { maxSizeMB: 5, maxDimension: 1000, minDimension: 50 },
-  layer: { maxSizeMB: 20, maxDimension: 3000, minDimension: 100 },
-  portfolio: { maxSizeMB: 10, maxDimension: 3000, minDimension: 100 },
+  layer: { maxSizeMB: 20, maxDimension: 5000, minDimension: 100 },
+  portfolio: { maxSizeMB: 10, maxDimension: 5000, minDimension: 100 },
   founder: { maxSizeMB: 5, maxDimension: 2000, minDimension: 50 },
-  preview: { maxSizeMB: 10, maxDimension: 3000, minDimension: 200 },
+  preview: { maxSizeMB: 10, maxDimension: 5000, minDimension: 200 },
   artwork: { maxSizeMB: 15, maxDimension: 4000, minDimension: 200 },
 };
 
