@@ -435,7 +435,7 @@ export function useApproveMarketingRequest() {
         .insert({
           user_id: request.user_id,
           type: 'marketing_approved',
-          title: 'Marketing Approved!',
+          title: 'Your Spotlight is Approved!',
           message: 'Your marketing request has been approved. Complete payment within 24 hours to activate your spotlight.',
           link: `/project/${request.project_id}?tab=marketing`,
         });

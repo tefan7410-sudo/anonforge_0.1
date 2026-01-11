@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import JSZip from 'jszip';
 import {
   useCreateGeneration,
@@ -78,7 +78,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
   const { data: exclusions } = useAllExclusions(projectId);
   const { data: effects } = useAllEffects(projectId);
   const { data: switches } = useAllSwitches(projectId);
-  const { toast } = useToast();
+  
   const createGeneration = useCreateGeneration();
   const cleanupGenerations = useCleanupGenerations();
 
@@ -556,10 +556,8 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
 
     // Check if we have enough remaining combinations
     if (batchSize > remainingCombinations) {
-      toast({
-        title: 'Not enough unique combinations',
+      toast.error('Not enough unique combinations', {
         description: `Only ${remainingCombinations} unique combinations remaining. Reduce batch size or add more layers.`,
-        variant: 'destructive',
       });
       return;
     }
@@ -747,18 +745,16 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
         // Don't fail the generation if credit deduction fails
       }
 
-      toast({
-        title: batchSize > 1
-          ? `${batchSize} ${isFullResolution ? 'full resolution' : ''} characters generated`
-          : 'Preview generated and saved to history',
+      const successMessage = batchSize > 1
+        ? `${batchSize} ${isFullResolution ? 'full resolution ' : ''}characters generated`
+        : 'Preview generated and saved to history';
+      toast.success(successMessage, {
         description: `${formatCredits(creditsNeeded)} credits used`,
       });
     } catch (error) {
       console.error('Generation error:', error);
-      toast({
-        title: 'Generation failed',
+      toast.error('Generation failed', {
         description: error instanceof Error ? error.message : 'Unknown error',
-        variant: 'destructive',
       });
     } finally {
       setGenerating(false);
@@ -828,7 +824,7 @@ export function GenerationPanel({ projectId, project }: GenerationPanelProps) {
       })));
     }
     setIsEditingMetadata(false);
-    toast({ title: 'Metadata saved' });
+    toast.success('Metadata saved');
   };
 
   // Cancel editing and reset to original

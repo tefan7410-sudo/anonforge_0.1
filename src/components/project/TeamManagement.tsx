@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Loader2, Mail, Trash2, UserPlus, Users, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { z } from 'zod';
@@ -24,7 +24,6 @@ interface TeamManagementProps {
 }
 
 export function TeamManagement({ projectId, ownerId }: TeamManagementProps) {
-  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('editor');
 
@@ -52,7 +51,7 @@ export function TeamManagement({ projectId, ownerId }: TeamManagementProps) {
 
     try {
       await inviteMember.mutateAsync({ projectId, email: trimmedEmail, role });
-      toast({ title: 'Invitation sent', description: `Invited ${trimmedEmail} as ${role}` });
+      toast.success(`Invited ${trimmedEmail} as ${role}`);
       setEmail('');
       setEmailError(null);
     } catch (error: any) {
@@ -61,11 +60,7 @@ export function TeamManagement({ projectId, ownerId }: TeamManagementProps) {
       if (message.includes('already pending') || message.includes('already a member')) {
         setEmailError(message);
       } else {
-        toast({
-          title: 'Failed to send invitation',
-          description: message,
-          variant: 'destructive',
-        });
+        toast.error(message || 'Failed to send invitation');
       }
     }
   };
@@ -73,26 +68,18 @@ export function TeamManagement({ projectId, ownerId }: TeamManagementProps) {
   const handleRemoveMember = async (memberId: string, memberName: string) => {
     try {
       await removeMember.mutateAsync({ memberId, projectId });
-      toast({ title: 'Member removed', description: `Removed ${memberName} from project` });
+      toast.success(`${memberName} removed from project`);
     } catch (error: any) {
-      toast({
-        title: 'Failed to remove member',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error(error.message || 'Failed to remove member');
     }
   };
 
   const handleCancelInvitation = async (invitationId: string, email: string) => {
     try {
       await cancelInvitation.mutateAsync({ invitationId, projectId });
-      toast({ title: 'Invitation cancelled', description: `Cancelled invitation for ${email}` });
+      toast.info(`Invitation cancelled for ${email}`);
     } catch (error: any) {
-      toast({
-        title: 'Failed to cancel invitation',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error(error.message || 'Failed to cancel invitation');
     }
   };
 

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface Generation {
   id: string;
@@ -104,6 +105,11 @@ export function useToggleFavorite() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['generations', variables.projectId] });
+      if (variables.isFavorite) {
+        toast.success('Added to favorites');
+      } else {
+        toast.info('Removed from favorites');
+      }
     },
   });
 }
@@ -255,8 +261,9 @@ export function useClearAllGenerations() {
 
       return (generations || []).length;
     },
-    onSuccess: (_, projectId) => {
+    onSuccess: (deletedCount, projectId) => {
       queryClient.invalidateQueries({ queryKey: ['generations', projectId] });
+      toast.success(`Cleared ${deletedCount} generation${deletedCount !== 1 ? 's' : ''}`);
     },
   });
 }
