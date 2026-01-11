@@ -34,8 +34,8 @@ export function FeaturedMarquee() {
         className="block hover:opacity-90 transition-opacity"
       >
         <div className="flex animate-marquee whitespace-nowrap py-2">
-          {/* Repeat content multiple times for seamless loop */}
-          {[...Array(6)].map((_, i) => (
+          {/* Reduced from 6 to 4 repetitions for better performance */}
+          {[...Array(4)].map((_, i) => (
             <div 
               key={i} 
               className={cn(

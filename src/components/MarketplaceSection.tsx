@@ -91,6 +91,8 @@ function CollectionCard({ collection, index, isSoldOut, t }: { collection: LiveC
                 src={collection.banner_url}
                 alt={`${collection.project.name} banner`}
                 className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                loading="lazy"
+                decoding="async"
               />
             ) : (
               <div className="flex h-full items-center justify-center">
@@ -131,6 +133,8 @@ function CollectionCard({ collection, index, isSoldOut, t }: { collection: LiveC
                 src={collection.logo_url}
                 alt={`${collection.project.name} logo`}
                 className="h-12 w-12 rounded-lg border-2 border-background object-cover shadow-md"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           )}

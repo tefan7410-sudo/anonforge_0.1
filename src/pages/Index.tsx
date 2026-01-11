@@ -117,7 +117,7 @@ export default function Index() {
     <PageTransition>
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/95 md:bg-background/80 md:backdrop-blur-md">
         <nav className="container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4" aria-label="Main navigation">
           <Link to="/" className="flex items-center gap-2 sm:gap-3" aria-label="AnonForge home">
             <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary p-1.5">
@@ -280,8 +280,16 @@ export default function Index() {
           />
           
           {/* Dynamic image backgrounds for marketing and custom images */}
+          {/* Only render current and adjacent backgrounds for performance */}
           {allBackgrounds.map((bg, index) => {
             if (bg.type === 'default') return null; // Handled above
+            // Only render current, previous, and next backgrounds
+            const isAdjacent = 
+              index === currentBgIndex || 
+              index === (currentBgIndex + 1) % allBackgrounds.length ||
+              index === (currentBgIndex - 1 + allBackgrounds.length) % allBackgrounds.length;
+            if (!isAdjacent) return null;
+            
             return (
               <div 
                 key={`${bg.type}-${index}`}
@@ -289,11 +297,14 @@ export default function Index() {
                   "absolute inset-0 transition-opacity duration-1000",
                   currentBgIndex === index ? "opacity-100" : "opacity-0"
                 )}
+                style={{ willChange: currentBgIndex === index ? 'opacity' : 'auto' }}
               >
                 <img 
                   src={bg.url} 
                   alt="" 
                   className="h-full w-full object-cover"
+                  loading={index === 0 ? "eager" : "lazy"}
+                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
               </div>
