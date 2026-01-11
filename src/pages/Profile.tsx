@@ -446,16 +446,31 @@ export default function Profile() {
                 </div>
               )}
 
-              {/* Email (read-only) */}
+              {/* Email / Wallet Account (read-only) */}
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">
+                  {profile?.email?.endsWith('@wallet.anonforge.com') ? 'Account' : 'Email'}
+                </Label>
                 <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{user?.email}</span>
+                  {profile?.email?.endsWith('@wallet.anonforge.com') ? (
+                    <>
+                      <Wallet className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Wallet ({profile?.stake_address ? formatStakeAddress(profile.stake_address) : 'Connected'})
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">{user?.email}</span>
+                    </>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Email cannot be changed. Contact support if you need to update it.
-                </p>
+                {!profile?.email?.endsWith('@wallet.anonforge.com') && (
+                  <p className="text-xs text-muted-foreground">
+                    Email cannot be changed. Contact support if you need to update it.
+                  </p>
+                )}
               </div>
 
               {/* Setup Mode: Terms checkbox and complete button */}

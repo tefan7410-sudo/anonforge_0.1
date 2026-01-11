@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAcceptInvitation, useDeclineInvitation } from '@/hooks/use-team';
-import { useIsProfileIncomplete } from '@/hooks/use-profile';
+import { useIsProfileIncomplete, useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -65,6 +65,7 @@ export default function Dashboard() {
   const { project: tutorialProject } = useTutorialProject();
   const { data: isAmbassador } = useIsAmbassador(user?.id);
   const { data: isProfileIncomplete, isLoading: profileCheckLoading } = useIsProfileIncomplete(user?.id);
+  const { data: profile } = useProfile(user?.id);
 
   // Redirect to profile setup if profile is incomplete (wallet registration)
   useEffect(() => {
@@ -254,7 +255,11 @@ export default function Dashboard() {
             <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
               <Link to="/profile">
                 <User className="mr-2 h-4 w-4" />
-                <span className="hidden lg:inline">{user?.email}</span>
+                <span className="hidden lg:inline">
+                  {profile?.email?.endsWith('@wallet.anonforge.com')
+                    ? (profile?.display_name || 'Profile')
+                    : (profile?.display_name || user?.email)}
+                </span>
                 <span className="lg:hidden">Profile</span>
               </Link>
             </Button>
