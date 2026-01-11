@@ -291,8 +291,8 @@ export default function Profile() {
         </div>
       </header>
 
-      <main className="container mx-auto max-w-2xl px-6 py-8">
-        <div className="space-y-8">
+      <main className="container mx-auto max-w-2xl px-6 py-6">
+        <div className="space-y-6">
           {/* Profile Information */}
           <Card>
             <CardHeader>
@@ -302,9 +302,9 @@ export default function Profile() {
               </CardTitle>
               <CardDescription>Update your personal details</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               {/* Avatar */}
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4">
                 <div className="relative">
                   <Avatar className="h-20 w-20">
                     <AvatarImage src={profile?.avatar_url || undefined} />
@@ -545,7 +545,7 @@ export default function Profile() {
               <CardDescription>Your credit balance and usage</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-lg border border-border/50 bg-muted/30 p-3 text-center">
                   <p className="text-2xl font-bold">{formatCredits(totalCredits)}</p>
                   <p className="text-xs text-muted-foreground">Total Credits</p>

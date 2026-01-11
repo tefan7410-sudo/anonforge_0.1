@@ -137,8 +137,8 @@ export default function Credits() {
         </div>
       </header>
 
-      <main className="container mx-auto max-w-5xl px-6 py-8">
-        <div className="space-y-8">
+      <main className="container mx-auto max-w-5xl px-6 py-6">
+        <div className="space-y-6">
           {/* Credit Balance Card */}
           <Card className={isLowCredits ? 'border-orange-500/50' : ''}>
             <CardHeader>
@@ -155,13 +155,13 @@ export default function Credits() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-3 md:grid-cols-3">
                   <Skeleton className="h-24" />
                   <Skeleton className="h-24" />
                   <Skeleton className="h-24" />
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-3 md:grid-cols-3">
                   {/* Total Credits */}
                   <div className="rounded-lg border border-border/50 bg-muted/30 p-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
@@ -249,7 +249,7 @@ export default function Credits() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-3">
                 {CREDIT_TIERS.map((tier) => (
                   <Card 
                     key={tier.id} 
