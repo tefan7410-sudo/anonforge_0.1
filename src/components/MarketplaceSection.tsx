@@ -112,11 +112,11 @@ function CollectionCard({ collection, index, isSoldOut, t }: { collection: LiveC
                   {t('marketplace.upcoming')}
                 </Badge>
               ) : isSoldOut ? (
-                <Badge className="bg-orange-500/90 text-white hover:bg-orange-500">
+                <Badge className="bg-warning/90 text-warning-foreground hover:bg-warning">
                   {t('marketplace.soldOut')}
                 </Badge>
               ) : (
-                <Badge className="bg-green-500/90 text-white hover:bg-green-500">
+                <Badge className="bg-success/90 text-white hover:bg-success">
                   <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
                   {t('marketplace.live')}
                 </Badge>

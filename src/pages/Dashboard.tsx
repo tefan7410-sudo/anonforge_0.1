@@ -152,9 +152,9 @@ export default function Dashboard() {
       <Link to={`/project/${project.id}`} data-tutorial={isTutorial ? "tutorial-project" : undefined}>
         <Card className={`group cursor-pointer transition-all hover:shadow-md ${
           isTutorial
-            ? 'border-primary/50 hover:border-primary bg-primary/5'
+          ? 'border-primary/50 hover:border-primary bg-primary/5'
             : hasWarning 
-              ? 'border-orange-500/50 hover:border-orange-500' 
+              ? 'border-warning/50 hover:border-warning' 
               : 'border-border/50 hover:border-primary/30'
         }`}>
           <CardHeader className="pb-3">
@@ -170,7 +170,7 @@ export default function Dashboard() {
                   </Badge>
                 )}
                 {hasWarning && (
-                  <Badge variant="outline" className="text-xs border-orange-500/50 text-orange-500 bg-orange-500/10">
+                  <Badge variant="outline" className="text-xs border-warning/50 text-warning bg-warning/10">
                     <AlertTriangle className="h-3 w-3 mr-1" />
                     {daysUntilDeletion}d left
                   </Badge>
@@ -240,7 +240,7 @@ export default function Dashboard() {
               to="/credits" 
               className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border transition-colors ${
                 isLowCredits 
-                  ? 'border-orange-500/50 text-orange-500 hover:bg-orange-500/10' 
+                  ? 'border-warning/50 text-warning hover:bg-warning/10' 
                   : 'border-border/50 hover:bg-muted'
               }`}
               title="View credits"

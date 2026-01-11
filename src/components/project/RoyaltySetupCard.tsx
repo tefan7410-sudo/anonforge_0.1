@@ -134,10 +134,10 @@ export function RoyaltySetupCard({ nmkrProject, payoutWallet }: RoyaltySetupCard
         </div>
 
         {hasUploads && (
-          <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3">
+          <div className="rounded-lg border border-warning/20 bg-warning/10 p-3">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5" />
-              <p className="text-sm text-yellow-700 dark:text-yellow-400">
+              <AlertTriangle className="h-4 w-4 text-warning mt-0.5" />
+              <p className="text-sm text-warning">
                 NFTs have been uploaded. Royalty tokens should be minted before 
                 uploading any NFTs for full marketplace compatibility.
               </p>

@@ -147,6 +147,17 @@
     @apply bg-card/80 backdrop-blur-sm;
   }
 
+  /* Custom icon color inheritance for Flaticon SVGs */
+  .icon-inherit {
+    filter: brightness(0) saturate(100%);
+  }
+  .dark .icon-inherit {
+    filter: brightness(0) saturate(100%) invert(1);
+  }
+  .icon-primary {
+    filter: brightness(0) saturate(100%) invert(76%) sepia(60%) saturate(507%) hue-rotate(67deg) brightness(103%);
+  }
+
   /* Hide scrollbar for horizontal scrolling tabs */
   .scrollbar-hide::-webkit-scrollbar {
     display: none;

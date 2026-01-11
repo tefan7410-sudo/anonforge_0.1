@@ -241,9 +241,9 @@ export default function Documentation() {
                 </li>
                 <li className="flex items-start gap-2">
                   <div className="h-4 w-6 flex items-center shrink-0">
-                    <div className="h-0.5 w-full rounded bg-purple-500" />
+                    <div className="h-0.5 w-full rounded bg-primary" />
                   </div>
-                  <span><Sparkles className="inline h-3 w-3 text-purple-500 mr-1" /><strong className="text-purple-500">Effect Link</strong> — Links effect layers to parent layers</span>
+                  <span><Sparkles className="inline h-3 w-3 text-primary mr-1" /><strong className="text-primary">Effect Link</strong> — Links effect layers to parent layers</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <div className="h-4 w-6 flex items-center shrink-0">

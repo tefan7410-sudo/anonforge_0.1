@@ -97,11 +97,11 @@ export default function Credits() {
 
   const getTransactionTypeColor = (type: string) => {
     switch (type) {
-      case 'purchase': return 'text-green-500';
-      case 'monthly_reset': return 'text-blue-500';
-      case 'admin_add': return 'text-green-500';
-      case 'admin_remove': return 'text-orange-500';
-      case 'credits_depleted': return 'text-red-500';
+      case 'purchase': return 'text-success';
+      case 'monthly_reset': return 'text-primary';
+      case 'admin_add': return 'text-success';
+      case 'admin_remove': return 'text-warning';
+      case 'credits_depleted': return 'text-destructive';
       default: return 'text-muted-foreground';
     }
   };
@@ -140,13 +140,13 @@ export default function Credits() {
       <main className="container mx-auto max-w-5xl px-6 py-6">
         <div className="space-y-6">
           {/* Credit Balance Card */}
-          <Card className={isLowCredits ? 'border-orange-500/50' : ''}>
+          <Card className={isLowCredits ? 'border-warning/50' : ''}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display">
                 <Coins className="h-5 w-5" />
                 Credit Balance
                 {isLowCredits && (
-                  <Badge variant="outline" className="border-orange-500 text-orange-500 ml-2">
+                  <Badge variant="outline" className="border-warning text-warning ml-2">
                     Low Balance
                   </Badge>
                 )}
@@ -354,7 +354,7 @@ export default function Credits() {
                         <TableCell className="text-muted-foreground">
                           {tx.description || (tx.generation_type === 'full_resolution' ? 'Full resolution generation' : tx.generation_type === 'preview' ? 'Preview generation' : '-')}
                         </TableCell>
-                        <TableCell className={`text-right font-medium ${tx.amount > 0 ? 'text-green-500' : 'text-orange-500'}`}>
+                        <TableCell className={`text-right font-medium ${tx.amount > 0 ? 'text-success' : 'text-warning'}`}>
                           {tx.amount > 0 ? '+' : ''}{formatCredits(tx.amount)}
                         </TableCell>
                       </TableRow>

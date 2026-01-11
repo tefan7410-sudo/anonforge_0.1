@@ -28,7 +28,7 @@ export function EffectEdge({
         id={id}
         path={edgePath}
         style={{
-          stroke: 'hsl(280 80% 55%)',
+          stroke: 'hsl(var(--primary))',
           strokeWidth: selected ? 3 : 2,
         }}
         markerEnd="url(#effect-marker)"
@@ -40,7 +40,7 @@ export function EffectEdge({
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             pointerEvents: 'all',
           }}
-          className="nodrag nopan rounded bg-purple-500/90 px-1.5 py-0.5 text-[10px] font-medium text-white"
+          className="nodrag nopan rounded bg-primary/90 px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground"
         >
           Effect {renderOrder !== undefined ? `#${renderOrder}` : ''}
         </div>

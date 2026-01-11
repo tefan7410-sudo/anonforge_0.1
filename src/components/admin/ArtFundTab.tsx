@@ -27,8 +27,8 @@ import { useAdaPrice } from '@/hooks/use-ada-price';
 
 const CATEGORY_OPTIONS = [
   { value: 'fees', label: 'Platform Fees', color: 'text-primary' },
-  { value: 'special_sale', label: 'Special Sales', color: 'text-purple-500' },
-  { value: 'donation', label: 'Donations', color: 'text-blue-500' },
+  { value: 'special_sale', label: 'Special Sales', color: 'text-primary' },
+  { value: 'donation', label: 'Donations', color: 'text-primary' },
   { value: 'other', label: 'Other', color: 'text-muted-foreground' },
 ] as const;
 

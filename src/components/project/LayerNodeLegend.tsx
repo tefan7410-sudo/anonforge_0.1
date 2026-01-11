@@ -13,9 +13,9 @@ export function LayerNodeLegend() {
       </div>
       <div className="flex items-center gap-2 text-xs">
         <div className="flex h-4 w-6 items-center justify-center">
-          <div className="h-0.5 w-full rounded bg-purple-500" />
+          <div className="h-0.5 w-full rounded bg-primary" />
         </div>
-        <Sparkles className="h-3 w-3 text-purple-500" />
+        <Sparkles className="h-3 w-3 text-primary" />
         <span>Effect Layer</span>
       </div>
       <div className="flex items-center gap-2 text-xs">

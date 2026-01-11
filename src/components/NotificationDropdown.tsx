@@ -63,7 +63,7 @@ export function NotificationDropdown() {
       case 'comment_reply':
         return <MessageSquare className="h-4 w-4 text-primary" />;
       case 'project_inactivity_warning':
-        return <AlertTriangle className="h-4 w-4 text-orange-500" />;
+        return <AlertTriangle className="h-4 w-4 text-warning" />;
       case 'project_deleted':
         return <Trash2 className="h-4 w-4 text-destructive" />;
       default:

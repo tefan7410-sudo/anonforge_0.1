@@ -145,8 +145,8 @@ export function ConnectionTypeModal({
               htmlFor="switch" 
               className={`flex flex-1 cursor-pointer items-center gap-3 ${sameCategory ? 'opacity-50' : ''}`}
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10">
-                <ArrowLeftRight className="h-4 w-4 text-amber-500" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/10">
+                <ArrowLeftRight className="h-4 w-4 text-warning" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium">Layer Switch</p>
@@ -170,8 +170,8 @@ export function ConnectionTypeModal({
               htmlFor="effect" 
               className={`flex flex-1 cursor-pointer items-center gap-3 ${!targetIsEffectLayer ? 'opacity-50' : ''}`}
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/10">
-                <Sparkles className="h-4 w-4 text-purple-500" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                <Sparkles className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium">Effect Link</p>
