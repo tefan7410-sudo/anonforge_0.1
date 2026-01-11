@@ -227,9 +227,9 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-48 w-full" />
+      <div className="space-y-4">
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-32 w-full" />
       </div>
     );
   }
@@ -237,31 +237,31 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
   // Show locked state if product page not set up
   if (isLocked) {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
+      <div className="flex flex-col items-center justify-center py-10">
         <Card className="max-w-lg w-full text-center">
-          <CardHeader>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-              <Lock className="h-8 w-8 text-muted-foreground" />
+          <CardHeader className="pb-3">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <Lock className="h-6 w-6 text-muted-foreground" />
             </div>
-            <CardTitle className="font-display">Set Up Your Product Page First</CardTitle>
-            <CardDescription>
-              Before exploring marketing options, complete your Product Page to create a storefront for your collection.
+            <CardTitle className="font-display text-lg">Set Up Your Product Page First</CardTitle>
+            <CardDescription className="text-sm">
+              Complete your Product Page to unlock marketing options.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-left rounded-lg border bg-muted/30 p-4">
-              <h4 className="text-sm font-medium mb-3">What you'll unlock:</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+          <CardContent className="space-y-3 pt-0">
+            <div className="text-left rounded-lg border bg-muted/30 p-3">
+              <h4 className="text-xs font-medium mb-2">What you'll unlock:</h4>
+              <ul className="space-y-1.5 text-xs text-muted-foreground">
                 <li className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4" />
+                  <Sparkles className="h-3.5 w-3.5" />
                   Featured Spotlight on homepage
                 </li>
                 <li className="flex items-center gap-2">
-                  <Star className="h-4 w-4" />
+                  <Star className="h-3.5 w-3.5" />
                   Priority placement in marketplace
                 </li>
                 <li className="flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
+                  <Globe className="h-3.5 w-3.5" />
                   Increased visibility for your collection
                 </li>
               </ul>
@@ -281,82 +281,74 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
   // Show current status if there's an existing request (unless user chose to create new)
   if (marketingRequest && !showNewRequestForm) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Current Status Card */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="h-4 w-4 text-primary" />
               Marketing Status
             </CardTitle>
               <StatusBadge status={marketingRequest.status} />
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 pt-0">
             {marketingRequest.status === 'pending' && (
-              <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
-                <div className="flex items-start gap-3">
-                  <Clock className="h-5 w-5 text-primary mt-0.5" />
+              <div className="rounded-lg border border-primary/30 bg-primary/10 p-3">
+                <div className="flex items-start gap-2">
+                  <Clock className="h-4 w-4 text-primary shrink-0" />
                   <div>
-                    <p className="font-medium text-primary">
-                      Request Pending Review
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Your marketing request is being reviewed by our team. You'll be notified once approved.
+                    <p className="text-sm font-medium text-primary">Request Pending Review</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Being reviewed. You'll be notified once approved.
                     </p>
                     {marketingRequest.start_date && marketingRequest.end_date && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Requested dates: {format(new Date(marketingRequest.start_date), 'MMM d')} - {format(new Date(marketingRequest.end_date), 'MMM d, yyyy')}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Dates: {format(new Date(marketingRequest.start_date), 'MMM d')} - {format(new Date(marketingRequest.end_date), 'MMM d, yyyy')} · Submitted {formatDistanceToNow(new Date(marketingRequest.created_at), { addSuffix: true })}
                       </p>
                     )}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Submitted {formatDistanceToNow(new Date(marketingRequest.created_at), { addSuffix: true })}
-                    </p>
                   </div>
                 </div>
               </div>
             )}
 
             {marketingRequest.status === 'approved' && !isPaymentExpired && paymentDeadline && (
-              <div className="space-y-4">
-                <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
-                  <div className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-primary mt-0.5" />
+              <div className="space-y-3">
+                <div className="rounded-lg border border-primary/30 bg-primary/10 p-3">
+                  <div className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-primary shrink-0" />
                     <div className="flex-1">
-                      <p className="font-medium">Request Approved!</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Complete payment within 24 hours to activate your spotlight.
-                      </p>
+                      <p className="text-sm font-medium">Request Approved!</p>
+                      <p className="text-xs text-muted-foreground">Complete payment within 24h to activate.</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Spotlight Dates Confirmation */}
                 {marketingRequest.start_date && marketingRequest.end_date && (
-                  <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CalendarCheck className="h-4 w-4 text-primary" />
-                      <span className="font-medium text-primary">Your Spotlight Dates</span>
+                  <div className="rounded-lg border border-primary/30 bg-primary/10 p-3">
+                    <div className="flex items-center gap-2">
+                      <CalendarCheck className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-sm font-medium text-primary">
+                        {format(new Date(marketingRequest.start_date), 'MMM d')} - {format(new Date(marketingRequest.end_date), 'MMM d, yyyy')}
+                      </span>
                     </div>
-                    <p className="text-sm font-medium">
-                      {format(new Date(marketingRequest.start_date), 'MMMM d')} - {format(new Date(marketingRequest.end_date), 'MMMM d, yyyy')}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Your campaign will go live at 00:01 UTC on {format(new Date(marketingRequest.start_date), 'MMMM d')}
+                    <p className="text-xs text-muted-foreground mt-1 ml-5">
+                      Goes live at 00:01 UTC on {format(new Date(marketingRequest.start_date), 'MMM d')}
                     </p>
                   </div>
                 )}
 
                 {/* Payment Card */}
-                <div className="rounded-lg border-2 border-primary/50 bg-card p-6 space-y-4">
+                <div className="rounded-lg border-2 border-primary/50 bg-card p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Wallet className="h-5 w-5 text-primary" />
-                      <span className="font-semibold">Complete Payment</span>
+                      <Wallet className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold">Complete Payment</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="h-4 w-4 text-destructive" />
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <Clock className="h-3.5 w-3.5 text-destructive" />
                       <CountdownTimer 
                         targetDate={paymentDeadline} 
                         compact 
@@ -365,22 +357,18 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
                     </div>
                   </div>
 
-                  <div className="rounded-lg bg-muted p-4">
-                    <p className="text-sm text-muted-foreground mb-1">Amount Due</p>
-                    <p className="text-3xl font-bold">{marketingRequest.price_ada} ADA</p>
+                  <div className="rounded-lg bg-muted p-3 flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">Amount Due</p>
+                    <p className="text-xl font-bold">{marketingRequest.price_ada} ADA</p>
                   </div>
 
-                  <div className="flex items-start gap-2 rounded-lg bg-muted border border-border p-3">
-                    <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                    <p className="text-xs text-muted-foreground">
-                      Click the button below to get a unique payment amount. 
-                      The unique decimal amount will be used to automatically verify your payment.
-                    </p>
-                  </div>
+                  <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    Unique payment amount auto-verifies your transaction.
+                  </p>
 
                   <Button 
                     className="w-full" 
-                    size="lg"
                     onClick={handleStartPayment}
                     disabled={createPaymentIntent.isPending}
                   >
@@ -396,15 +384,13 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
             )}
 
             {marketingRequest.status === 'approved' && isPaymentExpired && (
-              <div className="space-y-4">
-                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
-                  <div className="flex items-start gap-3">
-                    <Clock className="h-5 w-5 text-destructive mt-0.5" />
+              <div className="space-y-3">
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+                  <div className="flex items-start gap-2">
+                    <Clock className="h-4 w-4 text-destructive shrink-0" />
                     <div>
-                      <p className="font-medium text-destructive">Payment Window Expired</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        The 24-hour payment window has passed. Please submit a new marketing request.
-                      </p>
+                      <p className="text-sm font-medium text-destructive">Payment Window Expired</p>
+                      <p className="text-xs text-muted-foreground">Submit a new request to continue.</p>
                     </div>
                   </div>
                 </div>
@@ -421,37 +407,25 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
 
             {marketingRequest.status === 'paid' && (
               <div className={cn(
-                "rounded-lg border p-4",
+                "rounded-lg border p-3",
                 (marketingRequest as any).is_free_promo 
                   ? "border-purple-500/30 bg-purple-500/10" 
                   : "border-primary/30 bg-primary/10"
               )}>
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-2">
                   <CalendarCheck className={cn(
-                    "h-5 w-5 mt-0.5",
+                    "h-4 w-4 shrink-0",
                     (marketingRequest as any).is_free_promo ? "text-purple-500" : "text-primary"
                   )} />
                   <div>
                     {(marketingRequest as any).is_free_promo ? (
-                      <>
-                        <p className="font-medium text-purple-500">
-                          🎉 Complimentary Spotlight Scheduled!
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Your collection has been granted a free promotional spotlight! No payment required.
-                        </p>
-                      </>
+                      <p className="text-sm font-medium text-purple-500">🎉 Complimentary Spotlight Scheduled!</p>
                     ) : (
-                      <>
-                        <p className="font-medium text-primary">Payment Confirmed - Spotlight Scheduled!</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Your spotlight is scheduled and will go live at 00:01 UTC on the start date.
-                        </p>
-                      </>
+                      <p className="text-sm font-medium text-primary">Payment Confirmed - Scheduled!</p>
                     )}
                     {marketingRequest.start_date && marketingRequest.end_date && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Spotlight dates: {format(new Date(marketingRequest.start_date), 'MMMM d')} - {format(new Date(marketingRequest.end_date), 'MMMM d, yyyy')}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {format(new Date(marketingRequest.start_date), 'MMM d')} - {format(new Date(marketingRequest.end_date), 'MMM d, yyyy')} · Goes live at 00:01 UTC
                       </p>
                     )}
                   </div>
@@ -460,39 +434,29 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
             )}
 
             {marketingRequest.status === 'active' && (
-              <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
-                <div className="flex items-start gap-3">
-                  <Sparkles className="h-5 w-5 text-primary mt-0.5" />
+              <div className="rounded-lg border border-primary/30 bg-primary/10 p-3">
+                <div className="flex items-start gap-2">
+                  <Sparkles className="h-4 w-4 text-primary shrink-0" />
                   <div>
-                    <p className="font-medium text-primary">Currently Featured!</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Your collection is being promoted across AnonForge.
+                    <p className="text-sm font-medium text-primary">Currently Featured!</p>
+                    <p className="text-xs text-muted-foreground">
+                      Your collection is being promoted{marketingRequest.end_date && ` · Ends ${format(new Date(marketingRequest.end_date), 'MMM d, yyyy')}`}
                     </p>
-                    {marketingRequest.end_date && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Ends {format(new Date(marketingRequest.end_date), 'MMM d, yyyy')}
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>
             )}
 
             {marketingRequest.status === 'rejected' && (
-              <div className="space-y-4">
-                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
-                  <div className="flex items-start gap-3">
-                    <X className="h-5 w-5 text-destructive mt-0.5" />
+              <div className="space-y-3">
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+                  <div className="flex items-start gap-2">
+                    <X className="h-4 w-4 text-destructive shrink-0" />
                     <div>
-                      <p className="font-medium text-destructive">Request Rejected</p>
+                      <p className="text-sm font-medium text-destructive">Request Rejected</p>
                       {marketingRequest.admin_notes && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Reason: {marketingRequest.admin_notes}
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Reason: {marketingRequest.admin_notes}</p>
                       )}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        You can submit a new request after addressing the feedback.
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -508,18 +472,15 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
             )}
 
             {marketingRequest.status === 'completed' && (
-              <div className="space-y-4">
-                <div className="rounded-lg border border-muted bg-muted/50 p-4">
-                  <div className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div className="space-y-3">
+                <div className="rounded-lg border border-muted bg-muted/50 p-3">
+                  <div className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-muted-foreground shrink-0" />
                     <div>
-                      <p className="font-medium">Campaign Completed</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Your spotlight campaign has ended successfully.
-                      </p>
+                      <p className="text-sm font-medium">Campaign Completed</p>
                       {marketingRequest.start_date && marketingRequest.end_date && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Campaign ran: {format(new Date(marketingRequest.start_date), 'MMM d')} - {format(new Date(marketingRequest.end_date), 'MMM d, yyyy')}
+                        <p className="text-xs text-muted-foreground">
+                          Ran: {format(new Date(marketingRequest.start_date), 'MMM d')} - {format(new Date(marketingRequest.end_date), 'MMM d, yyyy')}
                         </p>
                       )}
                     </div>
@@ -537,20 +498,15 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
             )}
 
             {marketingRequest.status === 'cancelled' && (
-              <div className="space-y-4">
-                <div className="rounded-lg border border-muted bg-muted/50 p-4">
-                  <div className="flex items-start gap-3">
-                    <X className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div className="space-y-3">
+                <div className="rounded-lg border border-muted bg-muted/50 p-3">
+                  <div className="flex items-start gap-2">
+                    <X className="h-4 w-4 text-muted-foreground shrink-0" />
                     <div>
-                      <p className="font-medium">Campaign Cancelled</p>
+                      <p className="text-sm font-medium">Campaign Cancelled</p>
                       {marketingRequest.admin_notes && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Reason: {marketingRequest.admin_notes}
-                        </p>
+                        <p className="text-xs text-muted-foreground">Reason: {marketingRequest.admin_notes}</p>
                       )}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Your scheduled campaign was cancelled. You can submit a new request.
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -565,17 +521,17 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-muted-foreground">Duration</p>
-                <p className="font-medium">{marketingRequest.duration_days} day(s)</p>
+            <div className="flex items-center gap-4 text-xs pt-2 border-t">
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground">Duration:</span>
+                <span className="font-medium">{marketingRequest.duration_days} day(s)</span>
               </div>
-              <div>
-                <p className="text-muted-foreground">Price</p>
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground">Price:</span>
                 {(marketingRequest as any).is_free_promo ? (
-                  <p className="font-medium text-purple-500">FREE (Promotional)</p>
+                  <span className="font-medium text-purple-500">FREE</span>
                 ) : (
-                  <p className="font-medium">{marketingRequest.price_ada} ADA</p>
+                  <span className="font-medium">{marketingRequest.price_ada} ADA</span>
                 )}
               </div>
             </div>
@@ -597,73 +553,58 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
 
   // Show request form
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Spotlight Request Card */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <CardTitle>AnonForge Spotlight</CardTitle>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">AnonForge Spotlight</CardTitle>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold">25 ADA</span>
+              <span className="text-xs text-muted-foreground">/day</span>
+              <Badge variant="outline" className="text-xs">Max 5 days</Badge>
+            </div>
           </div>
-          <CardDescription>
-            Get your collection featured on our landing page and marketplace
-          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 pt-0">
           {/* Benefits */}
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="flex items-start gap-2 rounded-lg border border-border/50 p-3">
-              <Sparkles className="h-4 w-4 text-primary mt-0.5" />
-              <div>
-                <p className="text-sm font-medium">Featured Badge</p>
-                <p className="text-xs text-muted-foreground">Stand out in marketplace</p>
-              </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="flex items-center gap-2 rounded-md border border-border/50 p-2">
+              <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="text-xs font-medium">Featured Badge</span>
             </div>
-            <div className="flex items-start gap-2 rounded-lg border border-border/50 p-3">
-              <ImageIcon className="h-4 w-4 text-primary mt-0.5" />
-              <div>
-                <p className="text-sm font-medium">Hero Placement</p>
-                <p className="text-xs text-muted-foreground">Landing page spotlight</p>
-              </div>
+            <div className="flex items-center gap-2 rounded-md border border-border/50 p-2">
+              <ImageIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="text-xs font-medium">Hero Placement</span>
             </div>
-            <div className="flex items-start gap-2 rounded-lg border border-border/50 p-3">
-              <Globe className="h-4 w-4 text-primary mt-0.5" />
-              <div>
-                <p className="text-sm font-medium">Marquee Banner</p>
-                <p className="text-xs text-muted-foreground">Scrolling promotion</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Pricing */}
-          <div className="rounded-lg bg-muted/50 p-4">
-            <div className="flex items-baseline justify-between">
-              <div>
-                <p className="text-2xl font-bold">25 ADA</p>
-                <p className="text-sm text-muted-foreground">per day</p>
-              </div>
-              <Badge variant="outline">Max 5 days</Badge>
+            <div className="flex items-center gap-2 rounded-md border border-border/50 p-2">
+              <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="text-xs font-medium">Marquee Banner</span>
             </div>
           </div>
 
           {/* Calendar Date Selector */}
-          <div className="space-y-2">
-            <Label>Select Dates</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Select Dates</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  size="sm"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "w-full justify-start text-left font-normal h-9",
                     !selectedRange?.from && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-2 h-3.5 w-3.5" />
                   {selectedRange?.from ? (
                     selectedRange.to ? (
                       <>
                         {format(selectedRange.from, "MMM d")} - {format(selectedRange.to, "MMM d, yyyy")}
-                        <Badge variant="secondary" className="ml-auto">
+                        <Badge variant="secondary" className="ml-auto text-xs">
                           {durationDays} day{durationDays !== 1 ? 's' : ''}
                         </Badge>
                       </>
@@ -680,7 +621,6 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
                   mode="range"
                   selected={selectedRange}
                   onSelect={(range) => {
-                    // Enforce max 5 days
                     if (range?.from && range?.to) {
                       const days = differenceInDays(range.to, range.from) + 1;
                       if (days > 5) {
@@ -706,70 +646,58 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
                     },
                   }}
                   numberOfMonths={1}
-                  className="p-3 pointer-events-auto"
+                  className="p-2 pointer-events-auto"
                 />
-                {/* Legend */}
-                <div className="border-t p-3 space-y-1 text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded bg-destructive/20 border border-destructive/50" />
-                    <span className="text-muted-foreground">Booked (unavailable)</span>
+                <div className="border-t p-2 flex gap-3 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2.5 w-2.5 rounded bg-destructive/20 border border-destructive/50" />
+                    <span className="text-muted-foreground">Booked</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded border border-dashed border-muted-foreground bg-muted" />
-                    <span className="text-muted-foreground">Pending request (unavailable)</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2.5 w-2.5 rounded border border-dashed border-muted-foreground bg-muted" />
+                    <span className="text-muted-foreground">Pending</span>
                   </div>
                 </div>
               </PopoverContent>
             </Popover>
-
-            {/* Validation messages */}
-            {durationDays > 5 && (
-              <p className="text-sm text-destructive flex items-center gap-1">
+            {(durationDays > 5 || hasOverlapWithBooked) && (
+              <p className="text-xs text-destructive flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" />
-                Maximum 5 consecutive days allowed
-              </p>
-            )}
-            {hasOverlapWithBooked && (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                Selected dates overlap with an existing booking
+                {durationDays > 5 ? 'Maximum 5 consecutive days' : 'Dates overlap with existing booking'}
               </p>
             )}
           </div>
 
           {/* Hero Image Upload (Optional) */}
-          <div className="space-y-2">
-            <Label>Hero Image (optional, 16:9 recommended)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Hero Image (optional, 16:9)</Label>
             <div
               {...getRootProps()}
               className={cn(
-                'relative rounded-lg border-2 border-dashed p-6 text-center transition-colors cursor-pointer',
+                'relative rounded-lg border-2 border-dashed p-4 text-center transition-colors cursor-pointer',
                 isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50',
                 uploading && 'opacity-50 pointer-events-none'
               )}
             >
               <input {...getInputProps()} />
               {heroImageUrl ? (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <img
                     src={heroImageUrl}
                     alt="Hero preview"
-                    className="mx-auto max-h-40 rounded-lg object-cover"
+                    className="mx-auto max-h-24 rounded object-cover"
                   />
-                  <p className="text-xs text-muted-foreground">Click or drag to replace</p>
+                  <p className="text-xs text-muted-foreground">Click to replace</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2 py-1">
                   {uploading ? (
-                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   ) : (
-                    <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                    <Upload className="h-5 w-5 text-muted-foreground" />
                   )}
-                  <p className="text-sm text-muted-foreground">
-                    {isDragActive ? 'Drop image here' : 'Upload a 16:9 image (optional)'}
-                  </p>
                   <p className="text-xs text-muted-foreground">
-                    Without an image, the default gradient will be used
+                    {isDragActive ? 'Drop image' : 'Upload image or use default gradient'}
                   </p>
                 </div>
               )}
@@ -777,24 +705,24 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
           </div>
 
           {/* Message */}
-          <div className="space-y-2">
-            <Label>Message to Admin (optional)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Message (optional)</Label>
             <Textarea
-              placeholder="Any additional information..."
+              placeholder="Any additional info..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              rows={3}
+              rows={2}
+              className="text-sm"
             />
           </div>
 
           {/* Total & Submit */}
-          <div className="flex items-center justify-between rounded-lg bg-muted p-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Total</p>
-              <p className="text-2xl font-bold">{totalPrice} ADA</p>
+          <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-xs text-muted-foreground">Total:</span>
+              <span className="text-xl font-bold">{totalPrice} ADA</span>
             </div>
             <Button
-              size="lg"
               onClick={handleSubmit}
               disabled={!selectedRange?.from || !selectedRange?.to || durationDays > 5 || hasOverlapWithBooked || createRequest.isPending}
             >
@@ -807,14 +735,10 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
             </Button>
           </div>
 
-          {/* Note */}
-          <div className="flex items-start gap-2 text-xs text-muted-foreground">
-            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-            <p>
-              Only one collection can be featured at a time. Requests are reviewed within 24-48 hours.
-              Payment is required upon approval.
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+            One collection at a time. Reviews take 24-48h. Payment required upon approval.
+          </p>
         </CardContent>
       </Card>
 
@@ -876,21 +800,19 @@ function StatusBadge({ status }: { status: string }) {
 function ComingSoonSection() {
   return (
     <Card className="border-dashed">
-      <CardHeader>
-        <CardTitle className="text-muted-foreground">Coming Soon</CardTitle>
-        <CardDescription>More marketing options are on the way</CardDescription>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm text-muted-foreground">Coming Soon</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 sm:grid-cols-3">
+      <CardContent className="pt-0">
+        <div className="grid gap-2 sm:grid-cols-3">
           {COMING_SOON_OPTIONS.map((option) => (
             <div
               key={option.title}
-              className="relative rounded-lg border border-border/50 bg-muted/30 p-4 opacity-60"
+              className="relative flex items-center gap-2 rounded-md border border-border/50 bg-muted/30 p-2 opacity-60"
             >
-              <Lock className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-              <option.icon className="mb-3 h-6 w-6 text-muted-foreground" />
-              <p className="font-medium">{option.title}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{option.description}</p>
+              <option.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-xs font-medium truncate">{option.title}</span>
+              <Lock className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
             </div>
           ))}
         </div>
