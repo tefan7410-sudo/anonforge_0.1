@@ -16,6 +16,7 @@ import { useScrollAnimation } from '@/hooks/use-scroll-animation';
 import { useTranslations } from '@/hooks/use-translations';
 import { cn } from '@/lib/utils';
 import { PageTransition } from '@/components/PageTransition';
+import { SEOHead } from '@/components/SEOHead';
 import {
   Sheet,
   SheetContent,
@@ -115,6 +116,11 @@ export default function Index() {
 
   return (
     <PageTransition>
+      <SEOHead
+        title="Discover & Mint NFTs on Cardano"
+        description="Browse curated collections from independent creators or build your own NFT project with built-in minting on Cardano blockchain."
+        url="/"
+      />
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/95 md:bg-background/80 md:backdrop-blur-md">

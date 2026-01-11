@@ -67,18 +67,29 @@ class SessionLogger {
     };
   }
 
+  private sanitizeMessage(message: string): string {
+    return message
+      .replace(/Bearer\s+[A-Za-z0-9\-_\.]+/gi, 'Bearer [REDACTED]')
+      .replace(/api[_-]?key["']?\s*[:=]\s*["']?[A-Za-z0-9\-_]+/gi, 'api_key: [REDACTED]')
+      .replace(/password["']?\s*[:=]\s*["']?[^"'\s,}]+/gi, 'password: [REDACTED]')
+      .replace(/secret["']?\s*[:=]\s*["']?[A-Za-z0-9\-_]+/gi, 'secret: [REDACTED]')
+      .replace(/token["']?\s*[:=]\s*["']?[A-Za-z0-9\-_\.]+/gi, 'token: [REDACTED]');
+  }
+
   private addLog(level: LogEntry['level'], args: unknown[]) {
-    const message = args
-      .map((arg) => {
-        if (typeof arg === 'string') return arg;
-        try {
-          return JSON.stringify(arg, null, 0)?.substring(0, 500) || String(arg);
-        } catch {
-          return String(arg);
-        }
-      })
-      .join(' ')
-      .substring(0, 1000);
+    const message = this.sanitizeMessage(
+      args
+        .map((arg) => {
+          if (typeof arg === 'string') return arg;
+          try {
+            return JSON.stringify(arg, null, 0)?.substring(0, 500) || String(arg);
+          } catch {
+            return String(arg);
+          }
+        })
+        .join(' ')
+        .substring(0, 1000)
+    );
 
     this.logs.push({
       level,

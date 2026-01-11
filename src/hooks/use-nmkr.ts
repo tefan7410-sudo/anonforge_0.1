@@ -40,11 +40,13 @@ export interface NmkrCredentials {
   lastValidated: string | null;
 }
 
+const isDev = import.meta.env.DEV;
+
 // Simplified helper function to call NMKR proxy
 // Gateway JWT verification is disabled; the edge function validates auth internally
 // and returns { success: false, error: "..." } for auth issues (HTTP 200)
 async function callNmkrProxy(action: string, params: Record<string, unknown> = {}) {
-  console.log(`[NMKR] Calling action: ${action}`);
+  if (isDev) console.log(`[NMKR] Calling action: ${action}`);
 
   // Let the SDK handle auth - it will attach the current session token automatically
   const { data, error } = await supabase.functions.invoke('nmkr-proxy', {
@@ -53,7 +55,7 @@ async function callNmkrProxy(action: string, params: Record<string, unknown> = {
 
   // Handle invoke-level errors (network issues, function not found, etc.)
   if (error) {
-    console.log(`[NMKR] Invoke error: ${error.message}`);
+    if (isDev) console.log(`[NMKR] Invoke error: ${error.message}`);
     throw new Error(error.message || 'Failed to call NMKR service');
   }
 
@@ -69,11 +71,11 @@ async function callNmkrProxy(action: string, params: Record<string, unknown> = {
       const shortDetails = data.details.substring(0, 100);
       errorMessage += ` - ${shortDetails}`;
     }
-    console.log(`[NMKR] Action ${action} returned error:`, errorMessage);
+    if (isDev) console.log(`[NMKR] Action ${action} returned error:`, errorMessage);
     throw new Error(errorMessage);
   }
 
-  console.log(`[NMKR] Action ${action} succeeded`);
+  if (isDev) console.log(`[NMKR] Action ${action} succeeded`);
   return data;
 }
 
