@@ -91,13 +91,14 @@ export function useWalletPayment() {
         throw new Error('Wallet not connected');
       }
 
-      // Sign transaction
+      // Sign transaction - returns witness set (signatures), NOT full signed tx
       setStep('signing');
-      console.log('Requesting wallet signature...');
+      console.log('Requesting wallet signature (witness set)...');
       
-      let signedTx: string;
+      let signature: string;
       try {
-        signedTx = await handler.signTx(unsignedTx, true);
+        // Don't pass true - we want just the witness set, not a full signed tx
+        signature = await handler.signTx(unsignedTx);
       } catch (signError: any) {
         console.error('Wallet signing error:', signError);
         if (signError.code === 2 || signError.message?.includes('declined') || signError.message?.includes('cancel')) {
@@ -106,14 +107,16 @@ export function useWalletPayment() {
         throw new Error(signError.message || 'Failed to sign transaction');
       }
 
-      console.log('Transaction signed, submitting...');
+      console.log('Signature obtained, submitting to Anvil...');
+      console.log('Signature CBOR prefix:', signature.substring(0, 10));
       setStep('submitting');
 
-      // Submit signed transaction
+      // Submit unsigned transaction + signatures (Anvil-documented flow)
       const { data, error } = await supabase.functions.invoke('anvil-submit-transaction', {
         body: { 
           paymentId, 
-          signedTransaction: signedTx 
+          transaction: unsignedTx,
+          signatures: [signature]
         },
       });
 
