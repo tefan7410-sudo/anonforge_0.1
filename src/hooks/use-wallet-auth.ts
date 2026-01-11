@@ -3,21 +3,23 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWallet, useExtensions } from '@ada-anvil/weld/react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Browser-compatible string to hex conversion (replaces Node.js Buffer)
-function stringToHex(str: string): string {
-  const encoder = new TextEncoder();
-  const bytes = encoder.encode(str);
-  return Array.from(bytes)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
 export type WalletAuthMode = 'login' | 'register' | 'link';
 
 interface WalletAuthResult {
   success: boolean;
   isNewUser?: boolean;
   message?: string;
+}
+
+// Map backend error codes to user-friendly messages
+function getErrorMessage(errorCode: string): string {
+  const errorMessages: Record<string, string> = {
+    no_account_found: "No account found for this wallet. Please register first.",
+    stake_address_already_linked: "This wallet is already linked to another account.",
+    invalid_session: "Your session has expired. Please log in again.",
+    not_authenticated: "Please log in to link your wallet.",
+  };
+  return errorMessages[errorCode] || errorCode;
 }
 
 export function useWalletAuth() {
@@ -33,7 +35,7 @@ export function useWalletAuth() {
   const installedExtensions = useExtensions("supportedArr");
   const isExtensionsLoading = useExtensions("isLoading");
 
-  // Authenticate with wallet signature
+  // Authenticate with wallet - simplified flow (no signing required)
   const authenticate = useMutation({
     mutationFn: async ({ 
       mode, 
@@ -58,46 +60,12 @@ export function useWalletAuth() {
         // Get payment address for display
         const paymentAddr = wallet.changeAddressBech32;
         
-        // Step 2: Create authentication payload
-        const payload = JSON.stringify({
-          action: mode === 'link' ? 'link_wallet' : 'authenticate',
-          uri: window.location.origin,
-          timestamp: Date.now(),
-          stake_address: stakeAddr,
-        });
-        
-        // Convert payload to hex for CIP-8 signing
-        const payloadHex = stringToHex(payload);
-        
-        // Step 3: Request signature from wallet (CIP-8)
-        // signData returns different formats depending on wallet
-        const signResult = await wallet.handler.signData(payloadHex);
-        
-        // Handle different signature return formats
-        let signature: string;
-        let key: string;
-        
-        if (typeof signResult === 'string') {
-          // Some wallets return just the signature
-          signature = signResult;
-          key = stakeAddr; // Use stake address as key fallback
-        } else if (signResult && typeof signResult === 'object') {
-          // Most wallets return { signature, key }
-          signature = (signResult as any).signature || signResult;
-          key = (signResult as any).key || stakeAddr;
-        } else {
-          throw new Error('Invalid signature format from wallet');
-        }
-        
-        // Step 4: Send to backend for verification
+        // Step 2: Send to backend (no signing required!)
         const { data, error } = await supabase.functions.invoke('wallet-auth', {
           body: {
             mode,
-            signature,
-            key,
             stakeAddress: stakeAddr,
             paymentAddress: paymentAddr,
-            payload,
           },
         });
         
@@ -106,10 +74,10 @@ export function useWalletAuth() {
         }
         
         if (data?.error) {
-          throw new Error(data.error);
+          throw new Error(getErrorMessage(data.error));
         }
         
-        // Step 5: Handle different modes
+        // Step 3: Handle different modes
         if (mode === 'link') {
           // Just linking wallet to existing account
           queryClient.invalidateQueries({ queryKey: ['profile'] });
