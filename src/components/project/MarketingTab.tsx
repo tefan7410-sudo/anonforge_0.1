@@ -167,15 +167,7 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
     );
   }, [selectedRange, bookedDates]);
 
-  const hasOverlapWithPending = useMemo(() => {
-    if (!selectedRange?.from || !selectedRange?.to) return false;
-    const selectedDays = eachDayOfInterval({ start: selectedRange.from, end: selectedRange.to });
-    return selectedDays.some(day => 
-      pendingDates.some(pendingDay => 
-        startOfDay(day).getTime() === startOfDay(pendingDay).getTime()
-      )
-    );
-  }, [selectedRange, pendingDates]);
+  // Note: hasOverlapWithPending removed - pending dates are now disabled in calendar
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -225,11 +217,12 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
     }
   };
 
-  // Disable dates that are booked, in the past, or today (can never purchase for today)
+  // Disable dates that are booked, pending, in the past, or today (can never purchase for today)
   const tomorrow = addDays(startOfDay(new Date()), 1);
   const disabledDays = [
     { before: tomorrow }, // Can't select today or earlier
     ...bookedDates.map(date => startOfDay(date)),
+    ...pendingDates.map(date => startOfDay(date)), // Also disable pending dates
   ];
 
   if (isLoading) {
@@ -723,7 +716,7 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded border border-dashed border-muted-foreground bg-muted" />
-                    <span className="text-muted-foreground">Pending request</span>
+                    <span className="text-muted-foreground">Pending request (unavailable)</span>
                   </div>
                 </div>
               </PopoverContent>
@@ -740,12 +733,6 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
               <p className="text-sm text-destructive flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" />
                 Selected dates overlap with an existing booking
-              </p>
-            )}
-            {hasOverlapWithPending && !hasOverlapWithBooked && (
-              <p className="text-sm text-amber-600 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                Note: Some dates have pending requests (yours may be queued)
               </p>
             )}
           </div>
