@@ -219,7 +219,7 @@ export default function Credits() {
                     </div>
                     <p className="text-3xl font-bold">{fullResGenerationsRemaining.toLocaleString()}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      3000×3000 exports remaining
+                      5000×5000 exports remaining
                     </p>
                   </div>
 
@@ -261,7 +261,7 @@ export default function Credits() {
                 </li>
                 <li className="flex items-start gap-2">
                   <ImageIcon className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <span>Full resolution (3000×3000) exports cost <strong className="text-foreground">{CREDIT_COSTS.FULL_RESOLUTION} credits</strong> each.</span>
+                  <span>Full resolution (5000×5000) exports cost <strong className="text-foreground">{CREDIT_COSTS.FULL_RESOLUTION} credits</strong> each.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Zap className="h-4 w-4 text-primary shrink-0 mt-0.5" />

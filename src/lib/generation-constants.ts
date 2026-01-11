@@ -1,8 +1,8 @@
 // Generation configuration constants
 export const GENERATION_CONFIG = {
   // Resolution limits
-  MAX_LAYER_RESOLUTION: 3000,
-  MAX_EXPORT_RESOLUTION: 3000,
+  MAX_LAYER_RESOLUTION: 5000,
+  MAX_EXPORT_RESOLUTION: 5000,
   PREVIEW_RESOLUTION: 384, // Reduced from 512 for faster previews
   
   // Export settings

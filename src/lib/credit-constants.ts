@@ -1,6 +1,6 @@
 // Credit cost per generation type (discounted prices)
 export const CREDIT_COSTS = {
-  FULL_RESOLUTION: 0.05,   // 0.05 credits per full resolution export (3000x3000)
+  FULL_RESOLUTION: 0.05,   // 0.05 credits per full resolution export (5000x5000)
   PREVIEW: 0.002,          // 0.002 credits per preview (384x384)
 } as const;
 

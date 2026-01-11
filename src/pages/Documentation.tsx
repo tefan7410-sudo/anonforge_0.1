@@ -150,7 +150,7 @@ export default function Documentation() {
               </li>
               <li className="flex items-start gap-2">
                 <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                Maximum resolution: 3000×3000 pixels
+                Maximum resolution: 5000×5000 pixels
               </li>
               <li className="flex items-start gap-2">
                 <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
@@ -333,7 +333,7 @@ export default function Documentation() {
                 </div>
                 <div>
                   <p className="font-medium text-sm">Full Resolution</p>
-                  <p className="text-xs text-muted-foreground">Up to 3000×3000 pixels</p>
+                  <p className="text-xs text-muted-foreground">Up to 5000×5000 pixels</p>
                 </div>
               </div>
               
@@ -854,7 +854,7 @@ export default function Documentation() {
                   <FileImage className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-sm">Full Resolution (3000×3000)</p>
+                  <p className="font-medium text-sm">Full Resolution (5000×5000)</p>
                   <p className="text-xs text-muted-foreground">0.1 credits per image</p>
                 </div>
               </div>
