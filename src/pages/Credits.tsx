@@ -28,6 +28,7 @@ import {
   LogOut,
   TrendingUp,
   Loader2,
+  Wallet,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -35,7 +36,9 @@ import { MobileNav } from '@/components/MobileNav';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { PageTransition } from '@/components/PageTransition';
 import { PaymentModal } from '@/components/credits/PaymentModal';
+import { WalletPaymentModal } from '@/components/credits/WalletPaymentModal';
 import { useCreatePaymentIntent, PaymentIntent } from '@/hooks/use-payment-intent';
+import { useWalletPayment } from '@/hooks/use-wallet-payment';
 
 export default function Credits() {
   const navigate = useNavigate();
@@ -44,8 +47,11 @@ export default function Credits() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [currentPaymentIntent, setCurrentPaymentIntent] = useState<PaymentIntent | null>(null);
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
+  const [walletPaymentModalOpen, setWalletPaymentModalOpen] = useState(false);
+  const [walletPaymentTier, setWalletPaymentTier] = useState<typeof CREDIT_TIERS[number] | null>(null);
   
   const createPaymentIntent = useCreatePaymentIntent();
+  const walletPayment = useWalletPayment();
   
   const {
     isLoading,
@@ -82,6 +88,35 @@ export default function Credits() {
   const handleSignOut = async () => {
     await signOut();
     navigate('/login');
+  };
+
+  const handleWalletPurchase = async (tier: typeof CREDIT_TIERS[number]) => {
+    setWalletPaymentTier(tier);
+    setWalletPaymentModalOpen(true);
+    
+    try {
+      await walletPayment.purchaseWithWallet(tier.id);
+      toast({
+        title: 'Purchase Complete!',
+        description: `${tier.credits.toLocaleString()} credits have been added to your account.`,
+      });
+    } catch (error) {
+      // Error handled in modal
+      console.error('Wallet purchase error:', error);
+    }
+  };
+
+  const handleWalletPaymentClose = () => {
+    setWalletPaymentModalOpen(false);
+    walletPayment.reset();
+    setWalletPaymentTier(null);
+  };
+
+  const handleWalletPaymentRetry = () => {
+    if (walletPaymentTier) {
+      walletPayment.reset();
+      handleWalletPurchase(walletPaymentTier);
+    }
   };
 
   const getTransactionTypeLabel = (type: string) => {
@@ -288,21 +323,46 @@ export default function Credits() {
                           <span>Never expires</span>
                         </li>
                       </ul>
-                      <Button 
-                        className="w-full" 
-                        variant={tier.badge ? 'default' : 'outline'}
-                        onClick={() => handlePurchase(tier)}
-                        disabled={loadingTier === tier.id || createPaymentIntent.isPending}
-                      >
-                        {loadingTier === tier.id ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Loading...
-                          </>
-                        ) : (
-                          'Buy Now'
+                      <div className="space-y-2">
+                        {/* Wallet Payment - Only for Pro tier and if wallet connected */}
+                        {tier.id === 'pro' && walletPayment.isWalletConnected && (
+                          <Button 
+                            className="w-full" 
+                            variant="default"
+                            onClick={() => handleWalletPurchase(tier)}
+                            disabled={walletPayment.isProcessing}
+                          >
+                            {walletPayment.isProcessing && walletPaymentTier?.id === tier.id ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <Wallet className="mr-2 h-4 w-4" />
+                                Pay with Wallet
+                              </>
+                            )}
+                          </Button>
                         )}
-                      </Button>
+                        
+                        {/* Manual Payment */}
+                        <Button 
+                          className="w-full" 
+                          variant={tier.id === 'pro' && walletPayment.isWalletConnected ? 'outline' : (tier.badge ? 'default' : 'outline')}
+                          onClick={() => handlePurchase(tier)}
+                          disabled={loadingTier === tier.id || createPaymentIntent.isPending}
+                        >
+                          {loadingTier === tier.id ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            tier.id === 'pro' && walletPayment.isWalletConnected ? 'Pay Manually' : 'Buy Now'
+                          )}
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -380,6 +440,19 @@ export default function Credits() {
         open={paymentModalOpen}
         onOpenChange={setPaymentModalOpen}
         paymentIntent={currentPaymentIntent}
+      />
+
+      <WalletPaymentModal
+        open={walletPaymentModalOpen}
+        onOpenChange={setWalletPaymentModalOpen}
+        step={walletPayment.step}
+        error={walletPayment.error}
+        txHash={walletPayment.txHash}
+        creditsAdded={walletPayment.creditsAdded}
+        tierName={walletPaymentTier?.label || ''}
+        priceAda={walletPaymentTier?.priceAda || 0}
+        onRetry={handleWalletPaymentRetry}
+        onClose={handleWalletPaymentClose}
       />
     </div>
     </PageTransition>
