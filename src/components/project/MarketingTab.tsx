@@ -12,8 +12,11 @@ import {
   calculateMarketingPrice,
   type MarketingPaymentIntent,
 } from '@/hooks/use-marketing';
+import { useProductPage } from '@/hooks/use-product-page';
+import { useProject } from '@/hooks/use-project';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { MarketingPaymentModal } from '@/components/credits/MarketingPaymentModal';
+import { MarketingPreviewModal } from './MarketingPreviewModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +41,7 @@ import {
   CalendarIcon,
   CalendarCheck,
   Wallet,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format, differenceInDays, eachDayOfInterval, addDays, startOfDay } from 'date-fns';
@@ -70,6 +74,8 @@ const COMING_SOON_OPTIONS = [
 export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabProps) {
   const { user } = useAuth();
   const { data: marketingRequest, isLoading } = useProjectMarketingRequest(projectId);
+  const { data: productPage } = useProductPage(projectId);
+  const { data: project } = useProject(projectId);
   const [showNewRequestForm, setShowNewRequestForm] = useState(false);
   const { data: bookings = [] } = useMarketingBookings();
   const createRequest = useCreateMarketingRequest();
@@ -82,6 +88,7 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
   const [uploading, setUploading] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentIntent, setPaymentIntent] = useState<MarketingPaymentIntent | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   // Check for existing pending payment (session persistence)
   const { data: existingPayment } = useExistingMarketingPayment(
@@ -557,15 +564,26 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
       {/* Spotlight Request Card */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
               <CardTitle className="text-base">AnonForge Spotlight</CardTitle>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold">25 ADA</span>
-              <span className="text-xs text-muted-foreground">/day</span>
-              <Badge variant="outline" className="text-xs">Max 5 days</Badge>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setPreviewOpen(true)}
+                className="text-muted-foreground hover:text-foreground h-8 px-2 sm:px-3"
+              >
+                <Eye className="h-4 w-4 sm:mr-1.5" />
+                <span className="hidden sm:inline">Preview</span>
+              </Button>
+              <div className="flex items-center gap-1.5">
+                <span className="text-lg font-bold">25 ADA</span>
+                <span className="text-xs text-muted-foreground">/day</span>
+              </div>
+              <Badge variant="outline" className="text-xs hidden sm:inline-flex">Max 5 days</Badge>
             </div>
           </div>
         </CardHeader>
@@ -744,6 +762,16 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
 
       {/* Coming Soon Section */}
       <ComingSoonSection />
+
+      {/* Marketing Preview Modal */}
+      <MarketingPreviewModal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        projectName={project?.name || 'Your Collection'}
+        tagline={productPage?.tagline || undefined}
+        logoUrl={productPage?.logo_url}
+        heroImageUrl={heroImageUrl || productPage?.banner_url}
+      />
     </div>
   );
 }
