@@ -300,12 +300,21 @@ serve(async (req) => {
         return jsonResponse({ success: true, data: { paymentLink: payLink } });
 
       case "mint-royalty-token":
+        console.log(`Mint royalty token request: projectUid=${params.projectUid}, royaltyAddress=${params.royaltyAddress}, percentage=${params.percentage}`);
         if (!params.projectUid || !params.royaltyAddress || params.percentage === undefined) {
+          console.error("Missing required params for royalty mint:", { projectUid: !!params.projectUid, royaltyAddress: !!params.royaltyAddress, percentage: params.percentage });
           return jsonResponse({ error: "Missing projectUid, royaltyAddress, or percentage" }, 400);
         }
+        // Validate royalty address format
+        if (!params.royaltyAddress.startsWith('addr1')) {
+          console.error("Invalid royalty address format:", params.royaltyAddress.substring(0, 10));
+          return jsonResponse({ error: "Invalid Cardano address format. Must start with 'addr1'" }, 400);
+        }
         // NMKR uses GET for this endpoint with path parameters
+        // Percentage should be integer (e.g., 5 for 5%)
         nmkrEndpoint = `/MintRoyaltyToken/${params.projectUid}/${params.royaltyAddress}/${params.percentage}`;
         nmkrMethod = "GET";
+        console.log(`Calling NMKR royalty endpoint: GET ${nmkrEndpoint}`);
         break;
 
       case "get-royalty-information":

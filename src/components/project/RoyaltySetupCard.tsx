@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMintRoyaltyToken, NmkrProject } from '@/hooks/use-nmkr';
+import { useMintRoyaltyToken, useNmkrUploads, NmkrProject } from '@/hooks/use-nmkr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle2, Coins, Info, ExternalLink } from 'lucide-react';
+import { Loader2, CheckCircle2, Coins, Info, ExternalLink, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface RoyaltySetupCardProps {
@@ -18,31 +18,55 @@ interface RoyaltySetupCardProps {
 export function RoyaltySetupCard({ nmkrProject, payoutWallet }: RoyaltySetupCardProps) {
   const settings = nmkrProject.settings as Record<string, unknown> || {};
   const isRoyaltyMinted = settings.royaltyMinted === true;
+  // Get stored payout wallet from settings if not passed as prop
+  const storedPayoutWallet = settings.payoutWalletAddress as string | undefined;
+  const effectivePayoutWallet = payoutWallet || storedPayoutWallet;
   
   const [royaltyPercent, setRoyaltyPercent] = useState(5);
-  const [royaltyAddress, setRoyaltyAddress] = useState(payoutWallet || '');
+  const [royaltyAddress, setRoyaltyAddress] = useState('');
   const [usePayoutForRoyalty, setUsePayoutForRoyalty] = useState(true);
 
   const mintRoyalty = useMintRoyaltyToken();
+  const { data: uploads } = useNmkrUploads(nmkrProject.id);
+  const hasUploads = uploads && uploads.length > 0;
 
-  const isValidAddress = royaltyAddress.startsWith('addr1') && royaltyAddress.length >= 58;
-  const canMint = isValidAddress && royaltyPercent >= 1 && royaltyPercent <= 10;
+  // Determine which address will be used
+  const effectiveAddress = usePayoutForRoyalty ? effectivePayoutWallet : royaltyAddress;
+  const isEffectiveAddressValid = effectiveAddress?.startsWith('addr1') && effectiveAddress?.length >= 58;
+  const canMint = isEffectiveAddressValid && royaltyPercent >= 0 && royaltyPercent <= 10;
 
   const handleMintRoyalty = async () => {
-    if (!canMint) return;
+    if (!canMint || !effectiveAddress) {
+      console.log('[Royalty] Cannot mint:', { canMint, effectiveAddress, royaltyPercent });
+      return;
+    }
+    
+    console.log('[Royalty] Minting royalty token:', {
+      nmkrProjectId: nmkrProject.id,
+      nmkrProjectUid: nmkrProject.nmkr_project_uid,
+      royaltyAddress: effectiveAddress,
+      percentage: royaltyPercent,
+    });
     
     try {
       await mintRoyalty.mutateAsync({
         nmkrProjectId: nmkrProject.id,
         nmkrProjectUid: nmkrProject.nmkr_project_uid,
-        royaltyAddress: usePayoutForRoyalty ? (payoutWallet || royaltyAddress) : royaltyAddress,
+        royaltyAddress: effectiveAddress,
         percentage: royaltyPercent,
       });
+      toast.success('Royalty token minted successfully!');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('[Royalty] Mint error:', errorMessage);
       if (errorMessage.includes('402') || errorMessage.toLowerCase().includes('mint credits')) {
         toast.error(
           'You need mint credits on NMKR Studio to create a royalty token. Please purchase credits and try again.',
+          { duration: 8000 }
+        );
+      } else if (errorMessage.toLowerCase().includes('unused polic') || errorMessage.toLowerCase().includes('already')) {
+        toast.error(
+          'Royalty token can only be minted before any NFTs. This policy already has minted assets.',
           { duration: 8000 }
         );
       }
@@ -109,6 +133,18 @@ export function RoyaltySetupCard({ nmkrProject, payoutWallet }: RoyaltySetupCard
           </div>
         </div>
 
+        {hasUploads && (
+          <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+              <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                NFTs have been uploaded. Royalty tokens should be minted before 
+                uploading any NFTs for full marketplace compatibility.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -118,13 +154,13 @@ export function RoyaltySetupCard({ nmkrProject, payoutWallet }: RoyaltySetupCard
             <Slider
               value={[royaltyPercent]}
               onValueChange={(value) => setRoyaltyPercent(value[0])}
-              min={1}
+              min={0}
               max={10}
               step={1}
               className="w-full"
             />
             <p className="text-xs text-muted-foreground">
-              Standard is 5%. Range: 1-10%
+              Standard is 5%. Range: 0-10% (0% to remove royalties)
             </p>
           </div>
 
@@ -153,9 +189,9 @@ export function RoyaltySetupCard({ nmkrProject, payoutWallet }: RoyaltySetupCard
                 value={royaltyAddress}
                 onChange={(e) => setRoyaltyAddress(e.target.value)}
                 placeholder="addr1..."
-                className={royaltyAddress && !isValidAddress ? 'border-destructive' : ''}
+                className={royaltyAddress && !(royaltyAddress.startsWith('addr1') && royaltyAddress.length >= 58) ? 'border-destructive' : ''}
               />
-              {royaltyAddress && !isValidAddress && (
+              {royaltyAddress && !(royaltyAddress.startsWith('addr1') && royaltyAddress.length >= 58) && (
                 <p className="text-xs text-destructive">
                   Please enter a valid Cardano mainnet address
                 </p>
@@ -166,7 +202,7 @@ export function RoyaltySetupCard({ nmkrProject, payoutWallet }: RoyaltySetupCard
 
         <Button
           onClick={handleMintRoyalty}
-          disabled={mintRoyalty.isPending || !canMint || (usePayoutForRoyalty && !payoutWallet)}
+          disabled={mintRoyalty.isPending || !canMint}
           className="w-full"
         >
           {mintRoyalty.isPending ? (
@@ -182,9 +218,15 @@ export function RoyaltySetupCard({ nmkrProject, payoutWallet }: RoyaltySetupCard
           )}
         </Button>
 
-        {usePayoutForRoyalty && !payoutWallet && (
+        {usePayoutForRoyalty && !effectivePayoutWallet && (
           <p className="text-xs text-destructive text-center">
-            Payout wallet not available. Please enter a royalty address manually.
+            Payout wallet not configured. Please enter a royalty address manually or uncheck the option above.
+          </p>
+        )}
+
+        {effectiveAddress && (
+          <p className="text-xs text-muted-foreground text-center">
+            Royalties will be sent to: {effectiveAddress.slice(0, 20)}...{effectiveAddress.slice(-8)}
           </p>
         )}
       </CardContent>
