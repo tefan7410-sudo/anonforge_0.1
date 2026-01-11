@@ -224,7 +224,10 @@ export function GenerationDetailModal({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm truncate">
-                              {comment.user?.display_name || comment.user?.email}
+                              {comment.user?.display_name || 
+                                (comment.user?.email?.endsWith('@wallet.anonforge.com') 
+                                  ? 'Wallet User' 
+                                  : comment.user?.email)}
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(comment.created_at), {
