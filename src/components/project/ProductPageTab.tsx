@@ -67,6 +67,7 @@ import {
   Layers,
   Plus,
   Trash2,
+  Lock,
 } from 'lucide-react';
 import { cn, generateSlug } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -475,16 +476,21 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
     toast.success('Scheduled launch cancelled');
   };
 
-  // Toggle collection visibility (pause/unpause)
+  // Toggle collection visibility (pause/unpause) - also controls buy button
   const handleToggleHidden = async (hidden: boolean) => {
     setIsHidden(hidden);
+    // When hiding, also disable buy button
+    if (hidden) {
+      setBuyButtonEnabled(false);
+    }
     await updateProductPage.mutateAsync({
       projectId,
       updates: {
         is_hidden: hidden,
+        buy_button_enabled: hidden ? false : buyButtonEnabled,
       },
     });
-    toast.success(hidden ? 'Collection hidden from marketplace' : 'Collection visible on marketplace');
+    toast.success(hidden ? 'Collection hidden from marketplace (buy button disabled)' : 'Collection visible on marketplace');
   };
 
   // Clear image helpers
@@ -595,6 +601,8 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
     collection_type: collectionType,
     preview_images: previewImages,
     artworks: artworks,
+    admin_approved: productPage?.admin_approved ?? false,
+    rejection_reason: productPage?.rejection_reason ?? null,
     created_at: productPage?.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -602,6 +610,13 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
   // Determine launch status
   const isScheduled = scheduledLaunchAt && new Date(scheduledLaunchAt) > new Date();
   const isActuallyLive = isLive && !isScheduled;
+  
+  // Determine editing lock status
+  const isApproved = productPage?.admin_approved === true;
+  const isRejected = !!productPage?.rejection_reason && !productPage?.admin_approved;
+  
+  // Editing is locked if scheduled (pending or approved) or live, but NOT if rejected
+  const isEditingLocked = (!!scheduledLaunchAt || isActuallyLive) && !isRejected;
 
   return (
     <div className="space-y-6">
@@ -649,15 +664,17 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
           )}
         </div>
         <div className="flex items-center gap-2">
-          {/* Save Button - Primary action */}
-          <Button onClick={handleSave} disabled={isSaving} size="sm">
-            {isSaving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-4 w-4" />
-            )}
-            {isSaving ? 'Saving...' : 'Save'}
-          </Button>
+          {/* Save Button - Primary action (hidden when editing is locked) */}
+          {!isEditingLocked && (
+            <Button onClick={handleSave} disabled={isSaving} size="sm">
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
             <Eye className="mr-2 h-4 w-4" />
             Preview
@@ -697,8 +714,32 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
         </Alert>
       )}
 
+      {/* Editing Locked Info */}
+      {isEditingLocked && (
+        <Alert className="border-blue-500/50 bg-blue-500/10">
+          <Lock className="h-4 w-4 text-blue-500" />
+          <AlertDescription className="text-blue-700 dark:text-blue-300">
+            <strong>Product page is locked.</strong>{' '}
+            {isApproved 
+              ? "Your collection has been approved — only visibility can be changed."
+              : "Your launch is scheduled and pending review. You can edit again if your submission is rejected."}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Rejection Alert - Allow editing again */}
+      {isRejected && productPage?.rejection_reason && (
+        <Alert variant="destructive">
+          <XCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Your submission was rejected:</strong> {productPage.rejection_reason}
+            <p className="mt-1 text-sm opacity-90">Please update your product page and reschedule your launch.</p>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Scheduled Launch Info */}
-      {isScheduled && (
+      {isScheduled && !isRejected && (
         <Alert>
           <Clock className="h-4 w-4" />
           <AlertDescription>
@@ -710,8 +751,8 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
         </Alert>
       )}
 
-      {/* Collection Visibility (for live collections) */}
-      {isActuallyLive && (
+      {/* Collection Visibility (for live or approved scheduled collections) */}
+      {(isActuallyLive || (isScheduled && isApproved)) && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display">
@@ -727,7 +768,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
               <div className="space-y-0.5">
                 <Label htmlFor="pause-collection">Pause Collection</Label>
                 <p className="text-xs text-muted-foreground">
-                  When paused, your collection won't appear in the marketplace and the mint button will be hidden
+                  When paused, your collection won't appear in the marketplace and the buy button will be disabled
                 </p>
               </div>
               <Switch
@@ -757,12 +798,14 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
           <div className="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
-              onClick={() => setCollectionType('generative')}
+              onClick={() => !isEditingLocked && setCollectionType('generative')}
+              disabled={isEditingLocked}
               className={cn(
-                "relative flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-all hover:bg-accent/50",
+                "relative flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-all",
                 collectionType === 'generative' 
                   ? "border-primary bg-primary/5" 
-                  : "border-muted"
+                  : "border-muted",
+                isEditingLocked ? "opacity-60 cursor-not-allowed" : "hover:bg-accent/50"
               )}
             >
               <Layers className="h-5 w-5 text-primary shrink-0" />
@@ -777,12 +820,14 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
             
             <button
               type="button"
-              onClick={() => setCollectionType('art_collection')}
+              onClick={() => !isEditingLocked && setCollectionType('art_collection')}
+              disabled={isEditingLocked}
               className={cn(
-                "relative flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-all hover:bg-accent/50",
+                "relative flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-all",
                 collectionType === 'art_collection' 
                   ? "border-primary bg-primary/5" 
-                  : "border-muted"
+                  : "border-muted",
+                isEditingLocked ? "opacity-60 cursor-not-allowed" : "hover:bg-accent/50"
               )}
             >
               <Palette className="h-5 w-5 text-primary shrink-0" />
@@ -1015,6 +1060,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                 min="1"
                 value={maxSupply}
                 onChange={(e) => {
+                  if (isEditingLocked) return;
                   const newValue = e.target.value ? parseInt(e.target.value) : 1;
                   // Show warning if changing from 1 to something else
                   if (maxSupply === 1 && newValue > 1) {
@@ -1025,6 +1071,8 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                   }
                 }}
                 placeholder="1"
+                disabled={isEditingLocked}
+                className={cn(isEditingLocked && "bg-muted cursor-not-allowed")}
               />
               <p className="text-xs text-muted-foreground">
                 How many times each unique piece can be minted. Set to 1 for a fully unique collection.
@@ -1049,12 +1097,14 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                 type="url"
                 value={secondaryMarketUrl}
                 onChange={(e) => {
+                  if (isEditingLocked) return;
                   setSecondaryMarketUrl(e.target.value);
                   if (secondaryMarketError) validateSecondaryMarketUrl(e.target.value);
                 }}
                 onBlur={() => validateSecondaryMarketUrl(secondaryMarketUrl)}
                 placeholder="https://jpg.store/collection/..."
-                className={cn(secondaryMarketError && "border-destructive")}
+                disabled={isEditingLocked}
+                className={cn(secondaryMarketError && "border-destructive", isEditingLocked && "bg-muted cursor-not-allowed")}
               />
               {secondaryMarketError ? (
                 <p className="text-xs text-destructive flex items-center gap-1">
@@ -1087,8 +1137,14 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                 id="buy-button-enabled"
                 checked={buyButtonEnabled}
                 onCheckedChange={setBuyButtonEnabled}
+                disabled={isEditingLocked || isHidden}
               />
             </div>
+            {isHidden && (
+              <p className="text-xs text-muted-foreground italic">
+                Buy button is disabled while collection is hidden
+              </p>
+            )}
 
             {buyButtonEnabled && (
               <div className="grid gap-4 md:grid-cols-2 pl-6 border-l-2 border-primary/20">
@@ -1097,9 +1153,11 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                   <Input
                     id="buy-button-text"
                     value={buyButtonText}
-                    onChange={(e) => setBuyButtonText(e.target.value)}
+                    onChange={(e) => !isEditingLocked && setBuyButtonText(e.target.value)}
                     placeholder="Mint Now"
                     maxLength={30}
+                    disabled={isEditingLocked}
+                    className={cn(isEditingLocked && "bg-muted cursor-not-allowed")}
                   />
                 </div>
 
@@ -1179,15 +1237,17 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                 </div>
               ) : (
                 <div
-                  {...getBannerRootProps()}
+                  {...(isEditingLocked ? {} : getBannerRootProps())}
                   className={cn(
-                    "flex h-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
-                    isBannerDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                    "flex h-24 flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
+                    isEditingLocked 
+                      ? "bg-muted cursor-not-allowed border-muted" 
+                      : isBannerDragActive ? "border-primary bg-primary/5 cursor-pointer" : "border-muted-foreground/25 hover:border-primary/50 cursor-pointer"
                   )}
                 >
-                  <input {...getBannerInputProps()} />
+                  {!isEditingLocked && <input {...getBannerInputProps()} />}
                   <Upload className="h-5 w-5 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground mt-1">Drop or click</p>
+                  <p className="text-xs text-muted-foreground mt-1">{isEditingLocked ? 'Locked' : 'Drop or click'}</p>
                 </div>
               )}
             </div>
@@ -1213,13 +1273,15 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                 </div>
               ) : (
                 <div
-                  {...getLogoRootProps()}
+                  {...(isEditingLocked ? {} : getLogoRootProps())}
                   className={cn(
-                    "flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
-                    isLogoDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                    "flex h-20 w-20 flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
+                    isEditingLocked 
+                      ? "bg-muted cursor-not-allowed border-muted" 
+                      : isLogoDragActive ? "border-primary bg-primary/5 cursor-pointer" : "border-muted-foreground/25 hover:border-primary/50 cursor-pointer"
                   )}
                 >
-                  <input {...getLogoInputProps()} />
+                  {!isEditingLocked && <input {...getLogoInputProps()} />}
                   <ImageIcon className="h-5 w-5 text-muted-foreground" />
                 </div>
               )}
@@ -1234,9 +1296,11 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
               <Input
                 id="tagline"
                 value={tagline}
-                onChange={(e) => setTagline(e.target.value)}
+                onChange={(e) => !isEditingLocked && setTagline(e.target.value)}
                 placeholder="Short catchy tagline"
                 maxLength={100}
+                disabled={isEditingLocked}
+                className={cn(isEditingLocked && "bg-muted cursor-not-allowed")}
               />
               <p className="text-xs text-muted-foreground">{tagline.length}/100</p>
             </div>
@@ -1252,12 +1316,14 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                     type="url"
                     value={twitterUrl}
                     onChange={(e) => {
+                      if (isEditingLocked) return;
                       setTwitterUrl(e.target.value);
                       if (twitterError) validateTwitterUrl(e.target.value);
                     }}
                     onBlur={() => validateTwitterUrl(twitterUrl)}
                     placeholder="Twitter/X URL"
-                    className={cn("pl-7", twitterError && "border-destructive")}
+                    disabled={isEditingLocked}
+                    className={cn("pl-7", twitterError && "border-destructive", isEditingLocked && "bg-muted cursor-not-allowed")}
                   />
                   <Twitter className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   {twitterError && (
@@ -1271,12 +1337,14 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                     type="url"
                     value={discordUrl}
                     onChange={(e) => {
+                      if (isEditingLocked) return;
                       setDiscordUrl(e.target.value);
                       if (discordError) validateDiscordUrl(e.target.value);
                     }}
                     onBlur={() => validateDiscordUrl(discordUrl)}
                     placeholder="Discord URL"
-                    className={cn("pl-7", discordError && "border-destructive")}
+                    disabled={isEditingLocked}
+                    className={cn("pl-7", discordError && "border-destructive", isEditingLocked && "bg-muted cursor-not-allowed")}
                   />
                   <MessageCircle className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   {discordError && (
@@ -1290,12 +1358,14 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                     type="url"
                     value={websiteUrl}
                     onChange={(e) => {
+                      if (isEditingLocked) return;
                       setWebsiteUrl(e.target.value);
                       if (websiteError) validateWebsiteUrl(e.target.value);
                     }}
                     onBlur={() => validateWebsiteUrl(websiteUrl)}
                     placeholder="Website URL"
-                    className={cn("pl-7", websiteError && "border-destructive")}
+                    disabled={isEditingLocked}
+                    className={cn("pl-7", websiteError && "border-destructive", isEditingLocked && "bg-muted cursor-not-allowed")}
                   />
                   <Globe className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   {websiteError && (
@@ -1504,13 +1574,15 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                   </div>
                 ) : (
                   <div
-                    {...getFounderPfpRootProps()}
+                    {...(isEditingLocked ? {} : getFounderPfpRootProps())}
                     className={cn(
-                      "flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-full border-2 border-dashed transition-colors",
-                      isFounderPfpDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                      "flex h-20 w-20 flex-col items-center justify-center rounded-full border-2 border-dashed transition-colors",
+                      isEditingLocked 
+                        ? "bg-muted cursor-not-allowed border-muted" 
+                        : isFounderPfpDragActive ? "border-primary bg-primary/5 cursor-pointer" : "border-muted-foreground/25 hover:border-primary/50 cursor-pointer"
                     )}
                   >
-                    <input {...getFounderPfpInputProps()} />
+                    {!isEditingLocked && <input {...getFounderPfpInputProps()} />}
                     <User className="h-6 w-6 text-muted-foreground" />
                   </div>
                 )}
@@ -1520,17 +1592,17 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
               <div className="space-y-2">
                 <Label htmlFor="founder-name" className="flex items-center gap-2">
                   Name
-                  {isVerifiedCreator && (
+                  {(isVerifiedCreator || isEditingLocked) && (
                     <Badge variant="outline" className="text-xs">Locked</Badge>
                   )}
                 </Label>
                 <Input
                   id="founder-name"
                   value={isVerifiedCreator ? (profile?.display_name || founderName) : founderName}
-                  onChange={(e) => !isVerifiedCreator && setFounderName(e.target.value)}
+                  onChange={(e) => !isVerifiedCreator && !isEditingLocked && setFounderName(e.target.value)}
                   placeholder="Your name or alias"
-                  disabled={isVerifiedCreator}
-                  className={isVerifiedCreator ? "bg-muted cursor-not-allowed" : ""}
+                  disabled={isVerifiedCreator || isEditingLocked}
+                  className={(isVerifiedCreator || isEditingLocked) ? "bg-muted cursor-not-allowed" : ""}
                 />
                 {isVerifiedCreator && (
                   <p className="text-xs text-muted-foreground">From your verified profile</p>
@@ -1542,7 +1614,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                 <Label htmlFor="founder-twitter" className="flex items-center gap-2">
                   <Twitter className="h-3 w-3" />
                   Twitter Handle
-                  {isVerifiedCreator && (
+                  {(isVerifiedCreator || isEditingLocked) && (
                     <Badge variant="outline" className="text-xs">Locked</Badge>
                   )}
                 </Label>
@@ -1551,10 +1623,10 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
                   <Input
                     id="founder-twitter"
                     value={isVerifiedCreator ? (profile?.twitter_handle || founderTwitter) : founderTwitter}
-                    onChange={(e) => !isVerifiedCreator && setFounderTwitter(e.target.value.replace('@', ''))}
+                    onChange={(e) => !isVerifiedCreator && !isEditingLocked && setFounderTwitter(e.target.value.replace('@', ''))}
                     placeholder="yourhandle"
-                    className={cn("pl-7", isVerifiedCreator && "bg-muted cursor-not-allowed")}
-                    disabled={isVerifiedCreator}
+                    className={cn("pl-7", (isVerifiedCreator || isEditingLocked) && "bg-muted cursor-not-allowed")}
+                    disabled={isVerifiedCreator || isEditingLocked}
                   />
                 </div>
                 {isVerifiedCreator && (
@@ -1565,14 +1637,21 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
 
             {/* Founder Bio */}
             <div className="space-y-2">
-              <Label htmlFor="founder-bio">Bio</Label>
+              <Label htmlFor="founder-bio" className="flex items-center gap-2">
+                Bio
+                {isEditingLocked && (
+                  <Badge variant="outline" className="text-xs">Locked</Badge>
+                )}
+              </Label>
               <Textarea
                 id="founder-bio"
                 value={founderBio}
-                onChange={(e) => setFounderBio(e.target.value)}
+                onChange={(e) => !isEditingLocked && setFounderBio(e.target.value)}
                 placeholder="Tell collectors about yourself, your background, and your vision for this collection..."
                 rows={8}
                 maxLength={500}
+                disabled={isEditingLocked}
+                className={cn(isEditingLocked && "bg-muted cursor-not-allowed")}
               />
               <p className="text-xs text-muted-foreground">
                 {founderBio.length}/500 characters
