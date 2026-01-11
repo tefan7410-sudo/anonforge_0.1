@@ -197,6 +197,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
   const [isLive, setIsLive] = useState(false);
   const [scheduledLaunchAt, setScheduledLaunchAt] = useState<string | null>(null);
   const [isHidden, setIsHidden] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   
   // URL validation errors
   const [twitterError, setTwitterError] = useState<string | null>(null);
@@ -620,6 +621,13 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
   // Editing is locked if scheduled (pending or approved) or live, but NOT if rejected
   const isEditingLocked = (!!scheduledLaunchAt || isActuallyLive) && !isRejected;
 
+  // Collapse details section when editing becomes locked
+  useEffect(() => {
+    if (isEditingLocked) {
+      setDetailsOpen(false);
+    }
+  }, [isEditingLocked]);
+
   return (
     <div className="space-y-6">
       {/* Action Bar with Save Button */}
@@ -788,7 +796,10 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
       )}
 
       {/* Collapsible wrapper for editable content when locked */}
-      <Collapsible open={!isEditingLocked ? true : undefined} defaultOpen={!isEditingLocked}>
+      <Collapsible 
+        open={!isEditingLocked ? true : detailsOpen} 
+        onOpenChange={isEditingLocked ? setDetailsOpen : undefined}
+      >
         {isEditingLocked && (
           <CollapsibleTrigger asChild>
             <Button 
