@@ -242,7 +242,26 @@ export default function TermsOfService() {
             </section>
 
             <section className="mb-8">
-              <h2 className="font-display text-2xl font-semibold mb-4">17. Contact Information</h2>
+              <h2 className="font-display text-2xl font-semibold mb-4">17. Third-Party Assets</h2>
+              <p className="text-muted-foreground mb-4">
+                This application uses third-party assets and resources:
+              </p>
+              <ul className="list-disc list-inside text-muted-foreground space-y-2">
+                <li>
+                  Icons provided by{' '}
+                  <a href="https://www.flaticon.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    Flaticon
+                  </a>{' '}
+                  created by{' '}
+                  <a href="https://www.flaticon.com/authors/kirill-kazachek" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    Kirill Kazachek
+                  </a>
+                </li>
+              </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="font-display text-2xl font-semibold mb-4">18. Contact Information</h2>
               <p className="text-muted-foreground">
                 If you have any questions about these Terms, please contact us through the
                 Service.

@@ -47,39 +47,39 @@ import { formatDistanceToNow, format } from "date-fns";
 const statusConfig = {
   operational: { 
     icon: CheckCircle2, 
-    color: "text-green-500", 
-    bgColor: "bg-green-500/10",
-    borderColor: "border-green-500/20",
+    color: "text-success", 
+    bgColor: "bg-success/10",
+    borderColor: "border-success/20",
     label: "Operational" 
   },
   degraded: { 
     icon: AlertTriangle, 
-    color: "text-yellow-500", 
-    bgColor: "bg-yellow-500/10",
-    borderColor: "border-yellow-500/20",
+    color: "text-warning", 
+    bgColor: "bg-warning/10",
+    borderColor: "border-warning/20",
     label: "Degraded" 
   },
   partial_outage: { 
     icon: AlertCircle, 
-    color: "text-orange-500", 
-    bgColor: "bg-orange-500/10",
-    borderColor: "border-orange-500/20",
+    color: "text-warning", 
+    bgColor: "bg-warning/10",
+    borderColor: "border-warning/20",
     label: "Partial Outage" 
   },
   major_outage: { 
     icon: XCircle, 
-    color: "text-red-500", 
-    bgColor: "bg-red-500/10",
-    borderColor: "border-red-500/20",
+    color: "text-destructive", 
+    bgColor: "bg-destructive/10",
+    borderColor: "border-destructive/20",
     label: "Major Outage" 
   },
 };
 
 const severityConfig = {
-  info: { icon: Info, color: "text-blue-500", bgColor: "bg-blue-500/10" },
-  warning: { icon: AlertTriangle, color: "text-yellow-500", bgColor: "bg-yellow-500/10" },
-  critical: { icon: XCircle, color: "text-red-500", bgColor: "bg-red-500/10" },
-  maintenance: { icon: Wrench, color: "text-purple-500", bgColor: "bg-purple-500/10" },
+  info: { icon: Info, color: "text-primary", bgColor: "bg-primary/10" },
+  warning: { icon: AlertTriangle, color: "text-warning", bgColor: "bg-warning/10" },
+  critical: { icon: XCircle, color: "text-destructive", bgColor: "bg-destructive/10" },
+  maintenance: { icon: Wrench, color: "text-primary", bgColor: "bg-primary/10" },
 };
 
 function ServiceCard({ service }: { service: ServiceStatus }) {
@@ -146,7 +146,7 @@ function IncidentCard({ incident }: { incident: StatusIncident }) {
                 </span>
               )}
               {incident.resolved_at && (
-                <span className="text-green-500">
+                <span className="text-success">
                   Resolved {formatDistanceToNow(new Date(incident.resolved_at), { addSuffix: true })}
                 </span>
               )}
@@ -164,12 +164,12 @@ function OverallStatusBanner({ services, maintenanceMode }: {
 }) {
   if (maintenanceMode?.enabled) {
     return (
-      <Card className="bg-purple-500/10 border-purple-500/20">
+      <Card className="bg-primary/10 border-primary/20">
         <CardContent className="py-6">
           <div className="flex items-center justify-center gap-3">
-            <Wrench className="h-8 w-8 text-purple-500" />
+            <Wrench className="h-8 w-8 text-primary" />
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-purple-500">Maintenance Mode</h2>
+              <h2 className="text-2xl font-bold text-primary">Maintenance Mode</h2>
               <p className="text-muted-foreground">
                 {maintenanceMode.message || "The site is currently undergoing maintenance."}
               </p>
@@ -384,7 +384,7 @@ export default function Status() {
             {activeIncidents.length > 0 && (
               <section>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                  <AlertCircle className="h-5 w-5 text-warning" />
                   Active Incidents
                 </h3>
                 <div className="space-y-3">

@@ -37,7 +37,7 @@ function LayerNodeComponent({ data, selected }: NodeProps<LayerNodeType>) {
       className={cn(
         'relative w-48 rounded-lg border bg-card p-2 shadow-sm transition-all',
         selected ? 'border-primary ring-2 ring-primary/20' : 'border-border',
-        layer.is_effect_layer && 'border-purple-500/50 bg-purple-500/5'
+        layer.is_effect_layer && 'border-primary/50 bg-primary/5'
       )}
     >
       {/* Connection Handles */}
@@ -67,7 +67,7 @@ function LayerNodeComponent({ data, selected }: NodeProps<LayerNodeType>) {
           draggable={false}
         />
         {layer.is_effect_layer && (
-          <Badge className="absolute right-1 top-1 bg-purple-500 text-[10px] px-1.5 py-0.5">
+          <Badge className="absolute right-1 top-1 bg-primary text-[10px] px-1.5 py-0.5">
             <Sparkles className="mr-0.5 h-2.5 w-2.5" />
             Effect
           </Badge>

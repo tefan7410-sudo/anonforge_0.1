@@ -416,17 +416,17 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
               <div className={cn(
                 "rounded-lg border p-3",
                 (marketingRequest as any).is_free_promo 
-                  ? "border-purple-500/30 bg-purple-500/10" 
+                  ? "border-primary/30 bg-primary/10" 
                   : "border-primary/30 bg-primary/10"
               )}>
                 <div className="flex items-start gap-2">
                   <CalendarCheck className={cn(
                     "h-4 w-4 shrink-0",
-                    (marketingRequest as any).is_free_promo ? "text-purple-500" : "text-primary"
+                    (marketingRequest as any).is_free_promo ? "text-primary" : "text-primary"
                   )} />
                   <div>
                     {(marketingRequest as any).is_free_promo ? (
-                      <p className="text-sm font-medium text-purple-500">🎉 Complimentary Spotlight Scheduled!</p>
+                      <p className="text-sm font-medium text-primary">🎉 Complimentary Spotlight Scheduled!</p>
                     ) : (
                       <p className="text-sm font-medium text-primary">Payment Confirmed - Scheduled!</p>
                     )}

@@ -172,7 +172,7 @@ export function NewAccountWelcomeModal({ onClose }: NewAccountWelcomeModalProps)
             {/* Credits explanation */}
             <div className="rounded-lg border border-border/50 bg-muted/30 p-4">
               <h4 className="mb-2 font-medium text-foreground flex items-center gap-2">
-                <Coins className="h-4 w-4 text-amber-500" />
+                <Coins className="h-4 w-4 text-primary" />
                 About Credits
               </h4>
               <ul className="space-y-1 text-sm text-muted-foreground">

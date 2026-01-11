@@ -39,10 +39,10 @@ import {
 import { format } from "date-fns";
 
 const statusConfig = {
-  operational: { icon: CheckCircle2, color: "text-green-500", label: "Operational" },
-  degraded: { icon: AlertTriangle, color: "text-yellow-500", label: "Degraded" },
-  partial_outage: { icon: AlertCircle, color: "text-orange-500", label: "Partial Outage" },
-  major_outage: { icon: XCircle, color: "text-red-500", label: "Major Outage" },
+  operational: { icon: CheckCircle2, color: "text-success", label: "Operational" },
+  degraded: { icon: AlertTriangle, color: "text-warning", label: "Degraded" },
+  partial_outage: { icon: AlertCircle, color: "text-warning", label: "Partial Outage" },
+  major_outage: { icon: XCircle, color: "text-destructive", label: "Major Outage" },
 };
 
 function ServiceStatusRow({ service }: { service: ServiceStatus }) {
@@ -324,7 +324,7 @@ export function SystemStatusTab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-orange-500" />
+            <AlertCircle className="h-5 w-5 text-warning" />
             Active Incidents ({activeIncidents.length})
           </CardTitle>
         </CardHeader>

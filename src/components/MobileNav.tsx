@@ -141,11 +141,11 @@ export function MobileNav() {
             onClick={() => setOpen(false)}
           >
             <Link to="/credits">
-              <Coins className={`mr-3 h-4 w-4 ${isLowCredits ? 'text-orange-500' : ''}`} />
+              <Coins className={`mr-3 h-4 w-4 ${isLowCredits ? 'text-warning' : ''}`} />
               Credits
               <Badge 
                 variant="outline" 
-                className={`ml-auto ${isLowCredits ? 'border-orange-500 text-orange-500' : ''}`}
+                className={`ml-auto ${isLowCredits ? 'border-warning text-warning' : ''}`}
               >
                 {formatCredits(totalCredits)}
               </Badge>

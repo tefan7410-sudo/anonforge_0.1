@@ -16,11 +16,11 @@ export function RoyaltiesTab({ nmkrProject }: RoyaltiesTabProps) {
     <div className="space-y-6">
       {/* Royalty Warning Banner */}
       {!isRoyaltyMinted && (
-        <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
+        <div className="rounded-lg border border-warning/50 bg-warning/10 p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5 shrink-0" />
+            <AlertTriangle className="h-5 w-5 text-warning mt-0.5 shrink-0" />
             <div>
-              <h4 className="font-medium text-yellow-700 dark:text-yellow-400">
+              <h4 className="font-medium text-warning">
                 Royalty Token Not Created
               </h4>
               <p className="text-sm text-muted-foreground mt-1">

@@ -126,11 +126,11 @@ function CollectionCard({ collection, isSoldOut }: { collection: LiveCollection;
                   UPCOMING
                 </Badge>
               ) : isSoldOut ? (
-                <Badge className="bg-orange-500/90 text-white hover:bg-orange-500">
+                <Badge className="bg-warning/90 text-warning-foreground hover:bg-warning">
                   SOLD OUT
                 </Badge>
               ) : (
-                <Badge className="bg-green-500/90 text-white hover:bg-green-500">
+                <Badge className="bg-success/90 text-white hover:bg-success">
                   <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-white" />
                   LIVE
                 </Badge>
