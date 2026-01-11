@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export interface Project {
   id: string;
@@ -195,7 +195,6 @@ export function useAllExclusions(projectId: string) {
 
 export function useCreateExclusion() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ layerId, excludedLayerId }: { layerId: string; excludedLayerId: string; projectId: string }) => {
@@ -209,17 +208,16 @@ export function useCreateExclusion() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['layer-exclusions'] });
       queryClient.invalidateQueries({ queryKey: ['all-exclusions', variables.projectId] });
-      toast({ title: 'Exclusion rule added' });
+      toast.success('Trait exclusion rule created');
     },
     onError: (error: Error) => {
-      toast({ title: 'Failed to add exclusion', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     },
   });
 }
 
 export function useDeleteExclusion() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ layerId, excludedLayerId }: { layerId: string; excludedLayerId: string; projectId: string }) => {
@@ -233,10 +231,10 @@ export function useDeleteExclusion() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['layer-exclusions'] });
       queryClient.invalidateQueries({ queryKey: ['all-exclusions', variables.projectId] });
-      toast({ title: 'Exclusion rule removed' });
+      toast.success('Exclusion rule removed');
     },
     onError: (error: Error) => {
-      toast({ title: 'Failed to remove exclusion', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     },
   });
 }
@@ -295,7 +293,6 @@ export function useAllEffects(projectId: string) {
 
 export function useCreateEffect() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({
@@ -318,10 +315,10 @@ export function useCreateEffect() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['layer-effects'] });
       queryClient.invalidateQueries({ queryKey: ['all-effects', variables.projectId] });
-      toast({ title: 'Effect layer linked' });
+      toast.success('Effect linked to trait');
     },
     onError: (error: Error) => {
-      toast({ title: 'Failed to link effect', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     },
   });
 }
@@ -343,7 +340,6 @@ export function useUpdateEffectOrder() {
 
 export function useDeleteEffect() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ id }: { id: string; projectId: string }) => {
@@ -353,10 +349,10 @@ export function useDeleteEffect() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['layer-effects'] });
       queryClient.invalidateQueries({ queryKey: ['all-effects', variables.projectId] });
-      toast({ title: 'Effect layer removed' });
+      toast.success('Effect removed');
     },
     onError: (error: Error) => {
-      toast({ title: 'Failed to remove effect', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     },
   });
 }
@@ -378,7 +374,6 @@ export function useMarkAsEffectLayer() {
 
 export function useCreateCategory() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({
@@ -403,17 +398,15 @@ export function useCreateCategory() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['categories', variables.projectId] });
-      toast({ title: 'Category created' });
     },
     onError: (error: Error) => {
-      toast({ title: 'Failed to create category', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     },
   });
 }
 
 export function useUpdateCategory() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({
@@ -437,14 +430,13 @@ export function useUpdateCategory() {
       queryClient.invalidateQueries({ queryKey: ['categories', variables.projectId] });
     },
     onError: (error: Error) => {
-      toast({ title: 'Failed to update category', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     },
   });
 }
 
 export function useReorderCategories() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({
@@ -463,17 +455,16 @@ export function useReorderCategories() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['categories', variables.projectId] });
-      toast({ title: 'Layer order updated' });
+      toast.success('Layer stack order saved');
     },
     onError: (error: Error) => {
-      toast({ title: 'Failed to update order', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     },
   });
 }
 
 export function useDeleteCategory() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ id }: { id: string; projectId: string }) => {
@@ -482,10 +473,9 @@ export function useDeleteCategory() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['categories', variables.projectId] });
-      toast({ title: 'Category deleted' });
     },
     onError: (error: Error) => {
-      toast({ title: 'Failed to delete category', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     },
   });
 }
@@ -562,7 +552,6 @@ export function useUpdateLayerWeight() {
 
 export function useDeleteLayer() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ id, storagePath }: { id: string; categoryId: string; projectId: string; storagePath: string }) => {
@@ -576,17 +565,16 @@ export function useDeleteLayer() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['layers', variables.categoryId] });
       queryClient.invalidateQueries({ queryKey: ['all-layers', variables.projectId] });
-      toast({ title: 'Layer deleted' });
+      toast.success('Layer deleted');
     },
     onError: (error: Error) => {
-      toast({ title: 'Failed to delete layer', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     },
   });
 }
 
 export function useUpdateLayerName() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({
@@ -608,10 +596,10 @@ export function useUpdateLayerName() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['layers', variables.categoryId] });
       queryClient.invalidateQueries({ queryKey: ['all-layers', variables.projectId] });
-      toast({ title: 'Trait renamed' });
+      toast.success('Trait renamed');
     },
     onError: (error: Error) => {
-      toast({ title: 'Failed to rename trait', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     },
   });
 }
@@ -669,7 +657,6 @@ export function useAllSwitches(projectId: string) {
 
 export function useCreateSwitch() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ layerAId, layerBId }: { layerAId: string; layerBId: string; projectId: string }) => {
@@ -685,17 +672,16 @@ export function useCreateSwitch() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['layer-switches'] });
       queryClient.invalidateQueries({ queryKey: ['all-switches', variables.projectId] });
-      toast({ title: 'Layer switch rule added' });
+      toast.success('Layer switch rule added');
     },
     onError: (error: Error) => {
-      toast({ title: 'Failed to add switch rule', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     },
   });
 }
 
 export function useDeleteSwitch() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ layerAId, layerBId }: { layerAId: string; layerBId: string; projectId: string }) => {
@@ -712,10 +698,10 @@ export function useDeleteSwitch() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['layer-switches'] });
       queryClient.invalidateQueries({ queryKey: ['all-switches', variables.projectId] });
-      toast({ title: 'Layer switch rule removed' });
+      toast.success('Layer switch rule removed');
     },
     onError: (error: Error) => {
-      toast({ title: 'Failed to remove switch rule', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     },
   });
 }

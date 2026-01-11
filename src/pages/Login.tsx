@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { PageTransition } from '@/components/PageTransition';
@@ -27,7 +27,6 @@ export default function Login() {
   const { user, loading: authLoading, signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
 
   const from = location.state?.from?.pathname || '/dashboard';
 
@@ -54,17 +53,10 @@ export default function Login() {
     const { error } = await signIn(email, password);
 
     if (error) {
-      toast({
-        title: 'Sign in failed',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error(error.message);
       setLoading(false);
     } else {
-      toast({
-        title: 'Welcome back',
-        description: 'You have successfully signed in.',
-      });
+      toast.success('Welcome back!');
       navigate(from, { replace: true });
     }
   };
@@ -140,11 +132,7 @@ export default function Login() {
                 setGoogleLoading(true);
                 const { error } = await signInWithGoogle();
                 if (error) {
-                  toast({
-                    title: 'Google sign in failed',
-                    description: error.message,
-                    variant: 'destructive',
-                  });
+                  toast.error(error.message);
                   setGoogleLoading(false);
                 }
               }}

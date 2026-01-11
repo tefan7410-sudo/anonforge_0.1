@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { ArrowLeft, Layers, Save, Trash2, Loader2, Settings, Users, Shield, AlertTriangle } from 'lucide-react';
 import { TeamManagement } from '@/components/project/TeamManagement';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -33,7 +33,6 @@ export default function ProjectSettings() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
 
   const { data: project, isLoading, refetch } = useProject(id!);
 
@@ -58,7 +57,7 @@ export default function ProjectSettings() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast({ title: 'Name required', description: 'Please enter a project name', variant: 'destructive' });
+      toast.error('Please enter a project name');
       return;
     }
 
@@ -77,10 +76,10 @@ export default function ProjectSettings() {
 
       if (error) throw error;
 
-      toast({ title: 'Settings saved', description: 'Project settings have been updated' });
+      toast.success('Project settings saved');
       refetch();
     } catch (error: any) {
-      toast({ title: 'Failed to save', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     } finally {
       setSaving(false);
     }
@@ -92,10 +91,10 @@ export default function ProjectSettings() {
       const { error } = await supabase.from('projects').delete().eq('id', id);
       if (error) throw error;
 
-      toast({ title: 'Project deleted', description: 'Your project has been permanently deleted' });
+      toast.success('Project deleted');
       navigate('/dashboard');
     } catch (error: any) {
-      toast({ title: 'Failed to delete', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
       setDeleting(false);
     }
   };

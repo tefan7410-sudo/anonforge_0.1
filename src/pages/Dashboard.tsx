@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Plus, FolderOpen, Users, Clock, Loader2, LogOut, User, Check, X, Coins, AlertTriangle, GraduationCap, Sparkles, Megaphone, Palette } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { formatDistanceToNow } from 'date-fns';
@@ -50,7 +50,6 @@ interface Invitation {
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
-  const { toast } = useToast();
   const [ownedProjects, setOwnedProjects] = useState<Project[]>([]);
   const [sharedProjects, setSharedProjects] = useState<Project[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -119,11 +118,7 @@ export default function Dashboard() {
       setOwnedProjects(filteredOwned);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      toast({
-        title: 'Error loading data',
-        description: 'Please try refreshing the page',
-        variant: 'destructive',
-      });
+      toast.error('Error loading data. Please try refreshing the page.');
     } finally {
       setLoading(false);
     }
@@ -358,9 +353,9 @@ export default function Dashboard() {
                               try {
                                 await declineInvitation.mutateAsync({ invitationId: invite.id });
                                 setInvitations(prev => prev.filter(i => i.id !== invite.id));
-                                toast({ title: 'Invitation declined' });
+                                toast.info('Invitation declined');
                               } catch (error: any) {
-                                toast({ title: 'Failed', description: error.message, variant: 'destructive' });
+                                toast.error(error.message);
                               }
                             }}
                           >
@@ -374,10 +369,10 @@ export default function Dashboard() {
                               try {
                                 await acceptInvitation.mutateAsync({ invitationId: invite.id });
                                 setInvitations(prev => prev.filter(i => i.id !== invite.id));
-                                toast({ title: 'Invitation accepted', description: 'You now have access to this project' });
+                                toast.success('Invitation accepted! You now have access to this project.');
                                 loadProjects();
                               } catch (error: any) {
-                                toast({ title: 'Failed', description: error.message, variant: 'destructive' });
+                                toast.error(error.message);
                               }
                             }}
                           >

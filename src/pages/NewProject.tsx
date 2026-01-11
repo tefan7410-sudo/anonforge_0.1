@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { ArrowLeft, ArrowRight, Check, Loader2, Layers, Lock, Globe } from 'lucide-react';
 import { z } from 'zod';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
@@ -33,8 +33,6 @@ type Step = 'details' | 'privacy' | 'confirm';
 export default function NewProject() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  
   const [step, setStep] = useState<Step>('details');
   const [loading, setLoading] = useState(false);
   
@@ -109,11 +107,7 @@ export default function NewProject() {
     
     // Validate all inputs before submission
     if (!validateInputs()) {
-      toast({
-        title: 'Validation error',
-        description: 'Please fix the errors before continuing.',
-        variant: 'destructive',
-      });
+      toast.error('Please fix the errors before continuing.');
       return;
     }
     
@@ -137,17 +131,10 @@ export default function NewProject() {
       .single();
 
     if (error) {
-      toast({
-        title: 'Failed to create project',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error(error.message);
       setLoading(false);
     } else {
-      toast({
-        title: 'Project created',
-        description: `${sanitizedName} is ready to use.`,
-      });
+      toast.success(`${sanitizedName} is ready to use.`);
       navigate(`/project/${data.id}`);
     }
   };
