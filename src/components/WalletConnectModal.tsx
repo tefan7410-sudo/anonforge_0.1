@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, ExternalLink, Wallet, AlertCircle, ChevronDown } from 'lucide-react';
 import { useWalletAuth, WalletAuthMode } from '@/hooks/use-wallet-auth';
 import { toast } from 'sonner';
@@ -170,46 +171,45 @@ export function WalletConnectModal({
 
                   {/* Not installed wallets - only visible when expanded */}
                   {showAllWallets && (
-                    <div className="space-y-2">
-                      {notInstalledWallets.map((wallet) => (
-                        <Button
-                          key={wallet.key}
-                          variant="ghost"
-                          className="w-full justify-start gap-3 h-14 opacity-60"
-                          asChild
-                        >
-                          <a 
-                            href={wallet.website} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
+                    <ScrollArea className="max-h-[200px]">
+                      <div className="space-y-1 pr-2">
+                        {notInstalledWallets.map((wallet) => (
+                          <Button
+                            key={wallet.key}
+                            variant="ghost"
+                            className="w-full justify-start gap-2 h-10 opacity-60"
+                            asChild
                           >
-                            <div className="h-8 w-8 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-                              <img 
-                                src={wallet.icon} 
-                                alt={wallet.displayName}
-                                className="h-full w-full object-contain grayscale"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                  if (e.currentTarget.nextElementSibling) {
-                                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
-                                  }
-                                }}
-                              />
-                              <span className="hidden items-center justify-center text-muted-foreground font-bold text-sm">
-                                {wallet.displayName.charAt(0)}
-                              </span>
-                            </div>
-                            <div className="flex-1 text-left">
-                              <div className="font-medium">{wallet.displayName}</div>
-                              <div className="text-xs text-muted-foreground">
-                                Click to install
+                            <a 
+                              href={wallet.website} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                            >
+                              <div className="h-6 w-6 rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                                <img 
+                                  src={wallet.icon} 
+                                  alt={wallet.displayName}
+                                  className="h-full w-full object-contain grayscale"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    if (e.currentTarget.nextElementSibling) {
+                                      (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                                    }
+                                  }}
+                                />
+                                <span className="hidden items-center justify-center text-muted-foreground font-bold text-xs">
+                                  {wallet.displayName.charAt(0)}
+                                </span>
                               </div>
-                            </div>
-                            <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                          </a>
-                        </Button>
-                      ))}
-                    </div>
+                              <span className="flex-1 text-left text-sm font-medium">
+                                {wallet.displayName}
+                              </span>
+                              <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                            </a>
+                          </Button>
+                        ))}
+                      </div>
+                    </ScrollArea>
                   )}
                 </>
               )}
@@ -244,6 +244,19 @@ export function WalletConnectModal({
         <div className="text-xs text-center text-muted-foreground">
           By connecting, you agree to sign a message to verify wallet ownership. 
           No transaction will be made.
+        </div>
+
+        <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground pt-2 border-t">
+          <span>Powered by</span>
+          <a 
+            href="https://ada-anvil.io" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+          >
+            Ada Anvil
+            <ExternalLink className="h-3 w-3" />
+          </a>
         </div>
       </DialogContent>
     </Dialog>
