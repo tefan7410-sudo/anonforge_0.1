@@ -3,9 +3,21 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EmailVerificationPending } from '@/components/EmailVerificationPending';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+}
+
+// Check if user is a wallet-only user (synthetic email)
+function isWalletUser(email?: string | null): boolean {
+  return email?.endsWith('@wallet.anonforge.com') ?? false;
+}
+
+// Check if user signed in via OAuth (Google, etc.)
+function isOAuthUser(user: any): boolean {
+  const provider = user?.app_metadata?.provider;
+  return provider && provider !== 'email';
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
@@ -36,6 +48,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Check email verification for non-wallet, non-OAuth users
+  const needsEmailVerification = 
+    !isWalletUser(user.email) && 
+    !isOAuthUser(user) && 
+    !user.email_confirmed_at;
+
+  if (needsEmailVerification && user.email) {
+    return <EmailVerificationPending email={user.email} />;
   }
 
   return <>{children}</>;

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useExtensions } from '@ada-anvil/weld/react';
 import { SUPPORTED_WALLETS } from '@ada-anvil/weld';
 import {
@@ -28,6 +29,7 @@ export function WalletConnectModal({
   mode, 
   onSuccess 
 }: WalletConnectModalProps) {
+  const navigate = useNavigate();
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const [showAllWallets, setShowAllWallets] = useState(false);
   
@@ -65,7 +67,10 @@ export function WalletConnectModal({
       } else if (err.message?.includes('stake_address_already_linked')) {
         toast.error('This wallet is already linked to another account');
       } else if (err.message?.includes('no_account_found')) {
-        toast.error('No account found for this wallet. Please register first.');
+        // Seamlessly redirect to register for new wallet users
+        onClose();
+        toast.info("Let's set up your account!", { duration: 3000 });
+        navigate('/register', { state: { walletAutoRegister: true, walletKey } });
       } else {
         toast.error(err.message || 'Failed to connect wallet');
       }
