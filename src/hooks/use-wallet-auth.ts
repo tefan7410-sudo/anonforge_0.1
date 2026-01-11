@@ -3,6 +3,15 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWallet, useExtensions } from '@ada-anvil/weld/react';
 import { supabase } from '@/integrations/supabase/client';
 
+// Browser-compatible string to hex conversion (replaces Node.js Buffer)
+function stringToHex(str: string): string {
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(str);
+  return Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 export type WalletAuthMode = 'login' | 'register' | 'link';
 
 interface WalletAuthResult {
@@ -58,7 +67,7 @@ export function useWalletAuth() {
         });
         
         // Convert payload to hex for CIP-8 signing
-        const payloadHex = Buffer.from(payload, 'utf8').toString('hex');
+        const payloadHex = stringToHex(payload);
         
         // Step 3: Request signature from wallet (CIP-8)
         // signData returns different formats depending on wallet
