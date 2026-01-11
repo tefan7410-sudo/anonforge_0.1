@@ -104,7 +104,7 @@ serve(async (req) => {
 
     // Submit signed transaction to Anvil
     const submitResponse = await fetch(
-      'https://mainnet.api.ada-anvil.app/v2/services/transactions/submit',
+      'https://prod.api.ada-anvil.app/v2/services/transactions/submit',
       {
         method: 'POST',
         headers: {
