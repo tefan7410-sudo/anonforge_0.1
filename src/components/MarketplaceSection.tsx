@@ -11,6 +11,7 @@ import { useScrollAnimation } from '@/hooks/use-scroll-animation';
 import { useCollectionStatuses } from '@/hooks/use-collection-status';
 import { FeaturedSpotlight } from '@/components/FeaturedSpotlight';
 import { CountdownTimer } from '@/components/CountdownTimer';
+import { useTranslations } from '@/hooks/use-translations';
 import { cn } from '@/lib/utils';
 
 interface LiveCollection {
@@ -62,7 +63,7 @@ const useMarketplaceCollections = (limit?: number) => {
   });
 };
 
-function CollectionCard({ collection, index, isSoldOut }: { collection: LiveCollection; index: number; isSoldOut?: boolean }) {
+function CollectionCard({ collection, index, isSoldOut, t }: { collection: LiveCollection; index: number; isSoldOut?: boolean; t: (key: string) => string }) {
   const { ref, isVisible } = useScrollAnimation<HTMLDivElement>();
   const isFeatured = collection.is_featured;
   const isUpcoming = collection.scheduled_launch_at && 
@@ -102,22 +103,22 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
               {isFeatured && (
                 <Badge className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <Sparkles className="mr-1 h-3 w-3" />
-                  FEATURED
+                  {t('marketplace.featured')}
                 </Badge>
               )}
               {isUpcoming ? (
                 <Badge className="bg-primary/90 text-primary-foreground hover:bg-primary">
                   <Clock className="mr-1 h-3 w-3" />
-                  UPCOMING
+                  {t('marketplace.upcoming')}
                 </Badge>
               ) : isSoldOut ? (
                 <Badge className="bg-orange-500/90 text-white hover:bg-orange-500">
-                  SOLD OUT
+                  {t('marketplace.soldOut')}
                 </Badge>
               ) : (
                 <Badge className="bg-green-500/90 text-white hover:bg-green-500">
                   <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-                  LIVE
+                  {t('marketplace.live')}
                 </Badge>
               )}
             </div>
@@ -140,7 +141,7 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
             {collection.project.name}
           </h3>
           <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-            {collection.tagline || collection.project.description || 'Explore this collection'}
+            {collection.tagline || collection.project.description || t('marketplace.exploreCollection')}
           </p>
           {isUpcoming && collection.scheduled_launch_at && (
             <div className="mt-2">
@@ -148,7 +149,7 @@ function CollectionCard({ collection, index, isSoldOut }: { collection: LiveColl
             </div>
           )}
           <div className="mt-4 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">View Collection</span>
+            <span className="text-xs text-muted-foreground">{t('marketplace.viewCollection')}</span>
             <ExternalLink className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
           </div>
         </CardContent>
@@ -172,6 +173,7 @@ function CollectionCardSkeleton() {
 }
 
 export function MarketplaceSection() {
+  const { t } = useTranslations();
   const { data: collections, isLoading } = useMarketplaceCollections(6);
   const headerAnimation = useScrollAnimation<HTMLDivElement>();
 
@@ -201,7 +203,7 @@ export function MarketplaceSection() {
           <div>
             <div className="mb-3 inline-flex items-center gap-2">
               <Store className="h-5 w-5 text-primary" aria-hidden="true" />
-              <span className="text-sm font-medium text-primary">Live Collections</span>
+              <span className="text-sm font-medium text-primary">{t('marketplace.liveCollections')}</span>
               {!isLoading && collectionCount > 0 && (
                 <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
                   {collectionCount}
@@ -209,15 +211,15 @@ export function MarketplaceSection() {
               )}
             </div>
             <h2 id="marketplace-heading" className="font-display text-3xl font-bold">
-              Discover & Mint
+              {t('marketplace.discoverMint')}
             </h2>
             <p className="mt-2 text-muted-foreground">
-              Browse NFT collections from creators on AnonForge
+              {t('marketplace.browseCollections')}
             </p>
           </div>
           <Button variant="outline" asChild className="shrink-0">
             <Link to="/marketplace">
-              View All
+              {t('marketplace.viewAll')}
               <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
@@ -237,6 +239,7 @@ export function MarketplaceSection() {
                 collection={collection} 
                 index={index}
                 isSoldOut={statusMap?.[collection.project_id]?.isSoldOut}
+                t={t}
               />
             ))}
           </div>
@@ -244,10 +247,10 @@ export function MarketplaceSection() {
           <div className="text-center py-12">
             <Store className="h-12 w-12 mx-auto text-muted-foreground/30" aria-hidden="true" />
             <p className="mt-4 text-muted-foreground">
-              No live collections yet. Be the first to launch!
+              {t('marketplace.noCollections')}
             </p>
             <Button className="mt-6" asChild>
-              <Link to="/register">Create Your Collection</Link>
+              <Link to="/register">{t('marketplace.createCollection')}</Link>
             </Button>
           </div>
         )}
