@@ -1,19 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useMyAmbassadorRequest, useSubmitAmbassadorRequest } from '@/hooks/use-ambassador';
-import { Megaphone, Clock, X, Send, Loader2, Twitter } from 'lucide-react';
+import { useMyVerificationRequest, useIsVerifiedCreator } from '@/hooks/use-verification-request';
+import { useAuth } from '@/contexts/AuthContext';
+import { Megaphone, Clock, X, Send, Loader2, Twitter, BadgeCheck } from 'lucide-react';
 import { isValidTwitterUrl } from '@/lib/url-validation';
 
 export function AmbassadorWaitlistCard() {
+  const { user } = useAuth();
   const { data: existingRequest, isLoading } = useMyAmbassadorRequest();
+  const { data: verificationRequest } = useMyVerificationRequest();
+  const { data: isVerified } = useIsVerifiedCreator(user?.id);
   const submitRequest = useSubmitAmbassadorRequest();
   
   const [twitterLink, setTwitterLink] = useState('');
   const [twitterError, setTwitterError] = useState('');
+
+  // Pre-fill Twitter link from verification request if user is verified
+  useEffect(() => {
+    if (isVerified && verificationRequest?.twitter_handle && !twitterLink) {
+      const handle = verificationRequest.twitter_handle.replace(/^@/, '');
+      setTwitterLink(`https://twitter.com/${handle}`);
+    }
+  }, [isVerified, verificationRequest, twitterLink]);
 
   const validateTwitterLink = (value: string) => {
     if (!value.trim()) {
@@ -171,6 +184,14 @@ export function AmbassadorWaitlistCard() {
       </CardHeader>
       <CardContent>
         <div className="mb-6">
+          {isVerified && (
+            <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-success/10 border border-success/30">
+              <BadgeCheck className="h-5 w-5 text-success" />
+              <p className="text-sm text-success font-medium">
+                You're a verified creator! Your request will be auto-approved.
+              </p>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2 mb-4">
             <Badge variant="secondary">Promote Indie Artists</Badge>
             <Badge variant="secondary">Monetize Your Reach</Badge>
@@ -178,7 +199,9 @@ export function AmbassadorWaitlistCard() {
           </div>
           <p className="text-sm text-muted-foreground">
             As an ambassador, you help independent artists get in front of your audience. 
-            This feature is currently in limited access - submit your Twitter/X profile to join the waitlist.
+            {isVerified 
+              ? ' As a verified creator, you can start immediately!'
+              : ' This feature is currently in limited access - submit your Twitter/X profile to join the waitlist.'}
           </p>
         </div>
 
