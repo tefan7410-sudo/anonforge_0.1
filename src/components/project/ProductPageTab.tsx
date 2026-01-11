@@ -28,6 +28,16 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   Image as ImageIcon, 
   Upload, 
@@ -168,7 +178,9 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
   const [founderBio, setFounderBio] = useState('');
   const [founderTwitter, setFounderTwitter] = useState('');
   const [secondaryMarketUrl, setSecondaryMarketUrl] = useState('');
-  const [maxSupply, setMaxSupply] = useState<number | null>(null);
+  const [maxSupply, setMaxSupply] = useState<number>(1);
+  const [showCopiesWarning, setShowCopiesWarning] = useState(false);
+  const [pendingCopiesValue, setPendingCopiesValue] = useState<number | null>(null);
   
   // Collection type and template-specific state
   const [collectionType, setCollectionType] = useState<CollectionType>('generative');
@@ -225,7 +237,7 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
       setBuyButtonLink(productPage.buy_button_link);
       setIsLive(productPage.is_live || false);
       setSecondaryMarketUrl(productPage.secondary_market_url || '');
-      setMaxSupply(productPage.max_supply ?? null);
+      setMaxSupply(productPage.max_supply ?? 1);
       setScheduledLaunchAt(productPage.scheduled_launch_at);
       setIsHidden(productPage.is_hidden || false);
       setCollectionType(productPage.collection_type || 'generative');
@@ -990,21 +1002,41 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
 
           <Separator />
 
-          {/* Max Supply + Secondary Market */}
+          {/* Copies Per NFT + Secondary Market */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="max-supply">Max Supply</Label>
+              <Label htmlFor="copies-per-nft" className="flex items-center gap-2">
+                <Hash className="h-4 w-4" />
+                Copies Per NFT
+              </Label>
               <Input
-                id="max-supply"
+                id="copies-per-nft"
                 type="number"
                 min="1"
-                value={maxSupply ?? ''}
-                onChange={(e) => setMaxSupply(e.target.value ? parseInt(e.target.value) : null)}
-                placeholder="e.g., 10000"
+                value={maxSupply}
+                onChange={(e) => {
+                  const newValue = e.target.value ? parseInt(e.target.value) : 1;
+                  // Show warning if changing from 1 to something else
+                  if (maxSupply === 1 && newValue > 1) {
+                    setPendingCopiesValue(newValue);
+                    setShowCopiesWarning(true);
+                  } else {
+                    setMaxSupply(newValue);
+                  }
+                }}
+                placeholder="1"
               />
               <p className="text-xs text-muted-foreground">
-                Total number of NFTs in this collection
+                How many times each unique piece can be minted. Set to 1 for a fully unique collection.
               </p>
+              {maxSupply > 1 && (
+                <Alert className="border-amber-500/50 bg-amber-500/10">
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  <AlertDescription className="text-xs text-amber-700 dark:text-amber-400">
+                    Each unique NFT will have {maxSupply} editions
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -1642,6 +1674,48 @@ export function ProductPageTab({ projectId, projectName = 'Collection', isLocked
           setShowScheduleModal(false);
         }}
       />
+
+      {/* Copies Per NFT Warning Modal */}
+      <AlertDialog open={showCopiesWarning} onOpenChange={setShowCopiesWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              Are you sure?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Setting copies to more than 1 means each unique NFT in your collection 
+                will have <strong>{pendingCopiesValue}</strong> editions.
+              </p>
+              <div className="rounded-lg border bg-muted/50 p-3 text-sm">
+                <strong>Example:</strong> If you have 100 unique pieces and set copies to {pendingCopiesValue}, 
+                your total collection size will be <strong>{100 * (pendingCopiesValue || 1)}</strong> NFTs.
+              </div>
+              <p className="text-muted-foreground">
+                Only change this if you intentionally want multiple copies of each piece. 
+                For unique 1-of-1 collections, keep this at 1.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingCopiesValue(null)}>
+              Keep at 1
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (pendingCopiesValue !== null) {
+                  setMaxSupply(pendingCopiesValue);
+                }
+                setPendingCopiesValue(null);
+              }}
+              className="bg-amber-500 hover:bg-amber-600"
+            >
+              Yes, I understand
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
