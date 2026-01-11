@@ -26,7 +26,7 @@ const PLANNED_FEATURES = [
 
 export function SoonTab() {
   return (
-    <div className="flex flex-col items-center justify-center py-8">
+    <div className="flex flex-col items-center justify-center py-6 sm:py-8 px-4 sm:px-0">
       <Card className="max-w-lg w-full text-center">
         <CardHeader className="pb-3">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
