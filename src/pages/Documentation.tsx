@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { SEOHead } from '@/components/SEOHead';
 import {
   Sheet,
   SheetContent,
@@ -1185,6 +1186,12 @@ export default function Documentation() {
   }, [searchQuery]);
 
   return (
+    <>
+      <SEOHead
+        title="Documentation"
+        description="Everything you need to know about creating, managing, and launching your NFT collection on AnonForge. Guides for layer management, generation, minting, and more."
+        url="/documentation"
+      />
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
@@ -1426,5 +1433,6 @@ export default function Documentation() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

@@ -37,16 +37,8 @@ export function RoyaltySetupCard({ nmkrProject, payoutWallet }: RoyaltySetupCard
 
   const handleMintRoyalty = async () => {
     if (!canMint || !effectiveAddress) {
-      console.log('[Royalty] Cannot mint:', { canMint, effectiveAddress, royaltyPercent });
       return;
     }
-    
-    console.log('[Royalty] Minting royalty token:', {
-      nmkrProjectId: nmkrProject.id,
-      nmkrProjectUid: nmkrProject.nmkr_project_uid,
-      royaltyAddress: effectiveAddress,
-      percentage: royaltyPercent,
-    });
     
     try {
       await mintRoyalty.mutateAsync({
@@ -58,7 +50,6 @@ export function RoyaltySetupCard({ nmkrProject, payoutWallet }: RoyaltySetupCard
       toast.success('Royalty token minted successfully!');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('[Royalty] Mint error:', errorMessage);
       if (errorMessage.includes('402') || errorMessage.toLowerCase().includes('mint credits')) {
         toast.error(
           'You need mint credits on NMKR Studio to create a royalty token. Please purchase credits and try again.',
