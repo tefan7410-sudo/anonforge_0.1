@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { MarketplaceSection } from '@/components/MarketplaceSection';
 import { FeaturedMarquee } from '@/components/FeaturedMarquee';
 import { WelcomeModal } from '@/components/WelcomeModal';
 import { useActiveMarketing } from '@/hooks/use-marketing';
+import { useHeroBackgrounds } from '@/hooks/use-hero-backgrounds';
 import { useScrollAnimation } from '@/hooks/use-scroll-animation';
 import { useTranslations } from '@/hooks/use-translations';
 import { cn } from '@/lib/utils';
@@ -54,6 +55,7 @@ export default function Index() {
   const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: activeMarketing } = useActiveMarketing();
+  const { data: heroBackgrounds } = useHeroBackgrounds();
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
   const heroAnimation = useScrollAnimation<HTMLDivElement>();
   const creatorsAnimation = useScrollAnimation<HTMLDivElement>();
@@ -63,16 +65,37 @@ export default function Index() {
   // Only show marketing hero when there's active paid marketing
   const heroImageUrl = activeMarketing?.hero_image_url;
 
-  // Hero background slideshow effect
+  // Build array of all background images (default gradient + marketing + custom)
+  const allBackgrounds = useMemo(() => {
+    const items: { type: 'default' | 'marketing' | 'custom'; url?: string }[] = [
+      { type: 'default' },
+    ];
+    
+    // Add marketing image if active
+    if (heroImageUrl) {
+      items.push({ type: 'marketing', url: heroImageUrl });
+    }
+    
+    // Add custom backgrounds from admin
+    if (heroBackgrounds?.length) {
+      heroBackgrounds.forEach(bg => {
+        items.push({ type: 'custom', url: bg.image_url });
+      });
+    }
+    
+    return items;
+  }, [heroImageUrl, heroBackgrounds]);
+
+  // Hero background slideshow effect - cycles through all backgrounds
   useEffect(() => {
-    if (!heroImageUrl) return;
+    if (allBackgrounds.length <= 1) return;
     
     const interval = setInterval(() => {
-      setCurrentBgIndex((prev) => (prev === 0 ? 1 : 0));
+      setCurrentBgIndex((prev) => (prev + 1) % allBackgrounds.length);
     }, 6000);
 
     return () => clearInterval(interval);
-  }, [heroImageUrl]);
+  }, [allBackgrounds.length]);
 
 
   const creatorFeatures = [
@@ -248,30 +271,34 @@ export default function Index() {
       <main>
         {/* Hero Section - Dual Audience */}
         <section className="relative overflow-hidden" aria-labelledby="hero-heading">
-          {/* Default gradient background */}
+          {/* Default gradient background - always present, visible when currentBgIndex === 0 */}
           <div 
             className={cn(
               "absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent transition-opacity duration-1000",
-              heroImageUrl && currentBgIndex === 1 ? "opacity-0" : "opacity-100"
+              currentBgIndex === 0 ? "opacity-100" : "opacity-0"
             )} 
           />
           
-          {/* Featured hero image background */}
-          {heroImageUrl && (
-            <div 
-              className={cn(
-                "absolute inset-0 transition-opacity duration-1000",
-                currentBgIndex === 1 ? "opacity-100" : "opacity-0"
-              )}
-            >
-              <img 
-                src={heroImageUrl} 
-                alt="" 
-                className="h-full w-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
-            </div>
-          )}
+          {/* Dynamic image backgrounds for marketing and custom images */}
+          {allBackgrounds.map((bg, index) => {
+            if (bg.type === 'default') return null; // Handled above
+            return (
+              <div 
+                key={`${bg.type}-${index}`}
+                className={cn(
+                  "absolute inset-0 transition-opacity duration-1000",
+                  currentBgIndex === index ? "opacity-100" : "opacity-0"
+                )}
+              >
+                <img 
+                  src={bg.url} 
+                  alt="" 
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
+              </div>
+            );
+          })}
           <div 
             ref={heroAnimation.ref}
             className={cn(
