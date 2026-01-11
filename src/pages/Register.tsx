@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { Logo } from '@/components/Logo';
@@ -31,7 +31,6 @@ export default function Register() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const { user, loading: authLoading, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -53,20 +52,12 @@ export default function Register() {
     e.preventDefault();
     
     if (!acceptedTerms) {
-      toast({
-        title: 'Terms required',
-        description: 'Please accept the Terms of Service to continue.',
-        variant: 'destructive',
-      });
+      toast.error('Please accept the Terms of Service to continue.');
       return;
     }
 
     if (password.length < 6) {
-      toast({
-        title: 'Password too short',
-        description: 'Password must be at least 6 characters.',
-        variant: 'destructive',
-      });
+      toast.error('Password must be at least 6 characters.');
       return;
     }
 
@@ -75,11 +66,7 @@ export default function Register() {
     const { error } = await signUp(email, password, displayName || undefined);
 
     if (error) {
-      toast({
-        title: 'Registration failed',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error(error.message);
       setLoading(false);
     } else {
       // Update profile with terms and marketing consent after auth state updates
@@ -94,10 +81,7 @@ export default function Register() {
           .eq('id', newUser.id);
       }
 
-      toast({
-        title: 'Account created',
-        description: 'Welcome to AnonForge!',
-      });
+      toast.success('Welcome to AnonForge!');
       navigate('/dashboard', { replace: true });
     }
   };
@@ -223,11 +207,7 @@ export default function Register() {
                 setGoogleLoading(true);
                 const { error } = await signInWithGoogle();
                 if (error) {
-                  toast({
-                    title: 'Google sign in failed',
-                    description: error.message,
-                    variant: 'destructive',
-                  });
+                  toast.error(error.message);
                   setGoogleLoading(false);
                 }
               }}

@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { ArrowLeft, Save, User, Shield, AlertTriangle, Loader2, Camera, Mail, LogOut, BadgeCheck, Clock, X, Twitter, Coins, TrendingUp, GraduationCap, RotateCcw, RefreshCw } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -36,16 +36,15 @@ import { useTutorial } from '@/contexts/TutorialContext';
 
 function TutorialSection() {
   const { isActive, isCompleted, restartTutorial, loading } = useTutorial();
-  const { toast } = useToast();
   const [isRestarting, setIsRestarting] = useState(false);
 
   const handleRestart = async () => {
     setIsRestarting(true);
     try {
       await restartTutorial();
-      toast({ title: 'Tutorial restarted', description: 'Head to your dashboard to begin' });
+      toast.success('Tutorial restarted! Head to your dashboard to begin.');
     } catch (error: any) {
-      toast({ title: 'Failed to restart', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     } finally {
       setIsRestarting(false);
     }
@@ -94,7 +93,6 @@ function TutorialSection() {
 export default function Profile() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: profile, isLoading, error } = useProfile(user?.id);
@@ -128,9 +126,9 @@ export default function Profile() {
         userId: user.id,
         displayName: displayName.trim(),
       });
-      toast({ title: 'Profile saved', description: 'Your profile has been updated' });
+      toast.success('Profile saved');
     } catch (error: any) {
-      toast({ title: 'Failed to save', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     }
   };
 
@@ -145,22 +143,14 @@ export default function Profile() {
     try {
       const url = await uploadAvatar.mutateAsync({ userId: user.id, file });
       await updateProfile.mutateAsync({ userId: user.id, avatarUrl: url });
-      toast({ 
-        title: 'Avatar updated', 
-        description: 'Your profile picture has been changed',
-        action: (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => handleSyncToCollections(url)}
-          >
-            <RefreshCw className="mr-1 h-3 w-3" />
-            Sync to collections
-          </Button>
-        ),
+      toast.success('Profile picture updated', {
+        action: {
+          label: 'Sync to collections',
+          onClick: () => handleSyncToCollections(url),
+        },
       });
     } catch (error: any) {
-      toast({ title: 'Failed to upload', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     }
   };
 
@@ -173,12 +163,12 @@ export default function Profile() {
         displayName: displayName || profile?.display_name || undefined,
       });
       if (result.updated > 0) {
-        toast({ title: 'Synced', description: `Updated ${result.updated} collection(s) with your profile` });
+        toast.success(`Updated ${result.updated} collection(s) with your profile`);
       } else {
-        toast({ title: 'No collections to update', description: 'You have no collections to sync' });
+        toast.info('No collections to update');
       }
     } catch (error: any) {
-      toast({ title: 'Sync failed', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     }
   };
 
@@ -187,12 +177,9 @@ export default function Profile() {
 
     try {
       await resetPassword.mutateAsync({ email: user.email });
-      toast({
-        title: 'Password reset email sent',
-        description: 'Check your inbox for instructions to reset your password',
-      });
+      toast.success('Password reset email sent! Check your inbox.');
     } catch (error: any) {
-      toast({ title: 'Failed to send email', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     }
   };
 
@@ -203,7 +190,7 @@ export default function Profile() {
 
   const handleSubmitVerification = async () => {
     if (!verificationTwitter.trim()) {
-      toast({ title: 'Twitter handle required', variant: 'destructive' });
+      toast.error('Twitter handle is required');
       return;
     }
 
@@ -216,7 +203,7 @@ export default function Profile() {
       setVerificationTwitter('');
       setVerificationBio('');
     } catch (error: any) {
-      toast({ title: 'Failed to submit', description: error.message, variant: 'destructive' });
+      toast.error(error.message);
     }
   };
 
@@ -643,10 +630,7 @@ export default function Profile() {
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => {
-                          toast({
-                            title: 'Contact Support',
-                            description: 'Please contact support to delete your account',
-                          });
+                          toast.info('Please contact support to delete your account');
                         }}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
