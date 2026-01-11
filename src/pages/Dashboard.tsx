@@ -272,18 +272,18 @@ export default function Dashboard() {
                 : 'Promote collections and earn rewards'}
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             {/* Creator / Ambassador Toggle */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border/50 bg-muted/30">
+            <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg border border-border/50 bg-muted/30">
               <Palette className={`h-4 w-4 ${dashboardMode === 'creator' ? 'text-primary' : 'text-muted-foreground'}`} />
-              <span className={`text-sm ${dashboardMode === 'creator' ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+              <span className={`text-sm hidden sm:inline ${dashboardMode === 'creator' ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
                 Creator
               </span>
               <Switch
                 checked={dashboardMode === 'ambassador'}
                 onCheckedChange={(checked) => setDashboardMode(checked ? 'ambassador' : 'creator')}
               />
-              <span className={`text-sm ${dashboardMode === 'ambassador' ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+              <span className={`text-sm hidden sm:inline ${dashboardMode === 'ambassador' ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
                 Ambassador
               </span>
               <Megaphone className={`h-4 w-4 ${dashboardMode === 'ambassador' ? 'text-primary' : 'text-muted-foreground'}`} />
