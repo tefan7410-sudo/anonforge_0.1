@@ -14,8 +14,11 @@ import {
 } from '@/hooks/use-marketing';
 import { useProductPage } from '@/hooks/use-product-page';
 import { useProject } from '@/hooks/use-project';
+import { useMarketingWalletPayment } from '@/hooks/use-marketing-wallet-payment';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { MarketingPaymentModal } from '@/components/credits/MarketingPaymentModal';
+import { MarketingWalletPaymentModal } from '@/components/credits/MarketingWalletPaymentModal';
+import { WalletReconnectModal } from '@/components/credits/WalletReconnectModal';
 import { MarketingPreviewModal } from './MarketingPreviewModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,6 +45,7 @@ import {
   CalendarCheck,
   Wallet,
   Eye,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format, differenceInDays, eachDayOfInterval, addDays, startOfDay } from 'date-fns';
@@ -89,6 +93,11 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentIntent, setPaymentIntent] = useState<MarketingPaymentIntent | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [walletPaymentModalOpen, setWalletPaymentModalOpen] = useState(false);
+  const [walletConnectModalOpen, setWalletConnectModalOpen] = useState(false);
+
+  // Wallet payment hook
+  const walletPayment = useMarketingWalletPayment();
 
   // Check for existing pending payment (session persistence)
   const { data: existingPayment } = useExistingMarketingPayment(
@@ -369,23 +378,64 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
                     <p className="text-xl font-bold">{marketingRequest.price_ada} ADA</p>
                   </div>
 
-                  <p className="text-xs text-muted-foreground flex items-start gap-1.5">
-                    <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                    Unique payment amount auto-verifies your transaction.
-                  </p>
-
-                  <Button 
-                    className="w-full" 
-                    onClick={handleStartPayment}
-                    disabled={createPaymentIntent.isPending}
-                  >
-                    {createPaymentIntent.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {/* Wallet Payment Option */}
+                  <div className="space-y-2">
+                    {walletPayment.isWalletConnected ? (
+                      <Button 
+                        className="w-full" 
+                        onClick={() => {
+                          setWalletPaymentModalOpen(true);
+                          walletPayment.purchaseMarketingWithWallet(marketingRequest.id);
+                        }}
+                        disabled={walletPayment.isProcessing}
+                      >
+                        {walletPayment.isProcessing ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Wallet className="mr-2 h-4 w-4" />
+                        )}
+                        Pay with Wallet ({marketingRequest.price_ada} ADA)
+                      </Button>
+                    ) : walletPayment.lastWalletKey ? (
+                      <Button 
+                        className="w-full" 
+                        onClick={() => walletPayment.connectWallet(walletPayment.lastWalletKey!)}
+                        disabled={walletPayment.isConnecting}
+                      >
+                        {walletPayment.isConnecting ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                        )}
+                        Reconnect Wallet to Pay
+                      </Button>
                     ) : (
-                      <Wallet className="mr-2 h-4 w-4" />
+                      <Button 
+                        className="w-full" 
+                        onClick={() => setWalletConnectModalOpen(true)}
+                      >
+                        <Wallet className="mr-2 h-4 w-4" />
+                        Connect Wallet to Pay
+                      </Button>
                     )}
-                    Start Payment
-                  </Button>
+
+                    {/* Fallback: Manual Payment */}
+                    <Button 
+                      variant="outline"
+                      className="w-full" 
+                      onClick={handleStartPayment}
+                      disabled={createPaymentIntent.isPending}
+                    >
+                      {createPaymentIntent.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : null}
+                      Pay Manually
+                    </Button>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground text-center">
+                    Wallet payment is instant. Manual payment requires sending ADA to an address.
+                  </p>
                 </div>
               </div>
             )}
@@ -545,11 +595,41 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
           </CardContent>
         </Card>
 
-        {/* Payment Modal */}
+        {/* Payment Modal (Manual) */}
         <MarketingPaymentModal
           open={paymentModalOpen}
           onOpenChange={setPaymentModalOpen}
           paymentIntent={paymentIntent}
+        />
+
+        {/* Wallet Payment Modal */}
+        <MarketingWalletPaymentModal
+          open={walletPaymentModalOpen}
+          onOpenChange={setWalletPaymentModalOpen}
+          step={walletPayment.step}
+          error={walletPayment.error}
+          txHash={walletPayment.txHash}
+          startDate={walletPayment.startDate}
+          endDate={walletPayment.endDate}
+          priceAda={marketingRequest.price_ada}
+          onRetry={() => {
+            walletPayment.reset();
+            walletPayment.purchaseMarketingWithWallet(marketingRequest.id);
+          }}
+          onClose={() => {
+            setWalletPaymentModalOpen(false);
+            walletPayment.reset();
+          }}
+        />
+
+        {/* Wallet Connect Modal */}
+        <WalletReconnectModal
+          open={walletConnectModalOpen}
+          onClose={() => setWalletConnectModalOpen(false)}
+          onConnect={async (walletKey) => {
+            await walletPayment.connectWallet(walletKey);
+            setWalletConnectModalOpen(false);
+          }}
         />
 
         {/* Coming Soon Section */}
