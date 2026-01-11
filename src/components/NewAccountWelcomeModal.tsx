@@ -21,6 +21,7 @@ import { TutorialOptInModal } from '@/components/tutorial/TutorialOptInModal';
 import { useTutorial } from '@/contexts/TutorialContext';
 
 const STORAGE_KEY = 'anonforge-new-account-onboarding-seen';
+const SESSION_KEY = 'anonforge-new-account-onboarding-seen-session';
 
 interface Particle {
   id: number;
@@ -54,13 +55,21 @@ export function NewAccountWelcomeModal({ onClose }: NewAccountWelcomeModalProps)
   const { hasSeenPrompt, loading: tutorialLoading } = useTutorial();
 
   useEffect(() => {
-    const hasSeenOnboarding = localStorage.getItem(STORAGE_KEY);
-    if (!hasSeenOnboarding) {
+    // Check permanent preference first
+    const hasSeenPermanent = localStorage.getItem(STORAGE_KEY);
+    // Then check session preference
+    const hasSeenSession = sessionStorage.getItem(SESSION_KEY);
+    
+    if (!hasSeenPermanent && !hasSeenSession) {
       setOpen(true);
     }
   }, []);
 
   const handleClose = () => {
+    // Always save to session storage (won't show again this session)
+    sessionStorage.setItem(SESSION_KEY, 'true');
+    
+    // Save to localStorage only if checkbox is checked
     if (dontShowAgain) {
       localStorage.setItem(STORAGE_KEY, 'true');
     }
@@ -70,7 +79,9 @@ export function NewAccountWelcomeModal({ onClose }: NewAccountWelcomeModalProps)
 
   // When closing, check if we should show tutorial opt-in
   const handleGetStarted = () => {
+    // Mark as seen permanently (user actively engaged)
     localStorage.setItem(STORAGE_KEY, 'true');
+    sessionStorage.setItem(SESSION_KEY, 'true');
     setOpen(false);
     
     // Show tutorial opt-in if user hasn't seen it yet

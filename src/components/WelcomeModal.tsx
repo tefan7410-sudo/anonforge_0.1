@@ -13,6 +13,7 @@ import { Sparkles } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 
 const STORAGE_KEY = 'anonforge-welcome-seen';
+const SESSION_KEY = 'anonforge-welcome-seen-session';
 
 interface Particle {
   id: number;
@@ -40,13 +41,21 @@ export function WelcomeModal() {
   const particles = useMemo(() => generateParticles(), []);
 
   useEffect(() => {
-    const hasSeenWelcome = localStorage.getItem(STORAGE_KEY);
-    if (!hasSeenWelcome) {
+    // Check permanent preference first
+    const hasSeenPermanent = localStorage.getItem(STORAGE_KEY);
+    // Then check session preference
+    const hasSeenSession = sessionStorage.getItem(SESSION_KEY);
+    
+    if (!hasSeenPermanent && !hasSeenSession) {
       setOpen(true);
     }
   }, []);
 
   const handleClose = () => {
+    // Always save to session storage (won't show again this session)
+    sessionStorage.setItem(SESSION_KEY, 'true');
+    
+    // Save to localStorage only if checkbox is checked
     if (dontShowAgain) {
       localStorage.setItem(STORAGE_KEY, 'true');
     }
@@ -54,7 +63,9 @@ export function WelcomeModal() {
   };
 
   const handleExplore = () => {
+    // Mark as seen permanently (user actively engaged)
     localStorage.setItem(STORAGE_KEY, 'true');
+    sessionStorage.setItem(SESSION_KEY, 'true');
     setOpen(false);
   };
 
