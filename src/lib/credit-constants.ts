@@ -36,7 +36,7 @@ export const CREDIT_TIERS: CreditTier[] = [
   { 
     id: 'pro',
     credits: 5000, 
-    priceAda: 53, 
+    priceAda: 1, // TEST: 1 ADA for testing, revert to 53 after
     label: 'Pro', 
     badge: 'Best Value',
     fullResExports: 100000,

@@ -92,7 +92,7 @@ serve(async (req) => {
 
     // Call Anvil API to build transaction
     const buildResponse = await fetch(
-      'https://mainnet.api.ada-anvil.app/v2/services/transactions/build',
+      'https://prod.api.ada-anvil.app/v2/services/transactions/build',
       {
         method: 'POST',
         headers: {
@@ -156,7 +156,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         paymentId: paymentRecord.id,
-        unsignedTx: buildData.transaction,
+        unsignedTx: buildData.complete,
         tier: {
           id: tierId,
           credits: tier.credits,
