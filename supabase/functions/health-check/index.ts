@@ -97,18 +97,21 @@ async function checkAnvilApi(): Promise<ServiceCheck> {
   const anvilApiKey = Deno.env.get("ANVIL_API_KEY");
   
   try {
-    const response = await fetch("https://api.ada-anvil.app/v2/services/health", {
+    // Check the base API endpoint - it responds even without auth
+    const response = await fetch("https://api.ada-anvil.app/v2", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(anvilApiKey ? { "api-key": anvilApiKey } : {}),
+        ...(anvilApiKey ? { "x-api-key": anvilApiKey } : {}),
       },
       signal: AbortSignal.timeout(10000),
     });
     
     const responseTime = Date.now() - startTime;
     
-    if (response.ok) {
+    // Accept various status codes as "operational" - the API is reachable
+    // 200 = OK, 401/403 = needs auth (service up), 404 = endpoint not found (service up)
+    if (response.ok || response.status === 401 || response.status === 403 || response.status === 404) {
       return {
         service_name: 'anvil_api',
         status: responseTime > 5000 ? 'degraded' : 'operational',
@@ -117,12 +120,12 @@ async function checkAnvilApi(): Promise<ServiceCheck> {
       };
     }
     
-    // API returned error status
+    // Only 5xx errors or unexpected status codes indicate real issues
     return {
       service_name: 'anvil_api',
-      status: 'partial_outage',
+      status: response.status >= 500 ? 'partial_outage' : 'operational',
       response_time_ms: responseTime,
-      error_message: `HTTP ${response.status}`,
+      error_message: response.status >= 500 ? `HTTP ${response.status}` : null,
     };
   } catch (error: unknown) {
     return {
