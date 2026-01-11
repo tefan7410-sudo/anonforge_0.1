@@ -106,8 +106,19 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
 
   // Auto-resume existing payment session by calling the edge function
   // (which will return the existing payment with full details including address)
+  // ONLY for manual payments - skip if wallet payment is active
   useEffect(() => {
     const resumePayment = async () => {
+      // Skip if wallet payment is active or processing
+      if (walletPayment.step !== 'idle' || walletPayment.isProcessing) {
+        return;
+      }
+      
+      // Skip if wallet payment modal is open
+      if (walletPaymentModalOpen) {
+        return;
+      }
+      
       if (existingPayment && marketingRequest?.status === 'approved' && !paymentIntent) {
         try {
           // Call the edge function which will return the existing payment details
@@ -120,7 +131,7 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
       }
     };
     resumePayment();
-  }, [existingPayment, marketingRequest?.status, marketingRequest?.id]);
+  }, [existingPayment, marketingRequest?.status, marketingRequest?.id, walletPayment.step, walletPayment.isProcessing, walletPaymentModalOpen]);
 
   // Payment deadline for approved requests (24h from approval)
   const paymentDeadline = useMemo(() => {
@@ -384,6 +395,11 @@ export function MarketingTab({ projectId, isLocked, onSwitchTab }: MarketingTabP
                       <Button 
                         className="w-full" 
                         onClick={() => {
+                          // Close manual payment modal if open to prevent conflicts
+                          if (paymentModalOpen) {
+                            setPaymentModalOpen(false);
+                            setPaymentIntent(null);
+                          }
                           setWalletPaymentModalOpen(true);
                           walletPayment.purchaseMarketingWithWallet(marketingRequest.id);
                         }}
