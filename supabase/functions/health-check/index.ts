@@ -92,6 +92,48 @@ async function checkBlockfrostApi(): Promise<ServiceCheck> {
   }
 }
 
+async function checkAnvilApi(): Promise<ServiceCheck> {
+  const startTime = Date.now();
+  const anvilApiKey = Deno.env.get("ANVIL_API_KEY");
+  
+  try {
+    const response = await fetch("https://api.ada-anvil.app/v2/services/health", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...(anvilApiKey ? { "api-key": anvilApiKey } : {}),
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+    
+    const responseTime = Date.now() - startTime;
+    
+    if (response.ok) {
+      return {
+        service_name: 'anvil_api',
+        status: responseTime > 5000 ? 'degraded' : 'operational',
+        response_time_ms: responseTime,
+        error_message: null,
+      };
+    }
+    
+    // API returned error status
+    return {
+      service_name: 'anvil_api',
+      status: 'partial_outage',
+      response_time_ms: responseTime,
+      error_message: `HTTP ${response.status}`,
+    };
+  } catch (error: unknown) {
+    return {
+      service_name: 'anvil_api',
+      status: 'major_outage',
+      response_time_ms: Date.now() - startTime,
+      error_message: error instanceof Error ? error.message : 'Connection failed',
+    };
+  }
+}
+
 async function checkDatabase(supabase: any): Promise<ServiceCheck> {
   const startTime = Date.now();
   
@@ -210,15 +252,16 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Run all health checks in parallel
-    const [nmkr, blockfrost, database, storage, auth] = await Promise.all([
+    const [nmkr, blockfrost, anvil, database, storage, auth] = await Promise.all([
       checkNmkrApi(),
       checkBlockfrostApi(),
+      checkAnvilApi(),
       checkDatabase(supabase),
       checkStorage(supabase),
       checkAuth(supabase),
     ]);
 
-    const results = [nmkr, blockfrost, database, storage, auth];
+    const results = [nmkr, blockfrost, anvil, database, storage, auth];
     const now = new Date().toISOString();
 
     // Update all service statuses
@@ -254,6 +297,7 @@ serve(async (req) => {
           await supabase.from('status_incidents').insert({
             title: `${result.service_name === 'nmkr_api' ? 'NMKR API' : 
                     result.service_name === 'blockfrost_api' ? 'Blockfrost API' :
+                    result.service_name === 'anvil_api' ? 'Anvil API' :
                     result.service_name.charAt(0).toUpperCase() + result.service_name.slice(1)} Issues Detected`,
             message: `Automated health check detected issues with ${result.service_name}: ${result.error_message || 'Service unavailable'}`,
             severity: result.status === 'major_outage' ? 'critical' : 'warning',
