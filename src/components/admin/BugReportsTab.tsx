@@ -213,21 +213,23 @@ function BugReportRow({ report }: { report: ReturnType<typeof useAllBugReports>[
               <div className="grid gap-4 md:grid-cols-2 pt-2 border-t">
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Update Status</h4>
-                  <Select value={report.status} onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-40" onClick={(e) => e.stopPropagation()}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUS_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          <div className="flex items-center gap-2">
-                            <span className={`h-2 w-2 rounded-full ${option.color}`} />
-                            {option.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div>
+                    <Select value={report.status} onValueChange={handleStatusChange}>
+                      <SelectTrigger className="w-40" onClick={(e) => e.stopPropagation()}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            <div className="flex items-center gap-2">
+                              <span className={`h-2 w-2 rounded-full ${option.color}`} />
+                              {option.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="space-y-2">

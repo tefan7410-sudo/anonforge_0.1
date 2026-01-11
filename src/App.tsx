@@ -1,8 +1,9 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -11,6 +12,7 @@ import { TutorialProvider } from "@/components/tutorial/TutorialProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 import { CookieBanner } from "@/components/CookieBanner";
+import { sessionLogger } from "@/lib/session-logger";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -32,6 +34,17 @@ import ArtFund from "./pages/ArtFund";
 
 const queryClient = new QueryClient();
 
+// Track navigation for bug reports
+function NavigationTracker() {
+  const location = useLocation();
+  
+  useEffect(() => {
+    sessionLogger.addAction('navigation', location.pathname);
+  }, [location.pathname]);
+  
+  return null;
+}
+
 const App = () => (
   <HelmetProvider>
   <QueryClientProvider client={queryClient}>
@@ -41,6 +54,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <NavigationTracker />
             <AuthProvider>
               <TutorialProvider>
               <MaintenanceGuard>
