@@ -41,6 +41,7 @@ import { GenerationHistory } from '@/components/project/GenerationHistory';
 import { PublishPanel } from '@/components/project/PublishPanel';
 import { ProductPageTab } from '@/components/project/ProductPageTab';
 import { MarketingTab } from '@/components/project/MarketingTab';
+import { SoonTab } from '@/components/project/SoonTab';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileNav } from '@/components/MobileNav';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
@@ -315,6 +316,13 @@ export default function ProjectDetail() {
                       {!isMarketingUnlocked && <Lock className="h-3 w-3 mr-1" />}
                       Marketing
                     </TabsTrigger>
+                    <TabsTrigger 
+                      value="soon"
+                      className="opacity-50"
+                    >
+                      <Lock className="h-3 w-3 mr-1" />
+                      Soon
+                    </TabsTrigger>
                   </>
                 )}
               </TabsList>
@@ -412,6 +420,12 @@ export default function ProjectDetail() {
                     isLocked={!isMarketingUnlocked}
                     onSwitchTab={handleSwitchTab}
                   />
+                </ErrorBoundary>
+              </TabsContent>
+
+              <TabsContent value="soon">
+                <ErrorBoundary>
+                  <SoonTab />
                 </ErrorBoundary>
               </TabsContent>
 
