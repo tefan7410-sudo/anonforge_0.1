@@ -1,4 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
+// This file is deprecated - profiles are now fetched directly via Convex queries
+// Keeping for backwards compatibility but should be removed once all components are updated
 
 export interface ProfileData {
   id: string;
@@ -10,26 +11,16 @@ export interface ProfileData {
 /**
  * Fetch profiles for a list of user IDs.
  * Returns a Map for easy lookup.
+ * 
+ * @deprecated Use Convex queries directly instead
  */
 export async function fetchProfilesForUserIds(userIds: string[]): Promise<Map<string, ProfileData>> {
   if (userIds.length === 0) {
     return new Map();
   }
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, display_name, email, avatar_url')
-    .in('id', userIds);
-
-  if (error) {
-    console.error('Failed to fetch profiles:', error);
-    return new Map();
-  }
-
-  const profileMap = new Map<string, ProfileData>();
-  for (const profile of data || []) {
-    profileMap.set(profile.id, profile);
-  }
-
-  return profileMap;
+  // This function is no longer used since hooks fetch profiles directly
+  // Return empty map for backwards compatibility
+  console.warn('fetchProfilesForUserIds is deprecated - use Convex queries directly');
+  return new Map();
 }

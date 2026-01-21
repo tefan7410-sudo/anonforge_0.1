@@ -1,5 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useMutation } from 'convex/react';
+// Content moderation would need a Convex action for external API calls
+// For now, provide placeholder implementation
 
 export interface ModerationResult {
   isSafe: boolean;
@@ -20,56 +21,52 @@ interface ModerateTextParams {
 
 /**
  * Hook to moderate images for inappropriate content
+ * TODO: Implement with Convex action
  */
 export function useModerateImage() {
-  return useMutation({
-    mutationFn: async ({ imageUrl, imageBase64 }: ModerateImageParams): Promise<ModerationResult> => {
-      const { data, error } = await supabase.functions.invoke('content-moderation', {
-        body: { 
-          type: 'image',
-          imageUrl,
-          imageBase64,
-        },
-      });
-
-      if (error) {
-        console.error('Moderation error:', error);
-        // If moderation fails, allow the upload but log the error
-        return { isSafe: true, flaggedCategories: [], confidence: 0, message: 'Moderation unavailable' };
-      }
-
-      return data;
+  return {
+    mutateAsync: async ({ imageUrl, imageBase64 }: ModerateImageParams): Promise<ModerationResult> => {
+      // TODO: Call Convex action for image moderation
+      // const result = await convex.action('moderation.moderateImage', { imageUrl, imageBase64 });
+      
+      // Placeholder: allow all images for now
+      return { 
+        isSafe: true, 
+        flaggedCategories: [], 
+        confidence: 0, 
+        message: 'Moderation unavailable' 
+      };
     },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 /**
  * Hook to moderate text content for inappropriate content
+ * TODO: Implement with Convex action
  */
 export function useModerateText() {
-  return useMutation({
-    mutationFn: async ({ text, context }: ModerateTextParams): Promise<ModerationResult> => {
+  return {
+    mutateAsync: async ({ text, context }: ModerateTextParams): Promise<ModerationResult> => {
       if (!text || text.trim().length === 0) {
         return { isSafe: true, flaggedCategories: [], confidence: 1 };
       }
 
-      const { data, error } = await supabase.functions.invoke('content-moderation', {
-        body: { 
-          type: 'text',
-          text,
-          context,
-        },
-      });
-
-      if (error) {
-        console.error('Text moderation error:', error);
-        // If moderation fails, allow the content but log the error
-        return { isSafe: true, flaggedCategories: [], confidence: 0, message: 'Moderation unavailable' };
-      }
-
-      return data;
+      // TODO: Call Convex action for text moderation
+      // const result = await convex.action('moderation.moderateText', { text, context });
+      
+      // Placeholder: allow all text for now
+      return { 
+        isSafe: true, 
+        flaggedCategories: [], 
+        confidence: 0, 
+        message: 'Moderation unavailable' 
+      };
     },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 /**
