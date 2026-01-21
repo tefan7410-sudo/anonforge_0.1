@@ -1,170 +1,180 @@
 # AnonForge - Supabase to Convex Migration
 
-## Migration Summary
+## Current Status
 
-The frontend has been successfully cloned from `anonforge_0.1` and stripped of Supabase dependencies.
-
-### What Was Done
-
-1. **Cloned Repository**: Full frontend codebase from `github.com/tefan7410-sudo/anonforge_0.1`
-
-2. **Removed Supabase Backend**:
-   - Deleted `/supabase` folder (migrations, edge functions)
-   - Removed `@supabase/supabase-js` package
-   - Deleted `.env` file with Supabase credentials
-
-3. **Created Stub Layer**:
-   - `src/integrations/supabase/client.ts` - Stub client that maintains the same interface
-   - Provides mock data so the UI renders
-   - Logs all database operations to console for debugging
-
-4. **Updated Auth Context**:
-   - `src/contexts/AuthContext.tsx` - Works with stub client
-   - Sign in/up/out functions work (mock mode)
-
-5. **Prepared Convex**:
-   - Created `convex/` folder
-   - Created `convex/schema.ts` with full schema based on Supabase types
-   - Created `convex/README.md` with migration instructions
-
-### Build Status
-
-✅ **Build Successful** - No TypeScript errors
-✅ **Dev Server Running** - App renders at `http://localhost:8080`
+✅ **Phase 1 Complete**: Convex foundation is set up and deployed to Vercel  
+⏳ **Phase 2 In Progress**: Hooks need to be updated to use Convex directly
 
 ---
 
-## Next Steps
+## What Has Been Done
 
-### 1. Install & Initialize Convex
+### 1. Convex Setup
+- Installed `convex` package
+- Created full Convex schema (`convex/schema.ts`) with 25+ tables
+- Created Convex functions for all major entities:
+  - `convex/auth.ts` - Authentication helpers
+  - `convex/profiles.ts` - User profiles
+  - `convex/projects.ts` - NFT projects
+  - `convex/credits.ts` - Credit system
+  - `convex/status.ts` - Service status
+  - `convex/notifications.ts` - User notifications
+  - `convex/marketing.ts` - Marketing/featured projects
+  - `convex/categories.ts` - Trait categories
+  - `convex/layers.ts` - Layer management
+  - `convex/generations.ts` - Generation history
+  - `convex/productPages.ts` - Product pages
+  - `convex/admin.ts` - Admin functions
+  - `convex/files.ts` - File storage
+
+### 2. Clerk Auth Integration
+- Installed `@clerk/clerk-react`
+- Updated `src/App.tsx` with `ClerkProvider` + `ConvexProviderWithClerk`
+- Updated `src/contexts/AuthContext.tsx` to use Clerk when configured
+- Falls back to mock auth for development without Clerk
+
+### 3. Supabase Stub Layer
+- `src/integrations/supabase/client.ts` - Mock client for transition period
+- Allows existing hooks to work while Convex is being integrated
+- All UI continues to render with mock data
+
+### 4. Deployment
+- Deployed to Vercel: https://anonforge.vercel.app
+- Git workflow: Push to main → Vercel auto-deploys
+
+---
+
+## Next Steps to Complete Migration
+
+### Step 1: Initialize Convex Backend
+
+Run this in a terminal:
 
 ```bash
-npm install convex
+./scripts/setup-convex.sh
+# Or manually:
 npx convex dev
 ```
 
-### 2. Add Convex Client
+This will:
+1. Open browser for Convex login
+2. Create a new Convex project
+3. Generate the `convex/_generated/` types
+4. Add `CONVEX_URL` to `.env.local`
 
-Create `src/lib/convex.ts`:
-```typescript
-import { ConvexProvider, ConvexReactClient } from "convex/react";
+### Step 2: Set Up Clerk
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
+1. Create account at https://clerk.com
+2. Create a new application
+3. Get your Publishable Key
+4. Add to `.env.local`:
+   ```
+   VITE_CLERK_PUBLISHABLE_KEY=pk_test_xxx
+   ```
+5. In Clerk dashboard, configure JWT template for Convex
 
-export { convex, ConvexProvider };
-```
+### Step 3: Migrate Hooks to Convex
 
-### 3. Wrap App with ConvexProvider
-
-In `src/main.tsx`:
-```typescript
-import { ConvexProvider, convex } from './lib/convex';
-
-<ConvexProvider client={convex}>
-  <App />
-</ConvexProvider>
-```
-
-### 4. Set Up Authentication
-
-Choose one of:
-- **Clerk** (recommended) - https://docs.convex.dev/auth/clerk
-- **Auth0** - https://docs.convex.dev/auth/auth0
-- **Custom JWT** - https://docs.convex.dev/auth/advanced
-
-### 5. Migrate Hooks One by One
-
-Each hook in `src/hooks/` uses Supabase queries. Convert them to use Convex:
+Each hook needs to be updated from React Query + Supabase to Convex:
 
 ```typescript
-// Before (Supabase)
-const { data } = await supabase.from('projects').select('*').eq('owner_id', userId);
+// BEFORE (Supabase stub)
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
-// After (Convex)
-const projects = useQuery(api.projects.listByOwner, { ownerId: userId });
+export function useProfile(userId: string) {
+  return useQuery({
+    queryKey: ['profile', userId],
+    queryFn: async () => {
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId);
+      return data;
+    },
+  });
+}
+
+// AFTER (Convex)
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+
+export function useProfile(userId: string) {
+  return useQuery(api.profiles.get, { userId });
+}
 ```
 
-### 6. Migrate Storage
+### Step 4: Remove Supabase Stubs
 
-Supabase Storage → Convex File Storage
-- https://docs.convex.dev/file-storage
+Once all hooks are migrated:
+
+1. Delete `src/integrations/supabase/`
+2. Remove `@supabase/supabase-js` from package.json (if still present)
+3. Update any remaining imports
 
 ---
 
-## Files Using Supabase (52 files)
+## Files Still Using Supabase Stub
 
-These files import from `@/integrations/supabase/client` and need Convex migration:
+These files import from `@/integrations/supabase/client`:
 
-### Pages (7 files)
-- `src/pages/Register.tsx`
-- `src/pages/ProjectSettings.tsx`
-- `src/pages/Profile.tsx`
-- `src/pages/NewProject.tsx`
-- `src/pages/Marketplace.tsx`
-- `src/pages/Dashboard.tsx`
-- `src/pages/Collection.tsx`
-
-### Hooks (26 files)
-- `src/hooks/use-admin.ts`
-- `src/hooks/use-admin-ambassadors.ts`
-- `src/hooks/use-admin-costs.ts`
-- `src/hooks/use-admin-status.ts`
-- `src/hooks/use-ambassador.ts`
-- `src/hooks/use-art-fund.ts`
-- `src/hooks/use-bug-reports.ts`
-- `src/hooks/use-collection-status.ts`
-- `src/hooks/use-content-moderation.ts`
-- `src/hooks/use-creator-collections.ts`
-- `src/hooks/use-credits.ts`
-- `src/hooks/use-generation-comments.ts`
-- `src/hooks/use-generations.ts`
-- `src/hooks/use-hero-backgrounds.ts`
-- `src/hooks/use-marketing.ts`
-- `src/hooks/use-marketing-wallet-payment.ts`
-- `src/hooks/use-mentions.ts`
-- `src/hooks/use-nmkr.ts`
-- `src/hooks/use-notifications.ts`
-- `src/hooks/use-payment-intent.ts`
-- `src/hooks/use-product-page.ts`
+### High Priority (Core Functionality)
 - `src/hooks/use-profile.ts`
 - `src/hooks/use-project.ts`
-- `src/hooks/use-project-role.ts`
+- `src/hooks/use-credits.ts`
 - `src/hooks/use-status.ts`
-- `src/hooks/use-team.ts`
-- `src/hooks/use-tutorial.ts`
-- `src/hooks/use-verification-request.ts`
-- `src/hooks/use-wallet-auth.ts`
-- `src/hooks/use-wallet-payment.ts`
-
-### Contexts (1 file)
 - `src/contexts/AuthContext.tsx`
 
-### Components (11 files)
-- `src/components/EmailVerificationPending.tsx`
-- `src/components/MaintenanceGuard.tsx`
-- `src/components/MarketplaceSection.tsx`
-- `src/components/project/CategoryList.tsx`
-- `src/components/project/ConnectionTypeModal.tsx`
-- `src/components/project/GenerationDetailModal.tsx`
-- `src/components/project/GenerationPanel.tsx`
-- `src/components/project/LayerEffectsModal.tsx`
-- `src/components/project/LayerExclusionsModal.tsx`
-- `src/components/project/LayerSwitchModal.tsx`
-- `src/components/project/LayerUploadZone.tsx`
-- `src/components/project/nodes/LayerNode.tsx`
+### Medium Priority (Features)
+- `src/hooks/use-marketing.ts`
+- `src/hooks/use-notifications.ts`
+- `src/hooks/use-generations.ts`
+- `src/hooks/use-product-page.ts`
+- `src/hooks/use-hero-backgrounds.ts`
 
-### Lib (1 file)
-- `src/lib/admin-helpers.ts`
+### Lower Priority (Admin/Special)
+- `src/hooks/use-admin*.ts`
+- `src/hooks/use-ambassador.ts`
+- `src/hooks/use-bug-reports.ts`
+- `src/hooks/use-verification-request.ts`
 
 ---
 
-## Database Schema
+## Development Commands
 
-The Convex schema has been created at `convex/schema.ts` with all 35+ tables from the original Supabase database.
+```bash
+# Start frontend dev server
+npm run dev
+
+# Start Convex dev server (in separate terminal)
+npm run dev:convex
+
+# Start both in parallel
+npm run dev:all
+
+# Deploy Convex to production
+npm run convex:deploy
+
+# Build for production
+npm run build
+```
 
 ---
 
-## Support
+## Environment Variables
 
-For Convex documentation: https://docs.convex.dev
-For issues with this migration: Check the stub client console logs
+Create `.env.local` with:
+
+```bash
+# Convex (required)
+VITE_CONVEX_URL=https://your-project.convex.cloud
+
+# Clerk Auth (required for auth)
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_xxx
+```
+
+---
+
+## Resources
+
+- Convex Docs: https://docs.convex.dev
+- Clerk + Convex: https://docs.convex.dev/auth/clerk
+- Convex File Storage: https://docs.convex.dev/file-storage
+- Vercel Dashboard: https://vercel.com/bajuz/anonforge
