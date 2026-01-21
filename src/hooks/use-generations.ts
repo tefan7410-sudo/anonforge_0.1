@@ -1,316 +1,233 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { Id } from '../../convex/_generated/dataModel';
 import { toast } from 'sonner';
 
 export interface Generation {
-  id: string;
-  project_id: string;
-  token_id: string;
-  image_path: string | null;
-  layer_combination: string[];
-  metadata: Record<string, string>;
-  created_at: string;
-  is_favorite: boolean;
-  generation_type: 'single' | 'batch';
-  batch_size: number | null;
+  _id: Id<"generations">;
+  project_id: Id<"projects">;
+  user_id: string;
+  name: string;
+  count: number;
+  settings?: Record<string, unknown>;
+  status: string;
+  progress: number;
+  error_message?: string;
+  output_zip_url?: string;
+  generated_images?: Array<{
+    filename: string;
+    url: string;
+    traits: Record<string, unknown>;
+  }>;
+  completed_at?: string;
+  _creationTime: number;
 }
 
-const MAX_PREVIEW_GENERATIONS = 25;
-const RETENTION_DAYS = 15;
+export function useGenerations(projectId: string | undefined, limit = 50) {
+  const generations = useQuery(
+    api.generations.listByProject,
+    projectId ? { projectId: projectId as Id<"projects">, limit } : "skip"
+  );
 
-export function useGenerations(projectId: string) {
-  return useQuery({
-    queryKey: ['generations', projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('generations')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('is_favorite', { ascending: false })
-        .order('created_at', { ascending: false });
+  return {
+    data: generations as Generation[] | undefined,
+    isLoading: generations === undefined,
+    error: null,
+    refetch: () => {},
+  };
+}
 
-      if (error) throw error;
-      return data as Generation[];
-    },
-    enabled: !!projectId,
-  });
+export function useGeneration(generationId: string | undefined) {
+  const generation = useQuery(
+    api.generations.get,
+    generationId ? { id: generationId as Id<"generations"> } : "skip"
+  );
+
+  return {
+    data: generation as Generation | null | undefined,
+    isLoading: generation === undefined,
+    error: null,
+  };
 }
 
 export function useCreateGeneration() {
-  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const createGeneration = useMutation(api.generations.create);
 
-  return useMutation({
-    mutationFn: async ({
-      projectId,
-      tokenId,
-      imagePath,
-      layerCombination,
-      metadata,
-      generationType,
-      batchSize,
-    }: {
+  return {
+    mutateAsync: async (data: {
       projectId: string;
-      tokenId: string;
-      imagePath: string;
-      layerCombination: string[];
-      metadata: Record<string, string>;
-      generationType: 'single' | 'batch';
-      batchSize?: number;
+      name: string;
+      count: number;
+      settings?: Record<string, unknown>;
     }) => {
-      const { data, error } = await supabase
-        .from('generations')
-        .insert({
-          project_id: projectId,
-          token_id: tokenId,
-          image_path: imagePath,
-          layer_combination: layerCombination,
-          metadata,
-          generation_type: generationType,
-          batch_size: batchSize || null,
-        })
-        .select()
-        .single();
+      if (!user?.id) throw new Error('Not authenticated');
 
-      if (error) throw error;
-      return data as Generation;
+      const id = await createGeneration({
+        projectId: data.projectId as Id<"projects">,
+        userId: user.id,
+        name: data.name,
+        count: data.count,
+        settings: data.settings,
+      });
+
+      toast.success('Generation started');
+      return { id };
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['generations', variables.projectId] });
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-export function useToggleFavorite() {
-  const queryClient = useQueryClient();
+export function useUpdateGenerationStatus() {
+  const updateStatus = useMutation(api.generations.updateStatus);
 
-  return useMutation({
-    mutationFn: async ({
-      generationId,
-      isFavorite,
-    }: {
+  return {
+    mutateAsync: async (data: {
       generationId: string;
-      isFavorite: boolean;
-      projectId: string;
+      status: string;
+      progress?: number;
+      errorMessage?: string;
+      outputZipUrl?: string;
     }) => {
-      const { data, error } = await supabase
-        .from('generations')
-        .update({ is_favorite: isFavorite })
-        .eq('id', generationId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as Generation;
+      await updateStatus({
+        id: data.generationId as Id<"generations">,
+        status: data.status,
+        progress: data.progress,
+        errorMessage: data.errorMessage,
+        outputZipUrl: data.outputZipUrl,
+      });
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['generations', variables.projectId] });
-      if (variables.isFavorite) {
-        toast.success('Added to favorites');
-      } else {
-        toast.info('Removed from favorites');
-      }
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 export function useDeleteGeneration() {
-  const queryClient = useQueryClient();
+  const deleteGeneration = useMutation(api.generations.remove);
 
-  return useMutation({
-    mutationFn: async ({
-      generation,
-    }: {
-      generation: Generation;
-      projectId: string;
+  return {
+    mutateAsync: async (generationId: string) => {
+      await deleteGeneration({ id: generationId as Id<"generations"> });
+      toast.success('Generation deleted');
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+export function useGenerationComments(generationId: string | undefined) {
+  const comments = useQuery(
+    api.generations.getComments,
+    generationId ? { generationId: generationId as Id<"generations"> } : "skip"
+  );
+
+  return {
+    data: comments || [],
+    isLoading: comments === undefined,
+    error: null,
+    refetch: () => {},
+  };
+}
+
+export function useAddGenerationComment() {
+  const { user } = useAuth();
+  const addComment = useMutation(api.generations.addComment);
+
+  return {
+    mutateAsync: async (data: {
+      generationId: string;
+      content: string;
+      parentId?: string;
     }) => {
-      // Delete from storage first
-      if (generation.image_path) {
-        await supabase.storage.from('generations').remove([generation.image_path]);
-      }
+      if (!user?.id) throw new Error('Not authenticated');
 
-      // Delete from database
-      const { error } = await supabase
-        .from('generations')
-        .delete()
-        .eq('id', generation.id);
-
-      if (error) throw error;
+      await addComment({
+        generationId: data.generationId as Id<"generations">,
+        userId: user.id,
+        content: data.content,
+        parentId: data.parentId as Id<"generation_comments"> | undefined,
+      });
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['generations', variables.projectId] });
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 export function useCleanupGenerations() {
-  const queryClient = useQueryClient();
+  const deleteGeneration = useMutation(api.generations.remove);
 
-  return useMutation({
-    mutationFn: async (projectId: string) => {
-      // Get all non-favorite single generations, ordered by date desc
-      const { data: generations, error } = await supabase
-        .from('generations')
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('generation_type', 'single')
-        .eq('is_favorite', false)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Keep first 25, delete the rest
-      const toDelete = (generations || []).slice(MAX_PREVIEW_GENERATIONS) as Generation[];
-
-      for (const gen of toDelete) {
-        // Delete from storage
-        if (gen.image_path) {
-          await supabase.storage.from('generations').remove([gen.image_path]);
-        }
-        // Delete from database
-        await supabase.from('generations').delete().eq('id', gen.id);
-      }
-
-      return toDelete.length;
+  return {
+    mutateAsync: async (projectId: string) => {
+      // Cleanup old/failed generations - placeholder
+      // TODO: Implement batch cleanup in Convex
     },
-    onSuccess: (_, projectId) => {
-      queryClient.invalidateQueries({ queryKey: ['generations', projectId] });
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-// Upload image to generations storage bucket
+// Utility functions for file handling
 export async function uploadGenerationImage(
   projectId: string,
   generationId: string,
-  imageData: string,
-  fileExtension: 'jpg' | 'zip' = 'jpg'
+  filename: string,
+  blob: Blob
 ): Promise<string> {
-  // Convert base64 to blob
-  const response = await fetch(imageData);
-  const blob = await response.blob();
-
-  const filePath = `${projectId}/${generationId}.${fileExtension}`;
-
-  const { error } = await supabase.storage
-    .from('generations')
-    .upload(filePath, blob, {
-      contentType: fileExtension === 'jpg' ? 'image/jpeg' : 'application/zip',
-      upsert: true,
-    });
-
-  if (error) throw error;
-  return filePath;
+  // For now, return a placeholder URL
+  // TODO: Implement with Convex file storage
+  const url = URL.createObjectURL(blob);
+  return url;
 }
 
-// Upload zip file for batch generation
 export async function uploadGenerationZip(
   projectId: string,
   generationId: string,
-  zipBlob: Blob
+  blob: Blob
 ): Promise<string> {
-  const filePath = `${projectId}/${generationId}.zip`;
-
-  const { error } = await supabase.storage
-    .from('generations')
-    .upload(filePath, zipBlob, {
-      contentType: 'application/zip',
-      upsert: true,
-    });
-
-  if (error) throw error;
-  return filePath;
+  // For now, return a placeholder URL
+  // TODO: Implement with Convex file storage
+  const url = URL.createObjectURL(blob);
+  return url;
 }
 
-// Get public URL for generation file
-export function getGenerationFileUrl(imagePath: string): string {
-  const { data } = supabase.storage.from('generations').getPublicUrl(imagePath);
-  return data.publicUrl;
+export function getGenerationFileUrl(
+  projectId: string,
+  generationId: string,
+  filename: string
+): string {
+  // Return placeholder URL
+  // TODO: Implement with Convex file storage
+  return `/placeholder.svg`;
 }
 
-// Clear all generations for a project
+export function useToggleFavorite() {
+  return {
+    mutateAsync: async (generationId: string) => {
+      // TODO: Implement favorite toggle in Convex
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
 export function useClearAllGenerations() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (projectId: string) => {
-      // Get all generations for project
-      const { data: generations, error } = await supabase
-        .from('generations')
-        .select('*')
-        .eq('project_id', projectId);
-
-      if (error) throw error;
-
-      // Delete all files from storage
-      const filesToDelete = (generations || [])
-        .filter((g) => g.image_path)
-        .map((g) => g.image_path as string);
-
-      if (filesToDelete.length > 0) {
-        await supabase.storage.from('generations').remove(filesToDelete);
-      }
-
-      // Delete all records
-      const { error: deleteError } = await supabase
-        .from('generations')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (deleteError) throw deleteError;
-
-      return (generations || []).length;
+  return {
+    mutateAsync: async (projectId: string) => {
+      // TODO: Implement clear all in Convex
     },
-    onSuccess: (deletedCount, projectId) => {
-      queryClient.invalidateQueries({ queryKey: ['generations', projectId] });
-      toast.success(`Cleared ${deletedCount} generation${deletedCount !== 1 ? 's' : ''}`);
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-// Auto-cleanup old generations (non-favorites older than 15 days)
-export function useAutoCleanupOldGenerations(projectId: string) {
-  const queryClient = useQueryClient();
-  const hasRunRef = useRef(false);
-
-  useEffect(() => {
-    if (!projectId || hasRunRef.current) return;
-    hasRunRef.current = true;
-
-    const cleanup = async () => {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - RETENTION_DAYS);
-
-      // Get old non-favorite generations
-      const { data: oldGenerations, error } = await supabase
-        .from('generations')
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('is_favorite', false)
-        .lt('created_at', cutoffDate.toISOString());
-
-      if (error || !oldGenerations || oldGenerations.length === 0) return;
-
-      // Delete from storage
-      const filesToDelete = oldGenerations
-        .filter((g) => g.image_path)
-        .map((g) => g.image_path as string);
-
-      if (filesToDelete.length > 0) {
-        await supabase.storage.from('generations').remove(filesToDelete);
-      }
-
-      // Delete from database
-      const idsToDelete = oldGenerations.map((g) => g.id);
-      await supabase
-        .from('generations')
-        .delete()
-        .in('id', idsToDelete);
-
-      // Refresh the list
-      queryClient.invalidateQueries({ queryKey: ['generations', projectId] });
-    };
-
-    cleanup();
-  }, [projectId, queryClient]);
+export function useAutoCleanupOldGenerations() {
+  return {
+    mutateAsync: async (projectId: string, daysOld: number) => {
+      // TODO: Implement auto cleanup in Convex
+    },
+    mutate: () => {},
+    isPending: false,
+  };
 }

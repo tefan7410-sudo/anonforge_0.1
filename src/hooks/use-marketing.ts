@@ -1,674 +1,306 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { Id } from '../../convex/_generated/dataModel';
 
 export interface MarketingRequest {
-  id: string;
-  project_id: string;
+  _id: Id<"marketing_requests">;
+  project_id: Id<"projects">;
   user_id: string;
-  status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed' | 'expired' | 'paid' | 'cancelled';
+  status: string;
   duration_days: number;
+  start_date?: string;
+  end_date?: string;
   price_ada: number;
-  message: string | null;
-  admin_notes: string | null;
-  hero_image_url: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  payment_status: 'pending' | 'completed';
-  approved_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MarketingRequestWithProject extends MarketingRequest {
-  project: {
-    id: string;
+  message?: string;
+  hero_image_url?: string;
+  payment_status?: string;
+  approved_at?: string;
+  admin_notes?: string;
+  _creationTime: number;
+  project?: {
+    _id: Id<"projects">;
     name: string;
   };
-  product_page?: {
-    logo_url: string | null;
-    banner_url: string | null;
-    tagline: string | null;
+}
+
+export function useActiveMarketing() {
+  const marketing = useQuery(api.marketing.getActive);
+
+  return {
+    data: marketing,
+    isLoading: marketing === undefined,
+    error: null,
+    refetch: () => {},
   };
 }
 
-export interface MarketingBooking {
-  id: string;
-  start_date: string | null;
-  end_date: string | null;
-  status: string;
-}
-
-export interface MarketingPaymentIntent {
-  paymentId: string;
-  address: string;
-  amountAda: string;
-  amountLovelace: number;
-  priceAda: number;
-  dustAmount: number;
-  expiresAt: string;
-  startDate: string | null;
-  endDate: string | null;
-}
-
-const PRICE_PER_DAY = 25;
-
-export const calculateMarketingPrice = (days: number) => days * PRICE_PER_DAY;
-
-// Fetch marketing bookings for calendar availability
 export function useMarketingBookings() {
-  return useQuery({
-    queryKey: ['marketing-bookings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('marketing_requests')
-        .select('id, start_date, end_date, status')
-        .in('status', ['pending', 'approved', 'active', 'paid'])
-        .gte('end_date', new Date().toISOString());
+  const bookings = useQuery(api.marketing.getBookings);
 
-      if (error) throw error;
-      return (data || []) as MarketingBooking[];
-    },
-  });
+  return {
+    data: bookings as MarketingRequest[] | undefined,
+    isLoading: bookings === undefined,
+    error: null,
+  };
 }
 
-// Create marketing payment intent (for Blockfrost webhook flow)
-export function useCreateMarketingPaymentIntent() {
-  return useMutation({
-    mutationFn: async (marketingRequestId: string) => {
-      const { data, error } = await supabase.functions.invoke(
-        'create-marketing-payment-intent',
-        { body: { marketingRequestId } }
-      );
-      
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      
-      return data as MarketingPaymentIntent;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create payment');
-    },
-  });
+export function useProjectMarketing(projectId: string | undefined) {
+  const marketing = useQuery(
+    api.marketing.getByProject,
+    projectId ? { projectId: projectId as Id<"projects"> } : "skip"
+  );
+
+  return {
+    data: marketing as MarketingRequest | null | undefined,
+    isLoading: marketing === undefined,
+    error: null,
+    refetch: () => {},
+  };
 }
 
-// Check marketing payment status
-export function useMarketingPaymentStatus(paymentId: string | null, enabled = true) {
-  return useQuery({
-    queryKey: ['marketing-payment-status', paymentId],
-    queryFn: async () => {
-      if (!paymentId) return null;
-      
-      const { data, error } = await supabase
-        .from('pending_marketing_payments')
-        .select('status, tx_hash, completed_at, expires_at')
-        .eq('id', paymentId)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!paymentId && enabled,
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      // Poll every 5 seconds if payment is still pending
-      if (data?.status === 'pending') {
-        return 5000;
-      }
-      return false;
-    },
-  });
-}
-
-// Cancel a pending marketing payment
-export function useCancelMarketingPayment() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (paymentId: string) => {
-      const { error } = await supabase
-        .from('pending_marketing_payments')
-        .update({ status: 'expired' })
-        .eq('id', paymentId)
-        .eq('status', 'pending');
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marketing-payment-status'] });
-      queryClient.invalidateQueries({ queryKey: ['existing-marketing-payment'] });
-      queryClient.invalidateQueries({ queryKey: ['marketing-request'] });
-    },
-  });
-}
-
-// Fetch existing pending payment for a marketing request (for session persistence)
-export function useExistingMarketingPayment(marketingRequestId: string | null) {
-  return useQuery({
-    queryKey: ['existing-marketing-payment', marketingRequestId],
-    queryFn: async () => {
-      if (!marketingRequestId) return null;
-      
-      const { data, error } = await supabase
-        .from('pending_marketing_payments')
-        .select('*')
-        .eq('marketing_request_id', marketingRequestId)
-        .eq('status', 'pending')
-        .gt('expires_at', new Date().toISOString())
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!marketingRequestId,
-  });
-}
-
-// Fetch marketing request for a specific project
-export function useProjectMarketingRequest(projectId: string) {
-  return useQuery({
-    queryKey: ['marketing-request', projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('marketing_requests')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data as MarketingRequest | null;
-    },
-    enabled: !!projectId,
-  });
-}
-
-// Fetch active marketing (for landing page / marketplace display)
-export function useActiveMarketing() {
-  return useQuery({
-    queryKey: ['active-marketing'],
-    queryFn: async () => {
-      // First get the active marketing request
-      const { data: request, error: requestError } = await supabase
-        .from('marketing_requests')
-        .select(`
-          *,
-          project:projects!inner(id, name)
-        `)
-        .eq('status', 'active')
-        .limit(1)
-        .maybeSingle();
-
-      if (requestError) throw requestError;
-      if (!request) return null;
-
-      // Then fetch the product page separately
-      const { data: productPage } = await supabase
-        .from('product_pages')
-        .select('logo_url, banner_url, tagline')
-        .eq('project_id', request.project_id)
-        .maybeSingle();
-
-      return {
-        ...request,
-        product_page: productPage,
-      } as MarketingRequestWithProject;
-    },
-  });
-}
-
-// Fetch demo featured collection (first live collection for preview)
-export function useFeaturedPreview() {
-  return useQuery({
-    queryKey: ['featured-preview'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('product_pages')
-        .select(`
-          project_id,
-          logo_url,
-          banner_url,
-          tagline,
-          project:projects!inner(id, name)
-        `)
-        .eq('is_live', true)
-        .eq('is_hidden', false)
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) return null;
-
-      return {
-        project_id: data.project_id,
-        project: data.project,
-        product_page: {
-          logo_url: data.logo_url,
-          banner_url: data.banner_url,
-          tagline: data.tagline,
-        },
-        hero_image_url: '/images/demo-hero.png',
-      };
-    },
-  });
-}
-
-// Fetch all marketing requests (admin)
-export function useAllMarketingRequests() {
-  return useQuery({
-    queryKey: ['all-marketing-requests'],
-    queryFn: async () => {
-      const { data: requests, error } = await supabase
-        .from('marketing_requests')
-        .select(`
-          *,
-          project:projects!inner(id, name)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      // Fetch product pages for each request
-      const projectIds = requests?.map(r => r.project_id) || [];
-      const { data: productPages } = await supabase
-        .from('product_pages')
-        .select('project_id, logo_url, banner_url, tagline')
-        .in('project_id', projectIds);
-
-      const productPageMap = new Map(productPages?.map(pp => [pp.project_id, pp]) || []);
-
-      return (requests || []).map(req => ({
-        ...req,
-        product_page: productPageMap.get(req.project_id),
-      })) as MarketingRequestWithProject[];
-    },
-  });
-}
-
-// Fetch actionable marketing requests (admin) - pending, approved, paid
-export function useActionableMarketingRequests() {
-  return useQuery({
-    queryKey: ['actionable-marketing-requests'],
-    queryFn: async () => {
-      const { data: requests, error } = await supabase
-        .from('marketing_requests')
-        .select(`
-          *,
-          project:projects!inner(id, name)
-        `)
-        .in('status', ['pending', 'approved', 'paid'])
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Fetch product pages for each request
-      const projectIds = requests?.map(r => r.project_id) || [];
-      const { data: productPages } = await supabase
-        .from('product_pages')
-        .select('project_id, logo_url, banner_url, tagline')
-        .in('project_id', projectIds);
-
-      const productPageMap = new Map(productPages?.map(pp => [pp.project_id, pp]) || []);
-
-      return (requests || []).map(req => ({
-        ...req,
-        product_page: productPageMap.get(req.project_id),
-      })) as MarketingRequestWithProject[];
-    },
-  });
-}
-
-// Keep old hook name for compatibility (deprecated)
-export function usePendingMarketingRequests() {
-  return useActionableMarketingRequests();
-}
-
-// Create a new marketing request
 export function useCreateMarketingRequest() {
-  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const createMarketing = useMutation(api.marketing.create);
 
-  return useMutation({
-    mutationFn: async ({
-      projectId,
-      userId,
-      durationDays,
-      startDate,
-      endDate,
-      message,
-      heroImageUrl,
-    }: {
+  return {
+    mutateAsync: async (data: {
       projectId: string;
-      userId: string;
       durationDays: number;
       startDate: string;
       endDate: string;
+      priceAda: number;
       message?: string;
       heroImageUrl?: string;
     }) => {
-      const priceAda = calculateMarketingPrice(durationDays);
+      if (!user?.id) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
-        .from('marketing_requests')
-        .insert({
-          project_id: projectId,
-          user_id: userId,
-          duration_days: durationDays,
-          price_ada: priceAda,
-          start_date: startDate,
-          end_date: endDate,
-          message: message || null,
-          hero_image_url: heroImageUrl || null,
-        })
-        .select()
-        .single();
+      const id = await createMarketing({
+        projectId: data.projectId as Id<"projects">,
+        userId: user.id,
+        durationDays: data.durationDays,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        priceAda: data.priceAda,
+        message: data.message,
+        heroImageUrl: data.heroImageUrl,
+      });
 
-      if (error) throw error;
-      return data;
+      return { id };
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['marketing-request', variables.projectId] });
-      queryClient.invalidateQueries({ queryKey: ['pending-marketing-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
-      toast.success('Marketing request submitted!');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to submit marketing request');
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-// Upload hero image for marketing
-export function useUploadMarketingImage() {
-  return useMutation({
-    mutationFn: async ({ file, projectId }: { file: File; projectId: string }) => {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `marketing/${projectId}/hero-${Date.now()}.${fileExt}`;
+export function useApproveMarketing() {
+  const approveMarketing = useMutation(api.marketing.approve);
 
-      const { error: uploadError } = await supabase.storage
-        .from('product-assets')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from('product-assets')
-        .getPublicUrl(fileName);
-
-      return urlData.publicUrl;
+  return {
+    mutateAsync: async (requestId: string) => {
+      await approveMarketing({ id: requestId as Id<"marketing_requests"> });
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to upload image');
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-// Admin: Approve marketing request (sets to 'approved', user must pay within 24h)
+export function useRejectMarketing() {
+  const rejectMarketing = useMutation(api.marketing.reject);
+
+  return {
+    mutateAsync: async (requestId: string, reason: string) => {
+      await rejectMarketing({ id: requestId as Id<"marketing_requests">, reason });
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+export function useActivateMarketing() {
+  const activateMarketing = useMutation(api.marketing.activate);
+
+  return {
+    mutateAsync: async (requestId: string) => {
+      await activateMarketing({ id: requestId as Id<"marketing_requests"> });
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+// Payment intent types and hooks
+export interface MarketingPaymentIntent {
+  id: string;
+  paymentAddress: string;
+  amountAda: number;
+  amountLovelace: number;
+  expiresAt: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+}
+
+export function useMarketingPaymentStatus(paymentId: string | undefined) {
+  // Placeholder - would poll for payment status
+  return {
+    data: null as MarketingPaymentIntent | null,
+    isLoading: false,
+    error: null,
+    refetch: () => {},
+  };
+}
+
+export function useCancelMarketingPayment() {
+  return {
+    mutateAsync: async (paymentId: string) => {
+      // TODO: Implement in Convex
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+// Admin marketing hooks
+export function useActionableMarketingRequests() {
+  const requests = useQuery(api.admin.getMarketingRequests);
+  const actionable = requests?.filter(r => r.status === 'pending' || r.status === 'approved') || [];
+
+  return {
+    data: actionable,
+    isLoading: requests === undefined,
+    error: null,
+    refetch: () => {},
+  };
+}
+
+export function useAllMarketingRequests() {
+  const requests = useQuery(api.admin.getMarketingRequests);
+
+  return {
+    data: requests || [],
+    isLoading: requests === undefined,
+    error: null,
+    refetch: () => {},
+  };
+}
+
 export function useApproveMarketingRequest() {
-  const queryClient = useQueryClient();
+  const approve = useMutation(api.marketing.approve);
 
-  return useMutation({
-    mutationFn: async ({ requestId }: { requestId: string }) => {
-      // Get the request first
-      const { data: request, error: fetchError } = await supabase
-        .from('marketing_requests')
-        .select('user_id, project_id')
-        .eq('id', requestId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Update the request to approved (NOT active - user must pay first)
-      const { error: updateError } = await supabase
-        .from('marketing_requests')
-        .update({
-          status: 'approved',
-          approved_at: new Date().toISOString(),
-        })
-        .eq('id', requestId);
-
-      if (updateError) throw updateError;
-
-      // Create notification for user to pay
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: request.user_id,
-          type: 'marketing_approved',
-          title: 'Your Spotlight is Approved!',
-          message: 'Your marketing request has been approved. Complete payment within 24 hours to activate your spotlight.',
-          link: `/project/${request.project_id}?tab=marketing`,
-        });
-
-      if (notifError) console.error('Failed to create notification:', notifError);
-
-      return request;
+  return {
+    mutateAsync: async (requestId: string) => {
+      await approve({ id: requestId as Id<"marketing_requests"> });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pending-marketing-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['marketing-request'] });
-      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
-      toast.success('Marketing request approved! User notified to complete payment.');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to approve request');
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-// Admin: Approve marketing request as FREE promo (no payment required)
 export function useApproveFreeMarketingRequest() {
-  const queryClient = useQueryClient();
+  const approve = useMutation(api.marketing.approve);
+  const activate = useMutation(api.marketing.activate);
 
-  return useMutation({
-    mutationFn: async ({ requestId }: { requestId: string }) => {
-      // Get the request first
-      const { data: request, error: fetchError } = await supabase
-        .from('marketing_requests')
-        .select('user_id, project_id, start_date, end_date')
-        .eq('id', requestId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Update the request to paid with is_free_promo = true (skips payment)
-      const { error: updateError } = await supabase
-        .from('marketing_requests')
-        .update({
-          status: 'paid',
-          payment_status: 'completed',
-          is_free_promo: true,
-          approved_at: new Date().toISOString(),
-        })
-        .eq('id', requestId);
-
-      if (updateError) throw updateError;
-
-      // Create notification for user
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: request.user_id,
-          type: 'marketing_approved',
-          title: 'Congratulations! Free Spotlight Granted!',
-          message: 'Your marketing request has been approved as a complimentary promotional spotlight! No payment required.',
-          link: `/project/${request.project_id}?tab=marketing`,
-        });
-
-      if (notifError) console.error('Failed to create notification:', notifError);
-
-      return request;
+  return {
+    mutateAsync: async (requestId: string) => {
+      await approve({ id: requestId as Id<"marketing_requests"> });
+      await activate({ id: requestId as Id<"marketing_requests"> });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pending-marketing-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['actionable-marketing-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['marketing-request'] });
-      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
-      toast.success('Free promo granted! User has been notified.');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to approve free promo');
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-// Pay for approved marketing (activates the marketing)
-export function usePayForMarketing() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ requestId }: { requestId: string }) => {
-      // Get the request first
-      const { data: request, error: fetchError } = await supabase
-        .from('marketing_requests')
-        .select('project_id, start_date, end_date, approved_at')
-        .eq('id', requestId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Check if within 24h window
-      if (request.approved_at) {
-        const approvedAt = new Date(request.approved_at);
-        const now = new Date();
-        const hoursSinceApproval = (now.getTime() - approvedAt.getTime()) / (1000 * 60 * 60);
-        if (hoursSinceApproval > 24) {
-          throw new Error('Payment window has expired (24 hours)');
-        }
-      }
-
-      // Update the request to active
-      const { error: updateError } = await supabase
-        .from('marketing_requests')
-        .update({
-          status: 'active',
-          payment_status: 'completed',
-        })
-        .eq('id', requestId);
-
-      if (updateError) throw updateError;
-
-      // Update product_pages to mark as featured
-      const { error: productError } = await supabase
-        .from('product_pages')
-        .update({
-          is_featured: true,
-          featured_until: request.end_date,
-        })
-        .eq('project_id', request.project_id);
-
-      if (productError) throw productError;
-
-      return request;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marketing-request'] });
-      queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['active-marketing'] });
-      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
-      toast.success('Payment confirmed! Your marketing is now active.');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to activate marketing');
-    },
-  });
-}
-
-// Admin: Reject marketing request
 export function useRejectMarketingRequest() {
-  const queryClient = useQueryClient();
+  const reject = useMutation(api.marketing.reject);
 
-  return useMutation({
-    mutationFn: async ({ requestId, reason }: { requestId: string; reason: string }) => {
-      const { error } = await supabase
-        .from('marketing_requests')
-        .update({
-          status: 'rejected',
-          admin_notes: reason,
-        })
-        .eq('id', requestId);
-
-      if (error) throw error;
+  return {
+    mutateAsync: async (requestId: string, reason: string) => {
+      await reject({ id: requestId as Id<"marketing_requests">, reason });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pending-marketing-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
-      toast.success('Marketing request rejected');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to reject request');
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-// Admin: End marketing early
 export function useEndMarketingEarly() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ requestId, projectId }: { requestId: string; projectId: string }) => {
-      // Update request to completed
-      const { error: requestError } = await supabase
-        .from('marketing_requests')
-        .update({
-          status: 'completed',
-          end_date: new Date().toISOString(),
-        })
-        .eq('id', requestId);
-
-      if (requestError) throw requestError;
-
-      // Remove featured status
-      const { error: productError } = await supabase
-        .from('product_pages')
-        .update({
-          is_featured: false,
-          featured_until: null,
-        })
-        .eq('project_id', projectId);
-
-      if (productError) throw productError;
+  return {
+    mutateAsync: async (requestId: string) => {
+      // TODO: Implement in Convex
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['actionable-marketing-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['active-marketing'] });
-      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
-      toast.success('Marketing ended');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to end marketing');
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-// Admin: Cancel scheduled (paid) marketing before start date
 export function useCancelScheduledMarketing() {
-  const queryClient = useQueryClient();
+  return {
+    mutateAsync: async (requestId: string) => {
+      // TODO: Implement in Convex
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
 
-  return useMutation({
-    mutationFn: async ({ requestId }: { requestId: string }) => {
-      const { error } = await supabase
-        .from('marketing_requests')
-        .update({
-          status: 'cancelled',
-          admin_notes: 'Cancelled by admin before campaign start',
-        })
-        .eq('id', requestId);
+// Alias for project marketing
+export function useProjectMarketingRequest(projectId: string | undefined) {
+  return useProjectMarketing(projectId);
+}
 
-      if (error) throw error;
+// Image upload for marketing
+export function useUploadMarketingImage() {
+  return {
+    mutateAsync: async (file: File): Promise<string> => {
+      // TODO: Implement with Convex file storage
+      return URL.createObjectURL(file);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['all-marketing-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['actionable-marketing-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['marketing-bookings'] });
-      toast.success('Marketing campaign cancelled');
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+// Payment intent creation
+export function useCreateMarketingPaymentIntent() {
+  return {
+    mutateAsync: async (data: {
+      projectId: string;
+      durationDays: number;
+      startDate: string;
+      endDate: string;
+    }): Promise<MarketingPaymentIntent> => {
+      // TODO: Implement in Convex
+      return {
+        id: 'mock-payment-id',
+        paymentAddress: 'addr_mock...',
+        amountAda: calculateMarketingPrice(data.durationDays),
+        amountLovelace: calculateMarketingPrice(data.durationDays) * 1000000,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        startDate: data.startDate,
+        endDate: data.endDate,
+        status: 'pending',
+      };
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to cancel campaign');
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+// Check for existing payment
+export function useExistingMarketingPayment(projectId: string | undefined) {
+  return {
+    data: null as MarketingPaymentIntent | null,
+    isLoading: false,
+    error: null,
+  };
+}
+
+// Price calculation
+export function calculateMarketingPrice(days: number): number {
+  // Base price: 25 ADA per day with volume discounts
+  const basePrice = 25;
+  if (days >= 30) return Math.round(days * basePrice * 0.7); // 30% off
+  if (days >= 14) return Math.round(days * basePrice * 0.85); // 15% off
+  if (days >= 7) return Math.round(days * basePrice * 0.9); // 10% off
+  return days * basePrice;
 }

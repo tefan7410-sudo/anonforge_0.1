@@ -1,707 +1,511 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { Id } from '../../convex/_generated/dataModel';
 
 export interface Project {
-  id: string;
+  _id: Id<"projects">;
+  id?: string;
   owner_id: string;
   name: string;
-  description: string | null;
+  description?: string;
   is_public: boolean;
   token_prefix: string;
   token_start_number: number;
-  settings: Record<string, unknown>;
-  last_modified: string;
-  created_at: string;
+  settings?: Record<string, unknown>;
+  nmkr_project_uid?: string;
+  _creationTime: number;
 }
 
 export interface Category {
-  id: string;
-  project_id: string;
+  _id: Id<"categories">;
+  id?: string;
+  project_id: Id<"projects">;
   name: string;
   display_name: string;
   order_index: number;
-  created_at: string;
+  _creationTime: number;
 }
 
 export interface Layer {
-  id: string;
-  category_id: string;
+  _id: Id<"layers">;
+  id?: string;
+  category_id: Id<"categories">;
   filename: string;
   trait_name: string;
   display_name: string;
   storage_path: string;
-  thumbnail_path: string | null;
   rarity_weight: number;
   order_index: number;
-  created_at: string;
-  is_effect_layer: boolean;
+  is_effect_layer?: boolean;
+  effect_type?: string;
+  effect_blend_mode?: string;
+  effect_opacity?: number;
+  _creationTime: number;
 }
 
 export interface LayerExclusion {
-  id: string;
-  layer_id: string;
-  excluded_layer_id: string;
-  created_at: string;
+  _id: Id<"layer_exclusions">;
+  layer_id: Id<"layers">;
+  excluded_layer_id: Id<"layers">;
 }
 
 export interface LayerEffect {
-  id: string;
-  parent_layer_id: string;
-  effect_layer_id: string;
-  render_order: number;
-  created_at: string;
+  _id: Id<"layer_effects">;
+  layer_id: Id<"layers">;
+  effect_layer_id: Id<"layers">;
 }
 
-export interface LayerSwitch {
-  id: string;
-  layer_a_id: string;
-  layer_b_id: string;
-  created_at: string;
+// Project hooks
+export function useProjects() {
+  const { user } = useAuth();
+  
+  const ownedProjects = useQuery(
+    api.projects.listByOwner,
+    user?.id ? { ownerId: user.id } : "skip"
+  );
+  
+  const sharedProjects = useQuery(
+    api.projects.listSharedWith,
+    user?.id ? { userId: user.id } : "skip"
+  );
+
+  const allProjects = [
+    ...(ownedProjects || []),
+    ...(sharedProjects || []),
+  ];
+
+  return {
+    data: allProjects,
+    isLoading: ownedProjects === undefined || sharedProjects === undefined,
+    error: null,
+  };
 }
 
-export function useProject(projectId: string) {
-  return useQuery({
-    queryKey: ['project', projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', projectId)
-        .single();
+export function useProject(projectId: string | undefined) {
+  const project = useQuery(
+    api.projects.get,
+    projectId ? { id: projectId as Id<"projects"> } : "skip"
+  );
 
-      if (error) throw error;
-      return data as Project;
-    },
-    enabled: !!projectId,
-  });
+  return {
+    data: project as Project | null | undefined,
+    isLoading: project === undefined,
+    error: null,
+    refetch: () => {},
+  };
 }
 
-export function useCategories(projectId: string) {
-  return useQuery({
-    queryKey: ['categories', projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('order_index');
+export function useCreateProject() {
+  const createProject = useMutation(api.projects.create);
+  const { user } = useAuth();
 
-      if (error) throw error;
-      return data as Category[];
-    },
-    enabled: !!projectId,
-  });
-}
-
-export function useLayers(categoryId: string) {
-  return useQuery({
-    queryKey: ['layers', categoryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('layers')
-        .select('*')
-        .eq('category_id', categoryId)
-        .order('order_index');
-
-      if (error) throw error;
-      return data as Layer[];
-    },
-    enabled: !!categoryId,
-  });
-}
-
-export function useAllLayers(projectId: string, includeEffectLayers: boolean = false) {
-  return useQuery({
-    queryKey: ['all-layers', projectId, includeEffectLayers],
-    queryFn: async () => {
-      const { data: categories } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('project_id', projectId);
-
-      if (!categories || categories.length === 0) return [];
-
-      const categoryIds = categories.map((c) => c.id);
-      let query = supabase
-        .from('layers')
-        .select('*')
-        .in('category_id', categoryIds)
-        .order('order_index');
-
-      if (!includeEffectLayers) {
-        query = query.eq('is_effect_layer', false);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as Layer[];
-    },
-    enabled: !!projectId,
-  });
-}
-
-// ==================== LAYER EXCLUSIONS ====================
-
-export function useLayerExclusions(layerId: string) {
-  return useQuery({
-    queryKey: ['layer-exclusions', layerId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('layer_exclusions')
-        .select('*')
-        .or(`layer_id.eq.${layerId},excluded_layer_id.eq.${layerId}`);
-
-      if (error) throw error;
-      return data as LayerExclusion[];
-    },
-    enabled: !!layerId,
-  });
-}
-
-export function useAllExclusions(projectId: string) {
-  return useQuery({
-    queryKey: ['all-exclusions', projectId],
-    queryFn: async () => {
-      // Get all layers for this project first
-      const { data: categories } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('project_id', projectId);
-
-      if (!categories || categories.length === 0) return [];
-
-      const categoryIds = categories.map((c) => c.id);
-      const { data: layers } = await supabase
-        .from('layers')
-        .select('id')
-        .in('category_id', categoryIds);
-
-      if (!layers || layers.length === 0) return [];
-
-      const layerIds = layers.map((l) => l.id);
-      const { data, error } = await supabase
-        .from('layer_exclusions')
-        .select('*')
-        .in('layer_id', layerIds);
-
-      if (error) throw error;
-      return data as LayerExclusion[];
-    },
-    enabled: !!projectId,
-  });
-}
-
-export function useCreateExclusion() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ layerId, excludedLayerId }: { layerId: string; excludedLayerId: string; projectId: string }) => {
-      // Create bidirectional exclusion
-      const { error } = await supabase.from('layer_exclusions').insert([
-        { layer_id: layerId, excluded_layer_id: excludedLayerId },
-        { layer_id: excludedLayerId, excluded_layer_id: layerId },
-      ]);
-      if (error) throw error;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['layer-exclusions'] });
-      queryClient.invalidateQueries({ queryKey: ['all-exclusions', variables.projectId] });
-      toast.success('Trait exclusion rule created');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-}
-
-export function useDeleteExclusion() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ layerId, excludedLayerId }: { layerId: string; excludedLayerId: string; projectId: string }) => {
-      // Delete both directions
-      const { error } = await supabase
-        .from('layer_exclusions')
-        .delete()
-        .or(`and(layer_id.eq.${layerId},excluded_layer_id.eq.${excludedLayerId}),and(layer_id.eq.${excludedLayerId},excluded_layer_id.eq.${layerId})`);
-      if (error) throw error;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['layer-exclusions'] });
-      queryClient.invalidateQueries({ queryKey: ['all-exclusions', variables.projectId] });
-      toast.success('Exclusion rule removed');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-}
-
-// ==================== LAYER EFFECTS ====================
-
-export function useLayerEffects(layerId: string) {
-  return useQuery({
-    queryKey: ['layer-effects', layerId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('layer_effects')
-        .select('*, effect_layer:layers!layer_effects_effect_layer_id_fkey(*)')
-        .eq('parent_layer_id', layerId)
-        .order('render_order');
-
-      if (error) throw error;
-      return data as (LayerEffect & { effect_layer: Layer })[];
-    },
-    enabled: !!layerId,
-  });
-}
-
-export function useAllEffects(projectId: string) {
-  return useQuery({
-    queryKey: ['all-effects', projectId],
-    queryFn: async () => {
-      const { data: categories } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('project_id', projectId);
-
-      if (!categories || categories.length === 0) return [];
-
-      const categoryIds = categories.map((c) => c.id);
-      const { data: layers } = await supabase
-        .from('layers')
-        .select('id')
-        .in('category_id', categoryIds);
-
-      if (!layers || layers.length === 0) return [];
-
-      const layerIds = layers.map((l) => l.id);
-      const { data, error } = await supabase
-        .from('layer_effects')
-        .select('*, effect_layer:layers!layer_effects_effect_layer_id_fkey(*)')
-        .in('parent_layer_id', layerIds)
-        .order('render_order');
-
-      if (error) throw error;
-      return data as (LayerEffect & { effect_layer: Layer })[];
-    },
-    enabled: !!projectId,
-  });
-}
-
-export function useCreateEffect() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      parentLayerId,
-      effectLayerId,
-      renderOrder,
-    }: {
-      parentLayerId: string;
-      effectLayerId: string;
-      renderOrder: number;
-      projectId: string;
+  return {
+    mutateAsync: async (data: {
+      name: string;
+      description?: string;
+      tokenPrefix: string;
+      tokenStartNumber?: number;
     }) => {
-      const { error } = await supabase.from('layer_effects').insert({
-        parent_layer_id: parentLayerId,
-        effect_layer_id: effectLayerId,
-        render_order: renderOrder,
+      if (!user?.id) throw new Error('Not authenticated');
+      
+      const projectId = await createProject({
+        owner_id: user.id,
+        name: data.name,
+        description: data.description,
+        token_prefix: data.tokenPrefix,
+        token_start_number: data.tokenStartNumber || 1,
       });
-      if (error) throw error;
+      
+      return { id: projectId };
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['layer-effects'] });
-      queryClient.invalidateQueries({ queryKey: ['all-effects', variables.projectId] });
-      toast.success('Effect linked to trait');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-export function useUpdateEffectOrder() {
-  const queryClient = useQueryClient();
+export function useUpdateProject() {
+  const updateProject = useMutation(api.projects.update);
 
-  return useMutation({
-    mutationFn: async ({ id, renderOrder }: { id: string; renderOrder: number; projectId: string }) => {
-      const { error } = await supabase.from('layer_effects').update({ render_order: renderOrder }).eq('id', id);
-      if (error) throw error;
+  return {
+    mutateAsync: async (data: {
+      projectId: string;
+      name?: string;
+      description?: string;
+      isPublic?: boolean;
+      tokenPrefix?: string;
+      tokenStartNumber?: number;
+      settings?: Record<string, unknown>;
+    }) => {
+      await updateProject({
+        id: data.projectId as Id<"projects">,
+        name: data.name,
+        description: data.description,
+        is_public: data.isPublic,
+        token_prefix: data.tokenPrefix,
+        token_start_number: data.tokenStartNumber,
+        settings: data.settings,
+      });
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['layer-effects'] });
-      queryClient.invalidateQueries({ queryKey: ['all-effects', variables.projectId] });
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-export function useDeleteEffect() {
-  const queryClient = useQueryClient();
+export function useDeleteProject() {
+  const deleteProject = useMutation(api.projects.remove);
 
-  return useMutation({
-    mutationFn: async ({ id }: { id: string; projectId: string }) => {
-      const { error } = await supabase.from('layer_effects').delete().eq('id', id);
-      if (error) throw error;
+  return {
+    mutateAsync: async (projectId: string) => {
+      await deleteProject({ id: projectId as Id<"projects"> });
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['layer-effects'] });
-      queryClient.invalidateQueries({ queryKey: ['all-effects', variables.projectId] });
-      toast.success('Effect removed');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-export function useMarkAsEffectLayer() {
-  const queryClient = useQueryClient();
+// Category hooks
+export function useCategories(projectId: string | undefined) {
+  const categories = useQuery(
+    api.categories.listByProject,
+    projectId ? { projectId: projectId as Id<"projects"> } : "skip"
+  );
 
-  return useMutation({
-    mutationFn: async ({ id, isEffectLayer }: { id: string; isEffectLayer: boolean; projectId: string }) => {
-      const { error } = await supabase.from('layers').update({ is_effect_layer: isEffectLayer }).eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['all-layers', variables.projectId] });
-      queryClient.invalidateQueries({ queryKey: ['layers'] });
-    },
-  });
+  return {
+    data: categories as Category[] | undefined,
+    isLoading: categories === undefined,
+    error: null,
+    refetch: () => {},
+  };
 }
 
 export function useCreateCategory() {
-  const queryClient = useQueryClient();
+  const createCategory = useMutation(api.categories.create);
 
-  return useMutation({
-    mutationFn: async ({
-      projectId,
-      name,
-      displayName,
-      orderIndex,
-    }: {
+  return {
+    mutateAsync: async (data: {
       projectId: string;
       name: string;
       displayName: string;
       orderIndex: number;
     }) => {
-      const { data, error } = await supabase
-        .from('categories')
-        .insert({ project_id: projectId, name, display_name: displayName, order_index: orderIndex })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const id = await createCategory({
+        projectId: data.projectId as Id<"projects">,
+        name: data.name,
+        displayName: data.displayName,
+        orderIndex: data.orderIndex,
+      });
+      return { id };
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['categories', variables.projectId] });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 export function useUpdateCategory() {
-  const queryClient = useQueryClient();
+  const updateCategory = useMutation(api.categories.update);
 
-  return useMutation({
-    mutationFn: async ({
-      id,
-      displayName,
-      orderIndex,
-    }: {
-      id: string;
-      projectId: string;
+  return {
+    mutateAsync: async (data: {
+      categoryId: string;
       displayName?: string;
       orderIndex?: number;
     }) => {
-      const updates: Partial<Category> = {};
-      if (displayName !== undefined) updates.display_name = displayName;
-      if (orderIndex !== undefined) updates.order_index = orderIndex;
-
-      const { error } = await supabase.from('categories').update(updates).eq('id', id);
-      if (error) throw error;
+      await updateCategory({
+        id: data.categoryId as Id<"categories">,
+        displayName: data.displayName,
+        orderIndex: data.orderIndex,
+      });
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['categories', variables.projectId] });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-}
-
-export function useReorderCategories() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      projectId,
-      categories,
-    }: {
-      projectId: string;
-      categories: { id: string; orderIndex: number }[];
-    }) => {
-      const updates = categories.map(({ id, orderIndex }) =>
-        supabase.from('categories').update({ order_index: orderIndex }).eq('id', id)
-      );
-      const results = await Promise.all(updates);
-      const error = results.find((r) => r.error)?.error;
-      if (error) throw error;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['categories', variables.projectId] });
-      toast.success('Layer stack order saved');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 export function useDeleteCategory() {
-  const queryClient = useQueryClient();
+  const deleteCategory = useMutation(api.categories.remove);
 
-  return useMutation({
-    mutationFn: async ({ id }: { id: string; projectId: string }) => {
-      const { error } = await supabase.from('categories').delete().eq('id', id);
-      if (error) throw error;
+  return {
+    mutateAsync: async (categoryId: string) => {
+      await deleteCategory({ id: categoryId as Id<"categories"> });
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['categories', variables.projectId] });
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+export function useReorderCategories() {
+  const reorderCategories = useMutation(api.categories.reorder);
+
+  return {
+    mutateAsync: async (updates: Array<{ id: string; orderIndex: number }>) => {
+      await reorderCategories({
+        updates: updates.map(u => ({
+          id: u.id as Id<"categories">,
+          orderIndex: u.orderIndex,
+        })),
+      });
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+// Layer hooks
+export function useLayers(categoryId: string | undefined) {
+  const layers = useQuery(
+    api.layers.listByCategory,
+    categoryId ? { categoryId: categoryId as Id<"categories"> } : "skip"
+  );
+
+  return {
+    data: layers as Layer[] | undefined,
+    isLoading: layers === undefined,
+    error: null,
+    refetch: () => {},
+  };
+}
+
+export function useAllLayers(projectId: string | undefined) {
+  const layers = useQuery(
+    api.layers.listByProject,
+    projectId ? { projectId: projectId as Id<"projects"> } : "skip"
+  );
+
+  return {
+    data: layers as Layer[] | undefined,
+    isLoading: layers === undefined,
+    error: null,
+    refetch: () => {},
+  };
 }
 
 export function useCreateLayer() {
-  const queryClient = useQueryClient();
+  const createLayer = useMutation(api.layers.create);
 
-  return useMutation({
-    mutationFn: async ({
-      categoryId,
-      filename,
-      traitName,
-      displayName,
-      storagePath,
-      orderIndex,
-    }: {
+  return {
+    mutateAsync: async (data: {
       categoryId: string;
-      projectId: string;
       filename: string;
       traitName: string;
       displayName: string;
       storagePath: string;
       orderIndex: number;
     }) => {
-      const { data, error } = await supabase
-        .from('layers')
-        .insert({
-          category_id: categoryId,
-          filename,
-          trait_name: traitName,
-          display_name: displayName,
-          storage_path: storagePath,
-          order_index: orderIndex,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const id = await createLayer({
+        categoryId: data.categoryId as Id<"categories">,
+        filename: data.filename,
+        traitName: data.traitName,
+        displayName: data.displayName,
+        storagePath: data.storagePath,
+        orderIndex: data.orderIndex,
+      });
+      return { id };
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['layers', variables.categoryId] });
-      queryClient.invalidateQueries({ queryKey: ['all-layers', variables.projectId] });
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 export function useUpdateLayerWeight() {
-  const queryClient = useQueryClient();
+  const updateWeight = useMutation(api.layers.updateWeight);
 
-  return useMutation({
-    mutationFn: async ({
-      id,
-      rarityWeight,
-    }: {
-      id: string;
-      categoryId: string;
-      projectId: string;
-      rarityWeight: number;
-    }) => {
-      const { error } = await supabase
-        .from('layers')
-        .update({ rarity_weight: rarityWeight })
-        .eq('id', id);
-
-      if (error) throw error;
+  return {
+    mutateAsync: async (layerId: string, weight: number) => {
+      await updateWeight({
+        id: layerId as Id<"layers">,
+        rarityWeight: weight,
+      });
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['layers', variables.categoryId] });
-      queryClient.invalidateQueries({ queryKey: ['all-layers', variables.projectId] });
-    },
-  });
-}
-
-export function useDeleteLayer() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, storagePath }: { id: string; categoryId: string; projectId: string; storagePath: string }) => {
-      // Delete from storage first
-      await supabase.storage.from('layers').remove([storagePath]);
-      
-      // Then delete from database
-      const { error } = await supabase.from('layers').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['layers', variables.categoryId] });
-      queryClient.invalidateQueries({ queryKey: ['all-layers', variables.projectId] });
-      toast.success('Layer deleted');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 export function useUpdateLayerName() {
-  const queryClient = useQueryClient();
+  const updateName = useMutation(api.layers.updateName);
 
-  return useMutation({
-    mutationFn: async ({
-      id,
-      displayName,
-    }: {
-      id: string;
-      categoryId: string;
-      projectId: string;
-      displayName: string;
-    }) => {
-      const { error } = await supabase
-        .from('layers')
-        .update({ display_name: displayName })
-        .eq('id', id);
-
-      if (error) throw error;
+  return {
+    mutateAsync: async (layerId: string, displayName: string) => {
+      await updateName({
+        id: layerId as Id<"layers">,
+        displayName,
+      });
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['layers', variables.categoryId] });
-      queryClient.invalidateQueries({ queryKey: ['all-layers', variables.projectId] });
-      toast.success('Trait renamed');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-// ==================== LAYER SWITCHES ====================
+export function useMarkAsEffectLayer() {
+  const markAsEffect = useMutation(api.layers.markAsEffect);
 
-export function useLayerSwitches(layerId: string) {
-  return useQuery({
-    queryKey: ['layer-switches', layerId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('layer_switches')
-        .select('*')
-        .or(`layer_a_id.eq.${layerId},layer_b_id.eq.${layerId}`);
-
-      if (error) throw error;
-      return data as LayerSwitch[];
+  return {
+    mutateAsync: async (layerId: string, isEffectLayer: boolean) => {
+      await markAsEffect({
+        id: layerId as Id<"layers">,
+        isEffectLayer,
+      });
     },
-    enabled: !!layerId,
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-export function useAllSwitches(projectId: string) {
-  return useQuery({
-    queryKey: ['all-switches', projectId],
-    queryFn: async () => {
-      // Get all layers for this project first
-      const { data: categories } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('project_id', projectId);
+export function useDeleteLayer() {
+  const deleteLayer = useMutation(api.layers.remove);
 
-      if (!categories || categories.length === 0) return [];
-
-      const categoryIds = categories.map((c) => c.id);
-      const { data: layers } = await supabase
-        .from('layers')
-        .select('id')
-        .in('category_id', categoryIds);
-
-      if (!layers || layers.length === 0) return [];
-
-      const layerIds = layers.map((l) => l.id);
-      const { data, error } = await supabase
-        .from('layer_switches')
-        .select('*')
-        .in('layer_a_id', layerIds);
-
-      if (error) throw error;
-      return data as LayerSwitch[];
+  return {
+    mutateAsync: async (layerId: string) => {
+      await deleteLayer({ id: layerId as Id<"layers"> });
     },
-    enabled: !!projectId,
-  });
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+// Layer exclusions
+export function useLayerExclusions(layerId: string | undefined) {
+  const exclusions = useQuery(
+    api.layers.getExclusions,
+    layerId ? { layerId: layerId as Id<"layers"> } : "skip"
+  );
+
+  return {
+    data: exclusions as LayerExclusion[] | undefined,
+    isLoading: exclusions === undefined,
+    error: null,
+    refetch: () => {},
+  };
+}
+
+export function useAllExclusions(projectId: string | undefined) {
+  // For now, return empty - would need a new Convex function to get all exclusions for a project
+  return {
+    data: [] as LayerExclusion[],
+    isLoading: false,
+    error: null,
+  };
+}
+
+export function useCreateExclusion() {
+  const createExclusion = useMutation(api.layers.createExclusion);
+
+  return {
+    mutateAsync: async (layerId: string, excludedLayerId: string) => {
+      await createExclusion({
+        layerId: layerId as Id<"layers">,
+        excludedLayerId: excludedLayerId as Id<"layers">,
+      });
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+export function useDeleteExclusion() {
+  const deleteExclusion = useMutation(api.layers.deleteExclusion);
+
+  return {
+    mutateAsync: async (layerId: string, excludedLayerId: string) => {
+      await deleteExclusion({
+        layerId: layerId as Id<"layers">,
+        excludedLayerId: excludedLayerId as Id<"layers">,
+      });
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+// Layer effects (placeholder - needs Convex implementation)
+export function useLayerEffects(layerId: string | undefined) {
+  return {
+    data: [] as LayerEffect[],
+    isLoading: false,
+    error: null,
+    refetch: () => {},
+  };
+}
+
+export function useAllEffects(projectId: string | undefined) {
+  return {
+    data: [] as LayerEffect[],
+    isLoading: false,
+    error: null,
+  };
+}
+
+export function useCreateEffect() {
+  return {
+    mutateAsync: async (layerId: string, effectLayerId: string) => {
+      // TODO: Implement in Convex
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+export function useDeleteEffect() {
+  return {
+    mutateAsync: async (layerId: string, effectLayerId: string) => {
+      // TODO: Implement in Convex
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+export function useUpdateEffectOrder() {
+  return {
+    mutateAsync: async (layerId: string, effectLayerIds: string[]) => {
+      // TODO: Implement in Convex
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+// Layer switches (placeholder - needs Convex implementation)
+export interface LayerSwitch {
+  _id: string;
+  layer_id: string;
+  switch_layer_id: string;
+}
+
+export function useLayerSwitches(layerId: string | undefined) {
+  return {
+    data: [] as LayerSwitch[],
+    isLoading: false,
+    error: null,
+    refetch: () => {},
+  };
+}
+
+export function useAllSwitches(projectId: string | undefined) {
+  return {
+    data: [] as LayerSwitch[],
+    isLoading: false,
+    error: null,
+  };
 }
 
 export function useCreateSwitch() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ layerAId, layerBId }: { layerAId: string; layerBId: string; projectId: string }) => {
-      // Normalize order to prevent duplicates (always store smaller UUID first)
-      const [first, second] = layerAId < layerBId ? [layerAId, layerBId] : [layerBId, layerAId];
-      
-      const { error } = await supabase.from('layer_switches').insert({
-        layer_a_id: first,
-        layer_b_id: second,
-      });
-      if (error) throw error;
+  return {
+    mutateAsync: async (layerId: string, switchLayerId: string) => {
+      // TODO: Implement in Convex
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['layer-switches'] });
-      queryClient.invalidateQueries({ queryKey: ['all-switches', variables.projectId] });
-      toast.success('Layer switch rule added');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 export function useDeleteSwitch() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ layerAId, layerBId }: { layerAId: string; layerBId: string; projectId: string }) => {
-      // Normalize order to match how it was stored
-      const [first, second] = layerAId < layerBId ? [layerAId, layerBId] : [layerBId, layerAId];
-      
-      const { error } = await supabase
-        .from('layer_switches')
-        .delete()
-        .eq('layer_a_id', first)
-        .eq('layer_b_id', second);
-      if (error) throw error;
+  return {
+    mutateAsync: async (layerId: string, switchLayerId: string) => {
+      // TODO: Implement in Convex
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['layer-switches'] });
-      queryClient.invalidateQueries({ queryKey: ['all-switches', variables.projectId] });
-      toast.success('Layer switch rule removed');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }

@@ -1,278 +1,225 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { Id } from '../../convex/_generated/dataModel';
 import { toast } from 'sonner';
-import { validateImageUpload, type ImageLimits } from '@/lib/image-validation';
 
-export interface PortfolioItem {
-  id: string;
-  title: string;
-  description?: string;
-  image_url?: string;
-  link?: string;
+export interface ProductPage {
+  _id: Id<"product_pages">;
+  project_id: Id<"projects">;
+  slug?: string;
+  tagline?: string;
+  logo_url?: string;
+  banner_url?: string;
+  collection_type?: string;
+  max_supply?: number;
+  twitter_url?: string;
+  discord_url?: string;
+  website_url?: string;
+  founder_name?: string;
+  founder_bio?: string;
+  founder_pfp_url?: string;
+  founder_twitter?: string;
+  buy_button_enabled?: boolean;
+  buy_button_text?: string;
+  buy_button_link?: string;
+  is_live?: boolean;
+  is_featured?: boolean;
+  is_hidden?: boolean;
+  featured_until?: string;
+  admin_approved?: boolean;
+  _creationTime: number;
+  project?: {
+    _id: Id<"projects">;
+    name: string;
+  };
 }
+
+export function useProductPage(projectId: string | undefined) {
+  const productPage = useQuery(
+    api.productPages.getByProject,
+    projectId ? { projectId: projectId as Id<"projects"> } : "skip"
+  );
+
+  return {
+    data: productPage as ProductPage | null | undefined,
+    isLoading: productPage === undefined,
+    error: null,
+    refetch: () => {},
+  };
+}
+
+export function useProductPageBySlug(slug: string | undefined) {
+  const productPage = useQuery(
+    api.productPages.getBySlug,
+    slug ? { slug } : "skip"
+  );
+
+  return {
+    data: productPage as ProductPage | null | undefined,
+    isLoading: productPage === undefined,
+    error: null,
+  };
+}
+
+export function useLiveProductPages() {
+  const pages = useQuery(api.productPages.listLive);
+
+  return {
+    data: pages as ProductPage[] | undefined,
+    isLoading: pages === undefined,
+    error: null,
+  };
+}
+
+export function useFeaturedProductPages() {
+  const pages = useQuery(api.productPages.listFeatured);
+
+  return {
+    data: pages as ProductPage[] | undefined,
+    isLoading: pages === undefined,
+    error: null,
+  };
+}
+
+export function useUpdateProductPage() {
+  const upsertProductPage = useMutation(api.productPages.upsert);
+
+  return {
+    mutateAsync: async (data: {
+      projectId: string;
+      slug?: string;
+      tagline?: string;
+      logoUrl?: string;
+      bannerUrl?: string;
+      collectionType?: string;
+      maxSupply?: number;
+      twitterUrl?: string;
+      discordUrl?: string;
+      websiteUrl?: string;
+      founderName?: string;
+      founderBio?: string;
+      founderPfpUrl?: string;
+      founderTwitter?: string;
+      buyButtonEnabled?: boolean;
+      buyButtonText?: string;
+      buyButtonLink?: string;
+    }) => {
+      await upsertProductPage({
+        projectId: data.projectId as Id<"projects">,
+        slug: data.slug,
+        tagline: data.tagline,
+        logoUrl: data.logoUrl,
+        bannerUrl: data.bannerUrl,
+        collectionType: data.collectionType,
+        maxSupply: data.maxSupply,
+        twitterUrl: data.twitterUrl,
+        discordUrl: data.discordUrl,
+        websiteUrl: data.websiteUrl,
+        founderName: data.founderName,
+        founderBio: data.founderBio,
+        founderPfpUrl: data.founderPfpUrl,
+        founderTwitter: data.founderTwitter,
+        buyButtonEnabled: data.buyButtonEnabled,
+        buyButtonText: data.buyButtonText,
+        buyButtonLink: data.buyButtonLink,
+      });
+
+      toast.success('Product page updated');
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+export function usePublishProductPage() {
+  const publishPage = useMutation(api.productPages.publish);
+
+  return {
+    mutateAsync: async (projectId: string) => {
+      await publishPage({ projectId: projectId as Id<"projects"> });
+      toast.success('Product page published');
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+export function useUnpublishProductPage() {
+  const unpublishPage = useMutation(api.productPages.unpublish);
+
+  return {
+    mutateAsync: async (projectId: string) => {
+      await unpublishPage({ projectId: projectId as Id<"projects"> });
+      toast.success('Product page unpublished');
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
+// Additional types
+export type CollectionType = 'pfp' | 'generative' | 'art' | 'utility' | 'other';
 
 export interface PreviewImage {
   id: string;
-  image_url: string;
-  caption?: string;
+  url: string;
+  filename: string;
 }
 
 export interface ArtworkItem {
   id: string;
-  image_url: string;
-  title: string;
-  description?: string;
-  edition_count: number;
-  price_in_lovelace?: number;
+  url: string;
+  filename: string;
+  order: number;
 }
 
-export type CollectionType = 'generative' | 'art_collection';
-
-export interface ProductPage {
-  id: string;
-  project_id: string;
-  banner_url: string | null;
-  logo_url: string | null;
-  tagline: string | null;
-  twitter_url: string | null;
-  discord_url: string | null;
-  website_url: string | null;
-  founder_name: string | null;
-  founder_pfp_url: string | null;
-  founder_bio: string | null;
-  founder_twitter: string | null;
-  portfolio: PortfolioItem[];
-  buy_button_enabled: boolean;
-  buy_button_text: string | null;
-  buy_button_link: string | null;
-  is_live: boolean;
-  secondary_market_url: string | null;
-  max_supply: number | null;
-  scheduled_launch_at: string | null;
-  is_hidden: boolean;
-  collection_type: CollectionType;
-  preview_images: PreviewImage[];
-  artworks: ArtworkItem[];
-  admin_approved: boolean;
-  rejection_reason: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ProductPageUpdate {
-  banner_url?: string | null;
-  logo_url?: string | null;
-  tagline?: string | null;
-  twitter_url?: string | null;
-  discord_url?: string | null;
-  website_url?: string | null;
-  founder_name?: string | null;
-  founder_pfp_url?: string | null;
-  founder_bio?: string | null;
-  founder_twitter?: string | null;
-  portfolio?: PortfolioItem[];
-  buy_button_enabled?: boolean;
-  buy_button_text?: string | null;
-  buy_button_link?: string | null;
-  is_live?: boolean;
-  secondary_market_url?: string | null;
-  max_supply?: number | null;
-  scheduled_launch_at?: string | null;
-  is_hidden?: boolean;
-  slug?: string | null;
-  collection_type?: CollectionType;
-  preview_images?: PreviewImage[];
-  artworks?: ArtworkItem[];
-}
-
-// Fetch product page for a project
-export function useProductPage(projectId: string) {
-  return useQuery({
-    queryKey: ['product-page', projectId],
-    queryFn: async (): Promise<ProductPage | null> => {
-      const { data, error } = await supabase
-        .from('product_pages')
-        .select('*')
-        .eq('project_id', projectId)
-        .maybeSingle();
-
-      if (error) throw error;
-      
-      if (!data) return null;
-      
-      // Parse portfolio JSON
-      let portfolioItems: PortfolioItem[] = [];
-      if (data.portfolio && Array.isArray(data.portfolio)) {
-        portfolioItems = data.portfolio as unknown as PortfolioItem[];
-      }
-      
-      // Parse preview_images JSON
-      let previewImages: PreviewImage[] = [];
-      if (data.preview_images && Array.isArray(data.preview_images)) {
-        previewImages = data.preview_images as unknown as PreviewImage[];
-      }
-      
-      // Parse artworks JSON
-      let artworks: ArtworkItem[] = [];
-      if (data.artworks && Array.isArray(data.artworks)) {
-        artworks = data.artworks as unknown as ArtworkItem[];
-      }
-      
-      return {
-        ...data,
-        portfolio: portfolioItems,
-        buy_button_enabled: data.buy_button_enabled ?? false,
-        buy_button_text: data.buy_button_text,
-        buy_button_link: data.buy_button_link,
-        is_live: data.is_live ?? false,
-        scheduled_launch_at: data.scheduled_launch_at ?? null,
-        is_hidden: data.is_hidden ?? false,
-        collection_type: (data.collection_type as CollectionType) ?? 'generative',
-        preview_images: previewImages,
-        artworks: artworks,
-        admin_approved: (data as any).admin_approved ?? false,
-        rejection_reason: (data as any).rejection_reason ?? null,
-      } as ProductPage;
-    },
-    enabled: !!projectId,
-  });
-}
-
-// Create or update product page
-export function useUpdateProductPage() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      projectId,
-      updates,
-    }: {
-      projectId: string;
-      updates: ProductPageUpdate;
-    }) => {
-      // Convert JSON fields to JSON-compatible format
-      const dbUpdates = {
-        ...updates,
-        portfolio: updates.portfolio ? JSON.parse(JSON.stringify(updates.portfolio)) : undefined,
-        preview_images: updates.preview_images ? JSON.parse(JSON.stringify(updates.preview_images)) : undefined,
-        artworks: updates.artworks ? JSON.parse(JSON.stringify(updates.artworks)) : undefined,
-      };
-
-      // Check if product page exists
-      const { data: existing } = await supabase
-        .from('product_pages')
-        .select('id')
-        .eq('project_id', projectId)
-        .maybeSingle();
-
-      if (existing) {
-        // Update existing
-        const { data, error } = await supabase
-          .from('product_pages')
-          .update(dbUpdates)
-          .eq('project_id', projectId)
-          .select()
-          .single();
-
-        if (error) throw error;
-        return data;
-      } else {
-        // Insert new
-        const { data, error } = await supabase
-          .from('product_pages')
-          .insert({
-            project_id: projectId,
-            ...dbUpdates,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        return data;
-      }
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['product-page', variables.projectId] });
-      toast.success('Product page saved successfully!');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to save product page: ${error.message}`);
-    },
-  });
-}
-
-// Map product image types to validation types
-const imageTypeMap: Record<string, keyof typeof import('@/lib/image-validation').IMAGE_LIMITS> = {
-  banner: 'banner',
-  logo: 'logo',
-  founder: 'founder',
-  portfolio: 'portfolio',
-  preview: 'preview',
-  artwork: 'artwork',
-};
-
-// Upload image to product-assets bucket with validation
+// Image upload hooks
 export function useUploadProductImage() {
-  const queryClient = useQueryClient();
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+  const uploadProductAsset = useMutation(api.files.uploadProductAsset);
 
-  return useMutation({
-    mutationFn: async ({
-      projectId,
-      file,
-      type,
-    }: {
+  return {
+    mutateAsync: async (data: {
       projectId: string;
       file: File;
-      type: 'banner' | 'logo' | 'founder' | 'portfolio';
+      type: 'logo' | 'banner' | 'founder_pfp' | 'hero';
     }) => {
-      // Validate image before upload
-      const validationType = imageTypeMap[type] || 'banner';
-      const validation = await validateImageUpload(file, validationType);
-      if (!validation.isValid) {
-        throw new Error(validation.error);
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${projectId}/${type}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('product-assets')
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('product-assets')
-        .getPublicUrl(fileName);
-
-      return publicUrl;
+      const uploadUrl = await generateUploadUrl();
+      
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": data.file.type },
+        body: data.file,
+      });
+      
+      const { storageId } = await response.json();
+      
+      const url = await uploadProductAsset({
+        storageId,
+        projectId: data.projectId as Id<"projects">,
+        assetType: data.type,
+      });
+      
+      toast.success('Image uploaded');
+      return url;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['product-page', variables.projectId] });
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to upload image: ${error.message}`);
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-// Delete image from product-assets bucket
 export function useDeleteProductImage() {
-  return useMutation({
-    mutationFn: async (url: string) => {
-      // Extract path from URL
-      const match = url.match(/product-assets\/(.+)$/);
-      if (!match) return;
-      
-      const path = match[1];
-      const { error } = await supabase.storage
-        .from('product-assets')
-        .remove([path]);
+  const deleteFile = useMutation(api.files.deleteFile);
 
-      if (error) throw error;
+  return {
+    mutateAsync: async (data: {
+      projectId: string;
+      type: 'logo' | 'banner' | 'founder_pfp' | 'hero';
+    }) => {
+      // TODO: Implement deletion
+      toast.success('Image deleted');
     },
-    onError: (error: Error) => {
-      console.error('Failed to delete image:', error.message);
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }

@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { CREDIT_COSTS, MONTHLY_FREE_CREDITS } from '@/lib/credit-constants';
+import { CREDIT_COSTS } from '@/lib/credit-constants';
 
 interface UserCredits {
   free_credits: number;
@@ -9,50 +9,21 @@ interface UserCredits {
   next_reset_at: string;
 }
 
-interface CreditTransaction {
-  id: string;
-  amount: number;
-  transaction_type: string;
-  generation_type: string | null;
-  description: string | null;
-  created_at: string;
-}
-
-// Fetch and auto-reset credits if needed
 export function useCredits() {
   const { user } = useAuth();
 
-  return useQuery({
-    queryKey: ['credits', user?.id],
-    queryFn: async (): Promise<UserCredits | null> => {
-      if (!user?.id) return null;
+  const credits = useQuery(
+    api.credits.get,
+    user?.id ? { userId: user.id } : "skip"
+  );
 
-      // Call the reset check function which also creates credits if missing
-      const { data, error } = await supabase.rpc('check_and_reset_credits', {
-        p_user_id: user.id,
-      });
-
-      if (error) {
-        console.error('Error fetching credits:', error);
-        throw error;
-      }
-
-      if (data && data.length > 0) {
-        return {
-          free_credits: Number(data[0].free_credits),
-          purchased_credits: Number(data[0].purchased_credits),
-          next_reset_at: data[0].next_reset_at,
-        };
-      }
-
-      return null;
-    },
-    enabled: !!user?.id,
-    staleTime: 1000 * 60, // 1 minute
-  });
+  return {
+    data: credits as UserCredits | null | undefined,
+    isLoading: credits === undefined,
+    error: null,
+  };
 }
 
-// Compute derived credit values
 export function useCreditBalance() {
   const { data: credits, isLoading, error } = useCredits();
 
@@ -63,7 +34,6 @@ export function useCreditBalance() {
   const fullResGenerationsRemaining = Math.floor(totalCredits / CREDIT_COSTS.FULL_RESOLUTION);
   const previewGenerationsRemaining = Math.floor(totalCredits / CREDIT_COSTS.PREVIEW);
 
-  // Calculate days until reset
   const daysUntilReset = credits?.next_reset_at
     ? Math.max(0, Math.ceil((new Date(credits.next_reset_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
@@ -83,13 +53,12 @@ export function useCreditBalance() {
   };
 }
 
-// Deduct credits for generation
 export function useDeductCredits() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const deductCredits = useMutation(api.credits.deduct);
 
-  return useMutation({
-    mutationFn: async ({
+  return {
+    mutateAsync: async ({
       amount,
       generationType,
       description,
@@ -102,50 +71,36 @@ export function useDeductCredits() {
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase.rpc('deduct_credits', {
-        p_user_id: user.id,
-        p_amount: amount,
-        p_generation_type: generationType,
-        p_description: description || null,
-        p_generation_id: generationId || null,
+      await deductCredits({
+        userId: user.id,
+        amount,
+        generationType,
+        description,
+        generationId,
       });
 
-      if (error) throw error;
-      if (!data) throw new Error('Insufficient credits');
-
-      return data;
+      return true;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['credits', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['credit-transactions', user?.id] });
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-// Fetch transaction history
 export function useCreditTransactions(limit = 20) {
   const { user } = useAuth();
 
-  return useQuery({
-    queryKey: ['credit-transactions', user?.id, limit],
-    queryFn: async (): Promise<CreditTransaction[]> => {
-      if (!user?.id) return [];
+  const transactions = useQuery(
+    api.credits.getTransactions,
+    user?.id ? { userId: user.id } : "skip"
+  );
 
-      const { data, error } = await supabase
-        .from('credit_transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.id,
-  });
+  return {
+    data: transactions || [],
+    isLoading: transactions === undefined,
+    error: null,
+  };
 }
 
-// Check if user has enough credits for a generation
 export function useHasEnoughCredits(batchSize: number, isFullResolution: boolean) {
   const { totalCredits } = useCreditBalance();
   const costPerImage = isFullResolution ? CREDIT_COSTS.FULL_RESOLUTION : CREDIT_COSTS.PREVIEW;

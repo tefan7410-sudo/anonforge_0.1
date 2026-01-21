@@ -1,198 +1,99 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { Id } from '../../convex/_generated/dataModel';
 
 export interface HeroBackground {
-  id: string;
+  _id: Id<"hero_backgrounds">;
   image_url: string;
   storage_path: string;
-  display_order: number;
   is_active: boolean;
-  uploaded_by: string | null;
-  created_at: string;
-  updated_at: string;
+  display_order: number;
+  _creationTime: number;
 }
 
-// Fetch active hero backgrounds for the landing page
 export function useHeroBackgrounds() {
-  return useQuery({
-    queryKey: ['hero-backgrounds', 'active'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('hero_backgrounds')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+  const backgrounds = useQuery(api.admin.getHeroBackgrounds);
 
-      if (error) throw error;
-      return data as HeroBackground[];
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  return {
+    data: backgrounds as HeroBackground[] | undefined,
+    isLoading: backgrounds === undefined,
+    error: null,
+    refetch: () => {},
+  };
 }
 
-// Fetch all hero backgrounds for admin panel
-export function useAdminHeroBackgrounds() {
-  return useQuery({
-    queryKey: ['hero-backgrounds', 'admin'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('hero_backgrounds')
-        .select('*')
-        .order('display_order', { ascending: true });
+export function useActiveHeroBackgrounds() {
+  const backgrounds = useQuery(api.admin.getHeroBackgrounds);
 
-      if (error) throw error;
-      return data as HeroBackground[];
-    },
-  });
+  const activeBackgrounds = backgrounds?.filter(bg => bg.is_active) || [];
+
+  return {
+    data: activeBackgrounds as HeroBackground[],
+    isLoading: backgrounds === undefined,
+    error: null,
+  };
 }
 
-// Upload a new hero background
-export function useUploadHeroBackground() {
-  const queryClient = useQueryClient();
+export function useAddHeroBackground() {
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+  const uploadHeroBackground = useMutation(api.files.uploadHeroBackground);
 
-  return useMutation({
-    mutationFn: async (file: File) => {
-      // Upload to storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const storagePath = `hero-backgrounds/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('product-assets')
-        .upload(storagePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get the public URL
-      const { data: urlData } = supabase.storage
-        .from('product-assets')
-        .getPublicUrl(storagePath);
-
-      // Get the next display order
-      const { data: existing } = await supabase
-        .from('hero_backgrounds')
-        .select('display_order')
-        .order('display_order', { ascending: false })
-        .limit(1);
-
-      const nextOrder = existing && existing.length > 0 
-        ? (existing[0].display_order || 0) + 1 
-        : 0;
-
-      // Create database record
-      const { data, error } = await supabase
-        .from('hero_backgrounds')
-        .insert({
-          image_url: urlData.publicUrl,
-          storage_path: storagePath,
-          display_order: nextOrder,
-          is_active: true,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+  return {
+    mutateAsync: async (file: File) => {
+      // Get upload URL
+      const uploadUrl = await generateUploadUrl();
+      
+      // Upload file
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      
+      const { storageId } = await response.json();
+      
+      // Save to database
+      const result = await uploadHeroBackground({ storageId });
+      return result;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hero-backgrounds'] });
-      toast.success('Background uploaded successfully');
-    },
-    onError: (error) => {
-      console.error('Upload error:', error);
-      toast.error('Failed to upload background');
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-// Delete a hero background
+export function useToggleHeroBackground() {
+  const toggleBackground = useMutation(api.admin.toggleHeroBackground);
+
+  return {
+    mutateAsync: async (id: string, isActive: boolean) => {
+      await toggleBackground({ id: id as Id<"hero_backgrounds">, isActive });
+    },
+    mutate: () => {},
+    isPending: false,
+  };
+}
+
 export function useDeleteHeroBackground() {
-  const queryClient = useQueryClient();
+  const deleteBackground = useMutation(api.admin.deleteHeroBackground);
 
-  return useMutation({
-    mutationFn: async ({ id, storagePath }: { id: string; storagePath: string }) => {
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('product-assets')
-        .remove([storagePath]);
-
-      if (storageError) {
-        console.error('Storage delete error:', storageError);
-        // Continue with DB delete even if storage fails
-      }
-
-      // Delete from database
-      const { error } = await supabase
-        .from('hero_backgrounds')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+  return {
+    mutateAsync: async (id: string) => {
+      await deleteBackground({ id: id as Id<"hero_backgrounds"> });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hero-backgrounds'] });
-      toast.success('Background deleted');
-    },
-    onError: (error) => {
-      console.error('Delete error:', error);
-      toast.error('Failed to delete background');
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
-// Toggle active status
+// Aliases for admin
+export function useAdminHeroBackgrounds() {
+  return useHeroBackgrounds();
+}
+
+export function useUploadHeroBackground() {
+  return useAddHeroBackground();
+}
+
 export function useToggleHeroBackgroundActive() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      const { error } = await supabase
-        .from('hero_backgrounds')
-        .update({ is_active: isActive })
-        .eq('id', id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hero-backgrounds'] });
-    },
-    onError: (error) => {
-      console.error('Toggle error:', error);
-      toast.error('Failed to update background');
-    },
-  });
-}
-
-// Reorder backgrounds
-export function useReorderHeroBackgrounds() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (orderedIds: string[]) => {
-      const updates = orderedIds.map((id, index) => ({
-        id,
-        display_order: index,
-      }));
-
-      for (const update of updates) {
-        const { error } = await supabase
-          .from('hero_backgrounds')
-          .update({ display_order: update.display_order })
-          .eq('id', update.id);
-
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hero-backgrounds'] });
-    },
-    onError: (error) => {
-      console.error('Reorder error:', error);
-      toast.error('Failed to reorder backgrounds');
-    },
-  });
+  return useToggleHeroBackground();
 }

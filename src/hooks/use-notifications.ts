@@ -1,123 +1,84 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { Id } from '../../convex/_generated/dataModel';
 
 export interface Notification {
-  id: string;
+  _id: Id<"notifications">;
   user_id: string;
   type: string;
   title: string;
   message: string;
-  link: string | null;
-  metadata: Record<string, unknown>;
+  link?: string;
   is_read: boolean;
-  created_at: string;
+  metadata?: Record<string, unknown>;
+  _creationTime: number;
 }
 
-export function useNotifications(userId: string | undefined) {
-  return useQuery({
-    queryKey: ['notifications', userId],
-    queryFn: async () => {
-      if (!userId) return [];
+export function useNotifications(limit = 20) {
+  const { user } = useAuth();
 
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(50);
+  const notifications = useQuery(
+    api.notifications.list,
+    user?.id ? { userId: user.id, limit } : "skip"
+  );
 
-      if (error) throw error;
-      return data as Notification[];
-    },
-    enabled: !!userId,
-  });
+  return {
+    data: notifications as Notification[] | undefined,
+    isLoading: notifications === undefined,
+    error: null,
+    refetch: () => {},
+  };
 }
 
-export function useUnreadCount(userId: string | undefined) {
-  return useQuery({
-    queryKey: ['notifications-unread', userId],
-    queryFn: async () => {
-      if (!userId) return 0;
+export function useUnreadCount() {
+  const { user } = useAuth();
 
-      const { count, error } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('is_read', false);
+  const count = useQuery(
+    api.notifications.unreadCount,
+    user?.id ? { userId: user.id } : "skip"
+  );
 
-      if (error) throw error;
-      return count || 0;
-    },
-    enabled: !!userId,
-  });
+  return {
+    data: count ?? 0,
+    isLoading: count === undefined,
+  };
 }
 
 export function useMarkAsRead() {
-  const queryClient = useQueryClient();
+  const markAsRead = useMutation(api.notifications.markAsRead);
 
-  return useMutation({
-    mutationFn: async ({
-      notificationId,
-      userId,
-    }: {
-      notificationId: string;
-      userId: string;
-    }) => {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notificationId);
-
-      if (error) throw error;
+  return {
+    mutateAsync: async (notificationId: string) => {
+      await markAsRead({ id: notificationId as Id<"notifications"> });
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['notifications', variables.userId] });
-      queryClient.invalidateQueries({ queryKey: ['notifications-unread', variables.userId] });
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 export function useMarkAllAsRead() {
-  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const markAllAsRead = useMutation(api.notifications.markAllAsRead);
 
-  return useMutation({
-    mutationFn: async (userId: string) => {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', userId)
-        .eq('is_read', false);
-
-      if (error) throw error;
+  return {
+    mutateAsync: async () => {
+      if (!user?.id) return;
+      await markAllAsRead({ userId: user.id });
     },
-    onSuccess: (_, userId) => {
-      queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
-      queryClient.invalidateQueries({ queryKey: ['notifications-unread', userId] });
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 export function useDeleteNotification() {
-  const queryClient = useQueryClient();
+  const removeNotification = useMutation(api.notifications.remove);
 
-  return useMutation({
-    mutationFn: async ({
-      notificationId,
-      userId,
-    }: {
-      notificationId: string;
-      userId: string;
-    }) => {
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', notificationId);
-
-      if (error) throw error;
+  return {
+    mutateAsync: async (notificationId: string) => {
+      await removeNotification({ id: notificationId as Id<"notifications"> });
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['notifications', variables.userId] });
-      queryClient.invalidateQueries({ queryKey: ['notifications-unread', variables.userId] });
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
