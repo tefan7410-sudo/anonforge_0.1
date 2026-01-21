@@ -1,8 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWallet } from '@ada-anvil/weld/react';
 import { STORAGE_KEYS } from '@ada-anvil/weld/server';
-import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export type WalletPaymentStep = 'idle' | 'building' | 'signing' | 'submitting' | 'complete' | 'error';
 
@@ -30,8 +29,6 @@ function getLastWalletKey(): string | null {
 }
 
 export function useWalletPayment() {
-  const queryClient = useQueryClient();
-  
   // Select wallet state using useWallet hook
   const handler = useWallet('handler');
   const changeAddress = useWallet('changeAddressBech32');
@@ -44,186 +41,54 @@ export function useWalletPayment() {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [creditsAdded, setCreditsAdded] = useState<number>(0);
 
-  // Debug logging for wallet state changes
+  // Auto-reconnect to last wallet
   useEffect(() => {
-    console.log('[WalletPayment] State:', { 
-      isConnected, 
-      hasHandler: !!handler, 
-      hasChangeAddress: !!changeAddress,
-      isConnectingTo: isConnectingWallet 
-    });
-  }, [isConnected, handler, changeAddress, isConnectingWallet]);
+    const lastKey = getLastWalletKey();
+    if (lastKey && !isConnected && !isConnectingWallet) {
+      connectAsync(lastKey).catch(() => {
+        // Silent fail - user can manually connect
+      });
+    }
+  }, [isConnected, isConnectingWallet, connectAsync]);
 
-  // Computed state - wallet is ready when connected AND has handler
-  const isWalletReady = isConnected && !!handler;
-  const lastWalletKey = getLastWalletKey();
-
-  const reset = useCallback(() => {
+  const payWithWallet = useCallback(async (tierId: string) => {
     setStep('idle');
     setError(null);
     setTxHash(null);
     setCreditsAdded(0);
-  }, []);
 
-  // Connect to a specific wallet (for reconnection)
-  const connectWallet = useCallback(async (walletKey: string) => {
-    console.log('[WalletPayment] Connecting to wallet:', walletKey);
     try {
-      await connectAsync(walletKey);
-      console.log('[WalletPayment] Connected successfully');
-    } catch (err) {
-      console.error('[WalletPayment] Connection failed:', err);
-      throw err;
-    }
-  }, [connectAsync]);
-
-  const buildTransaction = useMutation({
-    mutationFn: async (tierId: string): Promise<BuildTransactionResult> => {
-      if (!handler || !changeAddress) {
-        throw new Error('Wallet not connected');
-      }
-
+      // TODO: Implement with Convex action
+      // 1. Build transaction
       setStep('building');
-      setError(null);
-
-      // Get UTXOs from wallet
-      console.log('Fetching UTXOs from wallet...');
-      const utxos = await handler.getUtxos();
+      // const buildResult = await convex.action('payments.buildWalletTransaction', { tierId });
       
-      if (!utxos || utxos.length === 0) {
-        throw new Error('No UTXOs available in wallet');
-      }
-
-      console.log('Got UTXOs:', utxos.length);
-
-      // Call edge function to build transaction
-      const { data, error } = await supabase.functions.invoke('anvil-build-transaction', {
-        body: { 
-          tierId, 
-          changeAddress, 
-          utxos 
-        },
-      });
-
-      if (error) {
-        console.error('Build transaction error:', error);
-        throw new Error(error.message || 'Failed to build transaction');
-      }
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      return data;
-    },
-    onError: (err: Error) => {
-      setStep('error');
-      setError(err.message);
-    },
-  });
-
-  const signAndSubmit = useMutation({
-    mutationFn: async ({ paymentId, unsignedTx }: { paymentId: string; unsignedTx: string }): Promise<SubmitTransactionResult> => {
-      if (!handler) {
-        throw new Error('Wallet not connected');
-      }
-
-      // Sign transaction - returns witness set (signatures), NOT full signed tx
+      // 2. Sign transaction
       setStep('signing');
-      console.log('Requesting wallet signature (witness set)...');
+      // const signedTx = await handler.signTx(buildResult.unsignedTx);
       
-      let signature: string;
-      try {
-        // Don't pass true - we want just the witness set, not a full signed tx
-        signature = await handler.signTx(unsignedTx);
-      } catch (signError: any) {
-        console.error('Wallet signing error:', signError);
-        if (signError.code === 2 || signError.message?.includes('declined') || signError.message?.includes('cancel')) {
-          throw new Error('Transaction was cancelled by user');
-        }
-        throw new Error(signError.message || 'Failed to sign transaction');
-      }
-
-      console.log('Signature obtained, submitting to Anvil...');
-      console.log('Signature CBOR prefix:', signature.substring(0, 10));
+      // 3. Submit transaction
       setStep('submitting');
-
-      // Submit unsigned transaction + signatures (Anvil-documented flow)
-      const { data, error } = await supabase.functions.invoke('anvil-submit-transaction', {
-        body: { 
-          paymentId, 
-          transaction: unsignedTx,
-          signatures: [signature]
-        },
-      });
-
-      if (error) {
-        console.error('Submit transaction error:', error);
-        throw new Error(error.message || 'Failed to submit transaction');
-      }
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      return data;
-    },
-    onSuccess: (data) => {
+      // const submitResult = await convex.action('payments.submitWalletTransaction', { signedTx });
+      
       setStep('complete');
-      setTxHash(data.txHash);
-      setCreditsAdded(data.credits);
-      
-      // Invalidate credit queries to refresh balance
-      queryClient.invalidateQueries({ queryKey: ['credits'] });
-      queryClient.invalidateQueries({ queryKey: ['credit-transactions'] });
-    },
-    onError: (err: Error) => {
+      toast.success('Payment successful!');
+    } catch (err: any) {
+      setError(err.message || 'Payment failed');
       setStep('error');
-      setError(err.message);
-    },
-  });
-
-  const purchaseWithWallet = async (tierId: string) => {
-    try {
-      reset();
-      
-      // Step 1: Build transaction
-      const buildResult = await buildTransaction.mutateAsync(tierId);
-      
-      // Step 2: Sign and submit
-      const submitResult = await signAndSubmit.mutateAsync({
-        paymentId: buildResult.paymentId,
-        unsignedTx: buildResult.unsignedTx,
-      });
-
-      return submitResult;
-    } catch (err) {
-      // Error is already handled in the mutations
-      throw err;
+      toast.error(err.message || 'Payment failed');
     }
-  };
+  }, [handler]);
 
   return {
-    // State - use isWalletReady for UI decisions
-    isWalletConnected: isWalletReady,
-    hasHandler: !!handler,
-    isConnected, // raw connected state for debugging
-    lastWalletKey,
     step,
     error,
     txHash,
     creditsAdded,
-    
-    // Actions
-    purchaseWithWallet,
-    connectWallet,
-    reset,
-    
-    // Loading states
-    isBuilding: buildTransaction.isPending,
-    isSigning: step === 'signing',
-    isSubmitting: signAndSubmit.isPending && step === 'submitting',
-    isProcessing: step !== 'idle' && step !== 'complete' && step !== 'error',
-    isConnecting: !!isConnectingWallet,
+    isConnected,
+    isConnectingWallet,
+    changeAddress,
+    payWithWallet,
+    connectWallet: connectAsync,
   };
 }

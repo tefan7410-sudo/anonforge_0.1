@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { Id } from '../../convex/_generated/dataModel';
 
 interface CreatorCollection {
   id: string;
@@ -12,49 +13,43 @@ interface CreatorCollection {
 }
 
 export function useCreatorCollections(ownerId: string | undefined, excludeProjectId?: string) {
-  return useQuery({
-    queryKey: ['creator-collections', ownerId, excludeProjectId],
-    queryFn: async (): Promise<CreatorCollection[]> => {
-      if (!ownerId) return [];
+  // Get all projects by this owner
+  const projects = useQuery(
+    api.projects.listByOwner,
+    ownerId ? { ownerId } : "skip"
+  );
 
-      // Get all projects by this owner
-      const { data: projects, error: projectsError } = await supabase
-        .from('projects')
-        .select('id, name, description')
-        .eq('owner_id', ownerId)
-        .neq('id', excludeProjectId || '');
+  // Get product pages for these projects
+  const productPages = useQuery(
+    api.productPages.listLive,
+    projects ? {} : "skip"
+  );
 
-      if (projectsError) throw projectsError;
-      if (!projects || projects.length === 0) return [];
-
-      // Get product pages for these projects that are live
-      const { data: productPages, error: pagesError } = await supabase
-        .from('product_pages')
-        .select('project_id, banner_url, logo_url, slug, is_live')
-        .in('project_id', projects.map(p => p.id))
-        .eq('is_live', true);
-
-      if (pagesError) throw pagesError;
-
-      // Combine the data
-      const collections: CreatorCollection[] = [];
-      for (const project of projects) {
-        const productPage = productPages?.find(pp => pp.project_id === project.id);
-        if (productPage?.is_live) {
-          collections.push({
-            id: project.id,
-            name: project.name,
-            description: project.description,
-            banner_url: productPage.banner_url,
-            logo_url: productPage.logo_url,
-            slug: productPage.slug,
-            is_live: true,
-          });
-        }
+  // Combine the data
+  const collections: CreatorCollection[] = [];
+  
+  if (projects && productPages) {
+    for (const project of projects) {
+      if (excludeProjectId && project._id === excludeProjectId) continue;
+      
+      const productPage = productPages.find(pp => pp.project_id === project._id);
+      if (productPage?.is_live) {
+        collections.push({
+          id: project._id,
+          name: project.name,
+          description: project.description || null,
+          banner_url: productPage.banner_url || null,
+          logo_url: productPage.logo_url || null,
+          slug: productPage.slug || null,
+          is_live: true,
+        });
       }
+    }
+  }
 
-      return collections;
-    },
-    enabled: !!ownerId,
-  });
+  return {
+    data: collections,
+    isLoading: projects === undefined || productPages === undefined,
+    error: null,
+  };
 }

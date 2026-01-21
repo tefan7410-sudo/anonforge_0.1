@@ -66,6 +66,17 @@ export default defineSchema({
   }).index("by_project", ["project_id"])
     .index("by_user", ["user_id"]),
 
+  // Project invitations
+  project_invitations: defineTable({
+    project_id: v.id("projects"),
+    email: v.string(),
+    role: v.string(),
+    status: v.string(),
+    invited_by: v.optional(v.string()),
+    expires_at: v.optional(v.string()),
+  }).index("by_project", ["project_id"])
+    .index("by_email", ["email"]),
+
   // Categories (trait categories)
   categories: defineTable({
     project_id: v.id("projects"),
@@ -250,6 +261,25 @@ export default defineSchema({
     is_anonymous: v.optional(v.boolean()),
   }).index("by_user", ["user_id"]),
 
+  // Art fund sources
+  art_fund_sources: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    amount_ada: v.number(),
+    category: v.union(v.literal("fees"), v.literal("special_sale"), v.literal("donation"), v.literal("other")),
+    source_date: v.string(),
+    is_active: v.boolean(),
+    created_by: v.optional(v.string()),
+  }).index("by_date", ["source_date"]),
+
+  // Art fund settings
+  art_fund_settings: defineTable({
+    wallet_address: v.string(),
+    description: v.optional(v.string()),
+    updated_at: v.optional(v.string()),
+    updated_by: v.optional(v.string()),
+  }),
+
   // Art fund payouts
   art_fund_payouts: defineTable({
     recipient_id: v.string(),
@@ -266,8 +296,13 @@ export default defineSchema({
     user_id: v.string(),
     status: v.string(),
     twitter_url: v.optional(v.string()),
+    twitter_link: v.optional(v.string()), // Alias for compatibility
     experience: v.optional(v.string()),
     motivation: v.optional(v.string()),
+    reason: v.optional(v.string()),
+    portfolio_links: v.optional(v.array(v.string())),
+    rejection_reason: v.optional(v.string()),
+    reviewed_by: v.optional(v.string()),
     reviewed_at: v.optional(v.string()),
     admin_notes: v.optional(v.string()),
   }).index("by_user", ["user_id"])
@@ -286,4 +321,14 @@ export default defineSchema({
     metadata: v.optional(v.any()),
   }).index("by_user", ["user_id"])
     .index("by_address", ["payment_address"]),
+
+  // Tutorial progress
+  tutorial_progress: defineTable({
+    user_id: v.string(),
+    tutorial_enabled: v.boolean(),
+    current_step: v.number(),
+    completed_at: v.optional(v.string()),
+    skipped_at: v.optional(v.string()),
+    updated_at: v.optional(v.string()),
+  }).index("by_user", ["user_id"]),
 });

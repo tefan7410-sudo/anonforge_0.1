@@ -1,25 +1,28 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { Id } from '../../convex/_generated/dataModel';
+import { toast } from 'sonner';
 
 export interface ArtFundSource {
-  id: string;
+  _id: Id<"art_fund_sources">;
+  id?: string;
   name: string;
-  description: string | null;
+  description?: string;
   amount_ada: number;
   category: 'fees' | 'special_sale' | 'donation' | 'other';
   source_date: string;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  created_by: string | null;
+  created_by?: string;
+  _creationTime: number;
 }
 
 export interface ArtFundSettings {
-  id: string;
+  _id: Id<"art_fund_settings">;
+  id?: string;
   wallet_address: string;
-  description: string | null;
-  updated_at: string;
-  updated_by: string | null;
+  description?: string;
+  updated_at?: string;
+  updated_by?: string;
 }
 
 export interface WalletBalance {
@@ -29,151 +32,111 @@ export interface WalletBalance {
 }
 
 export function useArtFundSources() {
-  return useQuery({
-    queryKey: ['art-fund-sources'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('art_fund_sources')
-        .select('*')
-        .order('source_date', { ascending: false });
+  const sources = useQuery(api.artFund.getSources);
 
-      if (error) throw error;
-      return data as ArtFundSource[];
-    },
-  });
+  return {
+    data: sources as ArtFundSource[] | undefined,
+    isLoading: sources === undefined,
+    error: null,
+  };
 }
 
 export function useArtFundSettings() {
-  return useQuery({
-    queryKey: ['art-fund-settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('art_fund_settings')
-        .select('*')
-        .limit(1)
-        .single();
+  const settings = useQuery(api.artFund.getSettings);
 
-      if (error) throw error;
-      return data as ArtFundSettings;
-    },
-  });
+  return {
+    data: settings as ArtFundSettings | undefined,
+    isLoading: settings === undefined,
+    error: null,
+  };
 }
 
 export function useWalletBalance(address: string | undefined) {
-  return useQuery({
-    queryKey: ['wallet-balance', address],
-    queryFn: async () => {
-      if (!address) return null;
-
-      const { data, error } = await supabase.functions.invoke('get-wallet-balance', {
-        body: { address },
-      });
-
-      if (error) throw error;
-      return data as WalletBalance;
-    },
-    enabled: !!address,
-    refetchInterval: 60000, // Refetch every minute
-  });
+  // This would need a Convex action to query blockchain
+  // For now, return null
+  return {
+    data: null as WalletBalance | null,
+    isLoading: false,
+    error: null,
+    refetch: () => {},
+  };
 }
 
 export function useAddFundSource() {
-  const queryClient = useQueryClient();
+  const addSource = useMutation(api.artFund.addSource);
 
-  return useMutation({
-    mutationFn: async (source: {
+  return {
+    mutateAsync: async (source: {
       name: string;
       description?: string;
       amount_ada: number;
       category: 'fees' | 'special_sale' | 'donation' | 'other';
       source_date: string;
     }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { data, error } = await supabase
-        .from('art_fund_sources')
-        .insert({
-          ...source,
-          created_by: user?.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      await addSource({
+        name: source.name,
+        description: source.description,
+        amountAda: source.amount_ada,
+        category: source.category,
+        sourceDate: source.source_date,
+      });
+      toast.success('Fund source added');
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['art-fund-sources'] });
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 export function useUpdateFundSource() {
-  const queryClient = useQueryClient();
+  const updateSource = useMutation(api.artFund.updateSource);
 
-  return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<ArtFundSource> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('art_fund_sources')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+  return {
+    mutateAsync: async ({ id, ...updates }: Partial<ArtFundSource> & { id: string }) => {
+      await updateSource({
+        id: id as Id<"art_fund_sources">,
+        name: updates.name,
+        description: updates.description,
+        amountAda: updates.amount_ada,
+        category: updates.category,
+        sourceDate: updates.source_date,
+        isActive: updates.is_active,
+      });
+      toast.success('Fund source updated');
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['art-fund-sources'] });
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 export function useDeleteFundSource() {
-  const queryClient = useQueryClient();
+  const deleteSource = useMutation(api.artFund.deleteSource);
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('art_fund_sources')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+  return {
+    mutateAsync: async (id: string) => {
+      await deleteSource({ id: id as Id<"art_fund_sources"> });
+      toast.success('Fund source deleted');
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['art-fund-sources'] });
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
 
 export function useUpdateArtFundSettings() {
-  const queryClient = useQueryClient();
+  const updateSettings = useMutation(api.artFund.updateSettings);
 
-  return useMutation({
-    mutationFn: async ({ id, wallet_address, description }: {
+  return {
+    mutateAsync: async ({ id, wallet_address, description }: {
       id: string;
       wallet_address: string;
       description?: string;
     }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      const { data, error } = await supabase
-        .from('art_fund_settings')
-        .update({
-          wallet_address,
-          description,
-          updated_by: user?.id,
-        })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      await updateSettings({
+        walletAddress: wallet_address,
+        description,
+      });
+      toast.success('Art fund settings updated');
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['art-fund-settings'] });
-    },
-  });
+    mutate: () => {},
+    isPending: false,
+  };
 }
